@@ -84,6 +84,13 @@ document.addEventListener("DOMContentLoaded", function(){
 </script>
 </head>
 <body>
+// Store user in localStorage after verification
+localStorage.setItem("user_" + email, JSON.stringify({
+    name: name,
+    email: email,
+    password: password,
+    verified: true
+}));
 
 <header>
 <h1>Bumbble</h1>
@@ -116,4 +123,5 @@ document.addEventListener("DOMContentLoaded", function(){
 
 </body>
 </html>
+
 
