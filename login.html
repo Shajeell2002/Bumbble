@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bumbble - Profile</title>
+<title>Bumbble - Login</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:Arial,sans-serif;background:#fff;color:#333;display:flex;flex-direction:column;min-height:100vh;}
@@ -11,11 +11,13 @@ header{display:flex;justify-content:space-between;align-items:center;padding:20p
 header h1{font-size:24px;}
 nav a{margin:0 10px;text-decoration:none;color:#333;font-weight:bold;}
 .section{flex:1;display:flex;justify-content:center;align-items:center;padding:40px 20px;}
-.profile-box{background:#f9f9f9;padding:30px;border-radius:15px;box-shadow:0 2px 6px rgba(0,0,0,0.1);width:100%;max-width:400px;text-align:center;}
-.profile-box h2{margin-bottom:20px;font-size:28px;}
-.profile-box p{font-size:18px;margin-bottom:15px;}
-.profile-box button{padding:12px 20px;border:none;border-radius:8px;background:#ffcb2b;font-size:18px;font-weight:bold;cursor:pointer;}
+.login-form{background:#f9f9f9;padding:30px;border-radius:15px;box-shadow:0 2px 6px rgba(0,0,0,0.1);width:100%;max-width:400px;display:flex;flex-direction:column;gap:15px;}
+.login-form h2{text-align:center;margin-bottom:20px;font-size:28px;}
+.login-form input{width:100%;padding:12px;border-radius:8px;border:1px solid #ccc;font-size:16px;}
+.login-form button{width:100%;padding:12px;border:none;border-radius:8px;background:#ffcb2b;font-size:18px;font-weight:bold;cursor:pointer;}
 footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:auto;}
+.logo{width:150px;height:auto;margin-bottom:20px;display:block;margin-left:auto;margin-right:auto;}
+@media(max-width:768px){.login-form{width:90%;}}
 </style>
 </head>
 <body>
@@ -35,12 +37,14 @@ footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:auto;}
 </header>
 
 <section class="section">
-<div class="profile-box" id="profileBox">
-<h2>Welcome!</h2>
-<p id="userName"></p>
-<p id="userEmail"></p>
-<button onclick="logout()">Logout</button>
-</div>
+<form class="login-form" id="loginForm">
+<img src="images/logo.png" alt="Bumbble Logo" class="logo">
+<h2>Login</h2>
+<input type="email" id="email" placeholder="Email" required>
+<input type="password" id="password" placeholder="Password" required>
+<button type="submit">Login</button>
+<p id="message" style="color:red;text-align:center;"></p>
+</form>
 </section>
 
 <footer>
@@ -48,34 +52,44 @@ footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:auto;}
 </footer>
 
 <script>
-// Get logged-in user email from localStorage/session
-// For simplicity, we assume the last logged-in user is saved in localStorage
-// If you want, you can store session info separately after login
 document.addEventListener("DOMContentLoaded", function(){
-    const email = localStorage.getItem("lastLoggedIn");
-    if(!email){
-        alert("❌ You are not logged in. Redirecting to login page.");
-        window.location.href = "login.html";
-        return;
-    }
+    const form = document.getElementById("loginForm");
+    const message = document.getElementById("message");
 
-    const user = JSON.parse(localStorage.getItem("user_" + email));
-    if(!user || !user.verified){
-        alert("❌ User not verified or not found. Redirecting to login.");
-        window.location.href = "login.html";
-        return;
-    }
+    form.addEventListener("submit", function(e){
+        e.preventDefault();
 
-    document.getElementById("userName").innerText = "Name: " + user.name;
-    document.getElementById("userEmail").innerText = "Email: " + user.email;
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value.trim();
+
+        // Retrieve user from localStorage
+        const user = JSON.parse(localStorage.getItem("user_" + email));
+
+        if(!user){
+            message.innerText = "❌ No account found with this email.";
+            return;
+        }
+
+        if(!user.verified){
+            message.innerText = "❌ Your account is not verified. Check your email.";
+            return;
+        }
+
+        if(user.password !== password){
+            message.innerText = "❌ Incorrect password.";
+            return;
+        }
+
+        // ✅ Login successful
+        localStorage.setItem("lastLoggedIn", email); // store logged-in user
+        message.style.color = "green";
+        message.innerText = "✅ Login successful! Redirecting...";
+
+        setTimeout(function(){
+            window.location.href = "profile.html"; // redirect to profile page
+        }, 1500);
+    });
 });
-
-// Logout function
-function logout(){
-    localStorage.removeItem("lastLoggedIn");
-    alert("✅ Logged out successfully!");
-    window.location.href = "login.html";
-}
 </script>
 
 </body>
