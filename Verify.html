@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bumbble - Verify Email</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Arial,sans-serif;background:#fefefe;color:#333;display:flex;flex-direction:column;min-height:100vh;justify-content:center;align-items:center;text-align:center;padding:20px;}
+header{display:flex;justify-content:space-between;align-items:center;padding:20px;background:#ffcb2b;width:100%;}
+header h1{font-size:24px;}
+nav a{margin:0 10px;text-decoration:none;color:#333;font-weight:bold;}
+.verify-box{background:#f9f9f9;padding:30px;border-radius:15px;box-shadow:0 2px 6px rgba(0,0,0,0.1);max-width:400px;width:100%;}
+.verify-box h2{font-size:28px;margin-bottom:20px;}
+.verify-box p{font-size:16px;margin-bottom:20px;}
+.verify-box button{padding:12px 20px;border:none;border-radius:8px;background:#ffcb2b;font-size:16px;font-weight:bold;cursor:pointer;}
+footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:auto;width:100%;}
+</style>
+<script>
+function getQueryParam(param) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(param);
+}
+
+function verifyEmail() {
+    const email = getQueryParam('email');
+    const messageBox = document.getElementById('messageBox');
+
+    if(email){
+        messageBox.innerHTML = `
+            <h2>Email Verified!</h2>
+            <p>Thank you, <strong>${email}</strong>, your account is now verified.</p>
+            <button onclick="redirectLogin()">Go to Login</button>
+        `;
+    } else {
+        messageBox.innerHTML = `
+            <h2>Verification Failed</h2>
+            <p>No email found. Please check your verification link.</p>
+        `;
+    }
+}
+
+function redirectLogin(){
+    window.location.href = "login.html";
+}
+
+window.onload = verifyEmail;
+</script>
+</head>
+<body>
+
+<header>
+<h1>Bumbble</h1>
+<nav>
+<a href="index.html">Home</a>
+<a href="date.html">Date</a>
+<a href="friends.html">Friends</a>
+<a href="stories.html">Stories</a>
+<a href="events.html">Events</a>
+<a href="safety.html">Safety</a>
+<a href="login.html">Login</a>
+<a href="signup.html">Sign Up</a>
+</nav>
+</header>
+
+<div class="verify-box" id="messageBox">
+<!-- Message will be injected here -->
+</div>
+
+<footer>
+<p>&copy; 2025 Bumbble. All rights reserved.</p>
+</footer>
+
+</body>
+</html>
