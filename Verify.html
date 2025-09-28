@@ -51,24 +51,35 @@ footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:auto; }
 </footer>
 
 <script>
-document.getElementById("verifyForm").addEventListener("submit", function(e){
-    e.preventDefault();
-    const email = document.getElementById("email").value.trim();
-    const enteredOtp = document.getElementById("otp").value.trim();
-    const storedOtp = localStorage.getItem(email+"_otp");
-
-    if(!storedOtp){
-        document.getElementById("message").innerText = "No OTP found for this email. Please signup first.";
-        return;
+document.addEventListener("DOMContentLoaded", function(){
+    // Prefill email if passed in URL
+    const params = new URLSearchParams(window.location.search);
+    const emailField = document.getElementById("email");
+    if(params.has("email")){
+        emailField.value = params.get("email");
     }
 
-    if(enteredOtp === storedOtp){
-        alert("✅ OTP verified successfully!");
-        localStorage.removeItem(email+"_otp"); // remove after verification
-        window.location.href = "login.html"; // redirect to login page
-    } else {
-        document.getElementById("message").innerText = "❌ Incorrect OTP. Please try again.";
-    }
+    // OTP verification
+    const form = document.getElementById("verifyForm");
+    form.addEventListener("submit", function(e){
+        e.preventDefault();
+        const email = document.getElementById("email").value.trim();
+        const enteredOtp = document.getElementById("otp").value.trim();
+        const storedOtp = localStorage.getItem(email+"_otp");
+
+        if(!storedOtp){
+            document.getElementById("message").innerText = "No OTP found for this email. Please signup first.";
+            return;
+        }
+
+        if(enteredOtp === storedOtp){
+            alert("✅ OTP verified successfully!");
+            localStorage.removeItem(email+"_otp"); // remove after verification
+            window.location.href = "login.html"; // redirect to login page
+        } else {
+            document.getElementById("message").innerText = "❌ Incorrect OTP. Please try again.";
+        }
+    });
 });
 </script>
 
