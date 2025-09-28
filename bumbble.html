@@ -1,58 +1,129 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bumbble - Find Your Connection</title>
-  <style>
-    body { margin:0; font-family: Arial, sans-serif; background:#fff; color:#333; }
-    header { display:flex; justify-content:space-between; align-items:center; padding:20px; background:#ffcb2b; }
-    header h1 { margin:0; font-size:24px; }
-    nav a { margin:0 10px; text-decoration:none; color:#333; font-weight:bold; }
-    .hero {
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      flex-direction:column;
-      text-align:center;
-      padding:60px 20px;
-      background:#fefefe;
-    }
-    .hero img {
-      max-width: 300px;
-      height: auto;
-      margin-bottom: 20px;
-    }
-    .hero h2 { font-size:36px; margin:20px 0 10px; }
-    .hero p { font-size:18px; margin:0 0 20px; }
-    .hero button {
-      background:#ffcb2b; border:none; padding:15px 30px; font-size:18px; font-weight:bold; cursor:pointer; border-radius:30px;
-    }
-    footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:40px; }
-  </style>
-</head>
-<body>
-  <header>
-    <h1>Bumbble</h1>
-    <nav>
-      <a href="index.html">Home</a>
-      <a href="date.html">Date</a>
-      <a href="friends.html">Friends</a>
-      <a href="stories.html">Stories</a>
-      <a href="events.html">Events</a>
-      <a href="safety.html">Safety</a>
-    </nav>
-  </header>
+/* Reset & Global Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  font-family: Arial, sans-serif;
+  background: #fff;
+  color: #333;
+}
 
-  <section class="hero">
-    <img src="1b415313-97c5-47cc-a4da-8341ffbbc95a.png" alt="Two people using phones illustration">
-    <h2>Meet. Match. Connect.</h2>
-    <p>Your journey to meaningful connections starts here.</p>
-    <button>Join Bumbble Now</button>
-  </section>
+/* Header & Navigation */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: #ffcb2b;
+}
+header h1 {
+  font-size: 24px;
+  margin: 0;
+}
+nav a {
+  margin: 0 10px;
+  text-decoration: none;
+  color: #333;
+  font-weight: bold;
+}
 
-  <footer>
-    <p>&copy; 2025 Bumbble. All rights reserved.</p>
-  </footer>
-</body>
-</html>
+/* Hero Section */
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  padding: 60px 20px;
+  background: #fefefe;
+}
+.hero img {
+  max-width: 300px;
+  height: auto;
+  margin-bottom: 20px;
+}
+.hero h2 {
+  font-size: 36px;
+  margin: 20px 0 10px;
+}
+.hero p {
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+.hero button {
+  background: #ffcb2b;
+  border: none;
+  padding: 15px 30px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 30px;
+}
+
+/* Page Sections */
+.section {
+  padding: 40px 20px;
+}
+.section h2 {
+  font-size: 28px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.card-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+.card {
+  background: #f9f9f9;
+  border-radius: 15px;
+  padding: 20px;
+  width: 250px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.card img {
+  width: 100%;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+/* Forms */
+form {
+  max-width: 400px;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+form input, form button {
+  padding: 12px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+form button {
+  background: #ffcb2b;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Footer */
+footer {
+  text-align: center;
+  padding: 20px;
+  background: #f1f1f1;
+  margin-top: 40px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .card-container {
+    flex-direction: column;
+    align-items: center;
+  }
+}
