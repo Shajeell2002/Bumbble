@@ -1,0 +1,56 @@
+<script>
+// 🔑 Your EmailJS credentials
+const PUBLIC_KEY = "kHFEtISmS3v-NWZVg";
+const SERVICE_ID = "service_q5dp62l";
+const TEMPLATE_ID = "template_ct1pfnt";
+
+emailjs.init(PUBLIC_KEY);
+
+document.addEventListener("DOMContentLoaded", function(){
+    const form = document.getElementById("signupForm");
+
+    form.addEventListener("submit", function(e){
+        e.preventDefault();
+
+        const name = document.getElementById("name").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value.trim();
+
+        if(!name || !email || !password){
+            alert("Please fill all fields.");
+            return;
+        }
+
+        // Generate 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000);
+
+        // Save OTP in localStorage for verification page
+        localStorage.setItem(email+"_otp", otp);
+
+        const btn = form.querySelector("button");
+        btn.disabled = true;
+        btn.innerText = "Sending...";
+
+        emailjs.send(SERVICE_ID, TEMPLATE_ID, {
+            user_email: email,   // must match template variable
+            to_name: name,
+            message: `Hello ${name},<br>
+                      Your OTP for Bumbble signup is: <strong>${otp}</strong><br>
+                      Or click this link to verify: 
+                      <a href="https://bumbble.in/verify.html?email=${encodeURIComponent(email)}&otp=${otp}">Verify Account</a>`
+        })
+        .then(function(response){
+            alert("✅ Verification email sent with OTP! Check your inbox.");
+            form.reset();
+            btn.disabled = false;
+            btn.innerText = "Sign Up";
+        })
+        .catch(function(error){
+            console.error(error);
+            alert("❌ Failed to send verification email. Check console.");
+            btn.disabled = false;
+            btn.innerText = "Sign Up";
+        });
+    });
+});
+</script>
