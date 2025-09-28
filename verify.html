@@ -1,81 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bumbble - Verify</title>
-  <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family:Arial,sans-serif; background:#fff; color:#333; display:flex; flex-direction:column; min-height:100vh; }
-    header { display:flex; justify-content:space-between; align-items:center; padding:20px; background:#ffcb2b; }
-    header h1 { font-size:24px; }
-    nav a { margin:0 10px; text-decoration:none; color:#333; font-weight:bold; }
-    .section { flex:1; display:flex; justify-content:center; align-items:center; padding:40px 20px; }
-    .verify-box { background:#f9f9f9; padding:30px; border-radius:15px; box-shadow:0 2px 6px rgba(0,0,0,0.1); width:100%; max-width:400px; display:flex; flex-direction:column; gap:15px; }
-    .verify-box h2 { text-align:center; margin-bottom:20px; font-size:28px; }
-    .verify-box input { width:100%; padding:12px; border-radius:8px; border:1px solid #ccc; font-size:16px; }
-    .verify-box button { width:100%; padding:12px; border:none; border-radius:8px; background:#ffcb2b; font-size:18px; font-weight:bold; cursor:pointer; }
-    footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:auto; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bumbble - Verify OTP</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Arial,sans-serif;background:#fff;color:#333;display:flex;flex-direction:column;min-height:100vh;}
+header{display:flex;justify-content:space-between;align-items:center;padding:20px;background:#ffcb2b;}
+header h1{font-size:24px;}
+nav a{margin:0 10px;text-decoration:none;color:#333;font-weight:bold;}
+.section{flex:1;display:flex;justify-content:center;align-items:center;padding:40px 20px;}
+.verify-form{background:#f9f9f9;padding:30px;border-radius:15px;box-shadow:0 2px 6px rgba(0,0,0,0.1);width:100%;max-width:400px;display:flex;flex-direction:column;gap:15px;}
+.verify-form h2{text-align:center;margin-bottom:20px;font-size:28px;}
+.verify-form input{width:100%;padding:12px;border-radius:8px;border:1px solid #ccc;font-size:16px;}
+.verify-form button{width:100%;padding:12px;border:none;border-radius:8px;background:#ffcb2b;font-size:18px;font-weight:bold;cursor:pointer;}
+footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:auto;}
+.logo{width:150px;height:auto;margin-bottom:20px;display:block;margin-left:auto;margin-right:auto;}
+@media(max-width:768px){.verify-form{width:90%;}}
+</style>
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+    const form = document.getElementById("verifyForm");
+    const urlParams = new URLSearchParams(window.location.search);
+    const email = urlParams.get("email");
+
+    if(!email){
+        alert("Invalid verification link.");
+        window.location.href = "signup.html";
+        return;
+    }
+
+    form.addEventListener("submit", function(e){
+        e.preventDefault();
+        const inputOtp = document.getElementById("otp").value.trim();
+        const storedOtp = localStorage.getItem(email+"_otp");
+
+        if(!inputOtp){
+            alert("Please enter OTP.");
+            return;
+        }
+
+        if(inputOtp === storedOtp){
+            // OTP correct, save user permanently
+            const name = localStorage.getItem("signup_name");
+            const password = localStorage.getItem("signup_password");
+
+            const user = { name, email, password, verified: true };
+            localStorage.setItem("user_" + email, JSON.stringify(user));
+
+            // Clear temporary storage
+            localStorage.removeItem("signup_name");
+            localStorage.removeItem("signup_password");
+            localStorage.removeItem(email+"_otp");
+
+            alert("✅ OTP verified! You can now login.");
+            window.location.href = "login.html";
+        } else {
+            alert("❌ Incorrect OTP. Please try again.");
+        }
+    });
+});
+</script>
 </head>
 <body>
 
 <header>
-  <h1>Bumbble</h1>
-  <nav>
-    <a href="index.html">Home</a>
-    <a href="date.html">Date</a>
-    <a href="friends.html">Friends</a>
-    <a href="stories.html">Stories</a>
-    <a href="events.html">Events</a>
-    <a href="safety.html">Safety</a>
-    <a href="login.html">Login</a>
-    <a href="signup.html">Sign Up</a>
-  </nav>
+<h1>Bumbble</h1>
+<nav>
+<a href="index.html">Home</a>
+<a href="date.html">Date</a>
+<a href="friends.html">Friends</a>
+<a href="stories.html">Stories</a>
+<a href="events.html">Events</a>
+<a href="safety.html">Safety</a>
+<a href="login.html">Login</a>
+<a href="signup.html">Sign Up</a>
+</nav>
 </header>
 
 <section class="section">
-  <div class="verify-box">
-    <h2>Email Verification</h2>
-    <p>Enter the OTP you received in your email:</p>
-    <input type="text" id="otpInput" placeholder="Enter OTP" required>
-    <button onclick="verifyOTP()">Verify</button>
-    <p id="message"></p>
-  </div>
+<form class="verify-form" id="verifyForm">
+<img src="images/logo.png" alt="Bumbble Logo" class="logo">
+<h2>Verify OTP</h2>
+<p>Please enter the 6-digit OTP sent to your email <strong id="userEmail"></strong></p>
+<input type="text" id="otp" placeholder="Enter OTP" required>
+<button type="submit">Verify</button>
+</form>
 </section>
 
 <footer>
-  <p>&copy; 2025 Bumbble. All rights reserved.</p>
+<p>&copy; 2025 Bumbble. All rights reserved.</p>
 </footer>
 
 <script>
-function getQueryParam(param) {
-  const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get(param);
-}
-
-function verifyOTP() {
-  const email = getQueryParam("email");
-  const enteredOtp = document.getElementById("otpInput").value.trim();
-  const storedOtp = localStorage.getItem(email + "_otp");
-
-  if (!email) {
-    document.getElementById("message").innerText = "❌ Email not found in URL.";
-    return;
-  }
-
-  if (!storedOtp) {
-    document.getElementById("message").innerText = "❌ No OTP found or expired.";
-    return;
-  }
-
-  if (enteredOtp === storedOtp) {
-    document.getElementById("message").innerText = "✅ Email verified successfully!";
-    localStorage.removeItem(email + "_otp"); // clear OTP after verification
-  } else {
-    document.getElementById("message").innerText = "❌ Invalid OTP. Please try again.";
-  }
-}
+// Display the email on the page
+const emailSpan = document.getElementById("userEmail");
+const urlParams = new URLSearchParams(window.location.search);
+const email = urlParams.get("email");
+if(emailSpan && email) emailSpan.textContent = email;
 </script>
 
 </body>
