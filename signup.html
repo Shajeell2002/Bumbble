@@ -19,14 +19,12 @@ footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:auto;}
 .logo{width:150px;height:auto;margin-bottom:20px;display:block;margin-left:auto;margin-right:auto;}
 @media(max-width:768px){.signup-form{width:90%;}}
 </style>
-
 <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 <script>
 // EmailJS credentials
 const PUBLIC_KEY = "U-X66-kC_8WKaopWx";
 const SERVICE_ID = "service_q5dp62l";
 const TEMPLATE_ID = "template_2hkocdj";
-
 emailjs.init(PUBLIC_KEY);
 
 document.addEventListener("DOMContentLoaded", function(){
@@ -44,20 +42,24 @@ document.addEventListener("DOMContentLoaded", function(){
             return;
         }
 
-        // Generate OTP
+        // Store temporarily until verification
+        localStorage.setItem("signup_name", name);
+        localStorage.setItem("signup_email", email);
+        localStorage.setItem("signup_password", password);
+
+        // Generate 6-digit OTP
         const passcode = Math.floor(100000 + Math.random() * 900000);
         const expiry = new Date(Date.now() + 15*60*1000);
         const time = expiry.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
 
-        // Store OTP in localStorage
+        // Store OTP for verification
         localStorage.setItem(email+"_otp", passcode);
 
-        // Verification link
         const verificationLink = `https://bumbble.in/verify.html?email=${encodeURIComponent(email)}`;
 
         const btn = form.querySelector("button");
         btn.disabled = true;
-        btn.innerText = "Sending...";
+        btn.innerText = "Sending OTP...";
 
         // Send EmailJS
         emailjs.send(SERVICE_ID, TEMPLATE_ID, {
@@ -68,14 +70,14 @@ document.addEventListener("DOMContentLoaded", function(){
             verification_link: verificationLink
         })
         .then(function(response){
-            alert("✅ OTP email sent! Check your inbox.");
-            form.reset();
+            alert("✅ OTP sent! Check your email for verification.");
             btn.disabled = false;
             btn.innerText = "Sign Up";
+            form.reset();
         })
         .catch(function(error){
             console.error(error);
-            alert("❌ Failed to send OTP email. Check console.");
+            alert("❌ Failed to send OTP email.");
             btn.disabled = false;
             btn.innerText = "Sign Up";
         });
@@ -84,13 +86,6 @@ document.addEventListener("DOMContentLoaded", function(){
 </script>
 </head>
 <body>
-// Store user in localStorage after verification
-localStorage.setItem("user_" + email, JSON.stringify({
-    name: name,
-    email: email,
-    password: password,
-    verified: true
-}));
 
 <header>
 <h1>Bumbble</h1>
@@ -123,5 +118,3 @@ localStorage.setItem("user_" + email, JSON.stringify({
 
 </body>
 </html>
-
-
