@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bumbble - Home</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #fff; color: #333; }
+
+    /* Header */
+    header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #ffcb2b; }
+    header h1 { font-size: 24px; margin: 0; }
+    nav a { margin: 0 10px; text-decoration: none; color: #333; font-weight: bold; }
+
+    /* Hero Section */
+    .hero { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 60px 20px; background: #fefefe; }
+    .hero img { max-width: 300px; height: auto; margin-bottom: 20px; }
+    .hero h2 { font-size: 36px; margin: 20px 0 10px; }
+    .hero p { font-size: 18px; margin-bottom: 20px; }
+    .hero button { background: #ffcb2b; border: none; padding: 15px 30px; font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 30px; }
+
+    /* Page Sections */
+    .section { padding: 40px 20px; }
+    .section h2 { font-size: 28px; margin-bottom: 20px; text-align: center; }
+    .card-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
+    .card { background: #f9f9f9; border-radius: 15px; padding: 20px; width: 250px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    .card img { width: 100%; border-radius: 10px; margin-bottom: 10px; }
+
+    /* Footer */
+    footer { text-align: center; padding: 20px; background: #f1f1f1; margin-top: 40px; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .card-container { flex-direction: column; align-items: center; }
+      .hero img { max-width: 80%; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Bumbble</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="date.html">Date</a>
+      <a href="friends.html">Friends</a>
+      <a href="stories.html">Stories</a>
+      <a href="events.html">Events</a>
+      <a href="safety.html">Safety</a>
+      <a href="login.html">Login</a>
+      <a href="signup.html">Sign Up</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <img src="images/1b415313-97c5-47cc-a4da-8341ffbbc95a.png" alt="Two people using phones illustration">
+    <h2>Meet. Match. Connect.</h2>
+    <p>Your journey to meaningful connections starts here.</p>
+    <button>Join Bumbble Now</button>
+  </section>
+
+  <section class="section">
+    <h2>Popular Connections</h2>
+    <div class="card-container">
+      <div class="card">
+        <img src="images/2.png" alt="Profile 1">
+        <h3>Jane Doe</h3>
+        <p>NY, 28</p>
+        <button>Like</button>
+      </div>
+      <div class="card">
+        <img src="images/3.png" alt="Profile 2">
+        <h3>John Smith</h3>
+        <p>LA, 30</p>
+        <button>Like</button>
+      </div>
+      <div class="card">
+        <img src="images/4.png" alt="Profile 3">
+        <h3>Emily R.</h3>
+        <p>Chicago, 26</p>
+        <button>Like</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>&copy; 2025 Bumbble. All rights reserved.</p>
+  </footer>
+
+</body>
+</html>
