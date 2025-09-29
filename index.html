@@ -50,10 +50,13 @@
   if(currentUser){
     // User logged in → show profile and logout
     nav.innerHTML = `
-      <a href="index.html">Home</a>
-      <a href="friends.html">Friends</a>
-      <a href="profile.html">Profile</a>
-      <a href="#" id="logoutBtn">Logout</a>
+      <a href="date.html">Date</a>
+<a href="friends.html">Friends</a>
+<a href="stories.html">Stories</a>
+<a href="events.html">Events</a>
+<a href="safety.html">Safety</a>
+<a href="profile.html">Profile</a>
+<a href="#" id="logoutBtn">Logout</a>
     `;
     document.getElementById("logoutBtn").addEventListener("click", () => {
       localStorage.removeItem("current_user");
@@ -77,3 +80,4 @@
 
 </body>
 </html>
+
