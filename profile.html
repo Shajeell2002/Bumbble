@@ -5,33 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Profile</title>
 <style>
-  *{margin:0;padding:0;box-sizing:border-box;}
-  body{font-family:Arial,sans-serif;background:#fff;color:#333;min-height:100vh;display:flex;flex-direction:column;}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: Arial, sans-serif; background: #fff; color: #333; min-height:100vh; display:flex; flex-direction:column;}
+header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #ffcb2b; }
+header h1 { font-size: 24px; }
+nav a { margin: 0 10px; text-decoration: none; color: #333; font-weight: bold; }
+nav a:hover { text-decoration: underline; }
 
-  /* HEADER */
-  header{display:flex;justify-content:space-between;align-items:center;padding:20px;background:#ffcb2b;}
-  header h1{font-size:24px;}
-  nav a{margin:0 10px;text-decoration:none;color:#333;font-weight:bold;}
-  nav a:hover{text-decoration:underline;}
+.section { flex:1; padding: 40px 20px; }
+.section h2 { font-size: 28px; margin-bottom: 20px; text-align: center; }
 
-  /* PROFILE SECTION */
-  .section{flex:1;padding:40px 20px;}
-  .section h2{text-align:center;font-size:28px;margin-bottom:20px;}
+.profile-container { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+.profile-card { background: #f9f9f9; border-radius: 15px; padding: 20px; width: 300px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+.profile-card img { width: 100%; border-radius: 50%; margin-bottom: 15px; }
+.profile-card h3 { margin-bottom: 8px; }
+.profile-card p { font-size: 14px; margin-bottom: 15px; }
+.profile-card button { background: #ffcb2b; border: none; padding: 10px 20px; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 20px; margin-bottom:5px; }
 
-  .profile-container{max-width:500px;margin:0 auto;display:flex;flex-direction:column;gap:20px;}
-  .profile-card{background:#f9f9f9;border-radius:15px;padding:20px;box-shadow:0 2px 6px rgba(0,0,0,0.1);text-align:center;}
-  .profile-card img{width:120px;border-radius:50%;margin-bottom:15px;}
-  .profile-card h3{margin-bottom:8px;}
-  .profile-card p{font-size:14px;margin-bottom:10px;}
-  .profile-card button{background:#ffcb2b;border:none;padding:10px 20px;font-size:16px;font-weight:bold;cursor:pointer;border-radius:20px;}
+.logout-btn { background: #ff5c5c; color: #fff; margin-top: 10px; }
 
-  /* CHANGE PASSWORD */
-  .change-password{background:#f9f9f9;padding:20px;border-radius:15px;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
-  .change-password input{width:100%;padding:10px;margin-bottom:10px;border-radius:8px;border:1px solid #ccc;}
-  .change-password button{width:100%;padding:10px;background:#ffcb2b;border:none;font-weight:bold;font-size:16px;border-radius:8px;cursor:pointer;}
-
-  /* FOOTER */
-  footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:auto;}
+footer { text-align: center; padding: 20px; background: #f1f1f1; margin-top: auto; }
+@media(max-width:768px){.profile-card{width:90%;}}
 </style>
 </head>
 <body>
@@ -53,21 +47,8 @@
 
 <section class="section">
   <h2>User Profile</h2>
-  <div class="profile-container">
-    <div class="profile-card">
-      <img id="profilePic" src="images/profile1.png" alt="User profile picture">
-      <h3 id="profileName">User Name</h3>
-      <p id="profileEmail">Email: user@example.com</p>
-      <p id="profileBio">Bio: Add your bio here.</p>
-    </div>
-
-    <div class="change-password">
-      <h3>Change Password</h3>
-      <input type="password" id="currentPassword" placeholder="Current Password" required>
-      <input type="password" id="newPassword" placeholder="New Password" required>
-      <input type="password" id="confirmPassword" placeholder="Confirm New Password" required>
-      <button id="changePwdBtn">Update Password</button>
-    </div>
+  <div class="profile-container" id="profileContainer">
+    <!-- Profile info will be loaded dynamically -->
   </div>
 </section>
 
@@ -76,54 +57,65 @@
 </footer>
 
 <script>
-  // Check if user is logged in
-  const currentUserEmail = localStorage.getItem("current_user");
-  if(!currentUserEmail){
-    alert("No user logged in. Redirecting to login page.");
-    window.location.href = "login.html";
-  } else {
-    const userData = JSON.parse(localStorage.getItem("user_" + currentUserEmail));
-    if(userData){
-      document.getElementById("profileName").innerText = userData.name;
-      document.getElementById("profileEmail").innerText = "Email: " + userData.email;
-      document.getElementById("profileBio").innerText = "Bio: " + (userData.bio || "Add your bio here.");
-      if(userData.profilePic) document.getElementById("profilePic").src = userData.profilePic;
-    }
+const currentUserEmail = localStorage.getItem("current_user");
+
+if(!currentUserEmail){
+  alert("❌ No user logged in. Redirecting to login page.");
+  window.location.href = "login.html";
+}
+
+const userData = JSON.parse(localStorage.getItem("user_" + currentUserEmail));
+
+const profileContainer = document.getElementById("profileContainer");
+
+// Create profile card
+const card = document.createElement("div");
+card.className = "profile-card";
+
+card.innerHTML = `
+  <img src="images/profile1.png" alt="User profile picture">
+  <h3>${userData.name}</h3>
+  <p>Email: ${currentUserEmail}</p>
+  <p>Bio: ${userData.bio || "Add your bio here"}</p>
+  <button id="editProfile">Edit Profile</button>
+  <button id="changePwd">Change Password</button>
+  <button id="logout" class="logout-btn">Logout</button>
+`;
+
+profileContainer.appendChild(card);
+
+// Logout functionality
+document.getElementById("logout").addEventListener("click", function(){
+  localStorage.removeItem("current_user");
+  alert("✅ Logged out successfully.");
+  window.location.href = "login.html";
+});
+
+// Edit Profile button
+document.getElementById("editProfile").addEventListener("click", function(){
+  const newName = prompt("Enter new name:", userData.name);
+  const newBio = prompt("Enter new bio:", userData.bio || "");
+  if(newName) userData.name = newName;
+  if(newBio) userData.bio = newBio;
+  localStorage.setItem("user_" + currentUserEmail, JSON.stringify(userData));
+  alert("✅ Profile updated successfully. Refreshing page.");
+  location.reload();
+});
+
+// Change Password button
+document.getElementById("changePwd").addEventListener("click", function(){
+  const currentPwd = prompt("Enter current password:");
+  if(currentPwd !== userData.password){
+    alert("❌ Current password incorrect.");
+    return;
   }
-
-  // Change password logic
-  document.getElementById("changePwdBtn").addEventListener("click", function(){
-    const currentPwdInput = document.getElementById("currentPassword").value;
-    const newPwdInput = document.getElementById("newPassword").value;
-    const confirmPwdInput = document.getElementById("confirmPassword").value;
-
-    if(!currentPwdInput || !newPwdInput || !confirmPwdInput){
-      alert("Please fill all fields.");
-      return;
-    }
-
-    const userData = JSON.parse(localStorage.getItem("user_" + currentUserEmail));
-
-    if(userData.password !== currentPwdInput){
-      alert("❌ Current password is incorrect.");
-      return;
-    }
-
-    if(newPwdInput !== confirmPwdInput){
-      alert("❌ New passwords do not match.");
-      return;
-    }
-
-    // Update password and save
-    userData.password = newPwdInput;
+  const newPwd = prompt("Enter new password:");
+  if(newPwd){
+    userData.password = newPwd;
     localStorage.setItem("user_" + currentUserEmail, JSON.stringify(userData));
-
-    alert("✅ Password updated successfully!");
-    // Clear inputs
-    document.getElementById("currentPassword").value = "";
-    document.getElementById("newPassword").value = "";
-    document.getElementById("confirmPassword").value = "";
-  });
+    alert("✅ Password updated successfully.");
+  }
+});
 </script>
 
 </body>
