@@ -16,13 +16,13 @@ nav a:hover { text-decoration: underline; }
 .section h2 { font-size:28px; margin-bottom:20px; text-align:center; }
 
 .friend-list { display:flex; flex-wrap:wrap; gap:20px; justify-content:center; }
-.friend-card { background:#f9f9f9; border-radius:15px; padding:20px; width:250px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.1); position:relative; }
-.friend-card img { width:80px; height:80px; border-radius:50%; object-fit:cover; margin-bottom:10px; }
+.friend-card { background:#f9f9f9; border-radius:15px; padding:20px; width:220px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.1); position:relative; }
+.friend-card img { width:100px; height:100px; border-radius:50%; object-fit:cover; margin-bottom:10px; }
 .friend-card h3 { margin-bottom:5px; }
-.status { position:absolute; top:10px; right:10px; width:15px; height:15px; border-radius:50%; border:2px solid #fff; }
-
-.online { background:#4CAF50; }
-.offline { background:#ccc; }
+.friend-card p { font-size:14px; margin-bottom:5px; }
+.status-dot { width:15px; height:15px; border-radius:50%; position:absolute; top:15px; right:15px; border:2px solid #fff; }
+.status-online { background:green; }
+.status-offline { background:red; }
 
 footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:40px; }
 @media(max-width:768px){.friend-card{width:90%;}}
@@ -42,11 +42,12 @@ footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:40px; }
 <a href="login.html">Login</a>
 <a href="signup.html">Sign Up</a>
 <a href="profile.html">Profile</a>
+<a href="#" id="logoutBtn">Logout</a>
 </nav>
 </header>
 
 <section class="section">
-<h2>Friends List</h2>
+<h2>Friend List</h2>
 <div class="friend-list" id="friendList"></div>
 </section>
 
@@ -55,64 +56,62 @@ footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:40px; }
 </footer>
 
 <script>
-// Check current user
+// Ensure user is logged in
 const currentUser = localStorage.getItem("current_user");
-if (!currentUser) {
+if(!currentUser){
     alert("❌ Please login first.");
     window.location.href = "login.html";
 }
 
-// Get all users from localStorage
-function getAllUsers() {
-    const users = [];
-    for (let i=0; i<localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if(key.startsWith("user_")) {
-            const user = JSON.parse(localStorage.getItem(key));
-            user.email = key.replace("user_", "");
-            users.push(user);
-        }
-    }
-    return users;
-}
+// Load all users
+const friendListContainer = document.getElementById("friendList");
+friendListContainer.innerHTML = "";
 
-// Render friends
-function renderFriends() {
-    const container = document.getElementById("friendList");
-    container.innerHTML = "";
-
-    const users = getAllUsers().filter(u => u.email !== currentUser); // exclude current user
-
-    if(users.length === 0){
-        container.innerHTML = "<p>No friends registered yet.</p>";
-        return;
-    }
-
-    users.forEach(user => {
+// Loop through localStorage to get all users
+for(let key in localStorage){
+    if(key.startsWith("user_")){
+        const user = JSON.parse(localStorage.getItem(key));
+        const email = key.replace("user_","");
+        
         const card = document.createElement("div");
         card.className = "friend-card";
-        card.innerHTML = `
-            <img src="${user.pic || 'images/profile1.png'}" alt="${user.name}">
-            <h3>${user.name}</h3>
-            <p>${user.bio || 'No bio'}</p>
-            <span class="status ${user.online ? 'online' : 'offline'}"></span>
-        `;
-        container.appendChild(card);
-    });
+        
+        // Profile pic
+        const img = document.createElement("img");
+        img.src = user.pic || "images/profile1.png";
+        card.appendChild(img);
+
+        // Name
+        const name = document.createElement("h3");
+        name.textContent = user.name || email;
+        card.appendChild(name);
+
+        // Location
+        const loc = document.createElement("p");
+        loc.textContent = user.location || "";
+        card.appendChild(loc);
+
+        // Age (if stored)
+        if(user.age){
+            const age = document.createElement("p");
+            age.textContent = "Age: " + user.age;
+            card.appendChild(age);
+        }
+
+        // Status dot
+        const status = document.createElement("span");
+        status.className = "status-dot " + (email === currentUser ? "status-online" : "status-offline");
+        card.appendChild(status);
+
+        friendListContainer.appendChild(card);
+    }
 }
 
-// Set current user as online
-let userData = JSON.parse(localStorage.getItem("user_" + currentUser));
-userData.online = true;
-localStorage.setItem("user_" + currentUser, JSON.stringify(userData));
-
-renderFriends();
-
-// When user closes tab or navigates away, set offline
-window.addEventListener("beforeunload", () => {
-    let userData = JSON.parse(localStorage.getItem("user_" + currentUser));
-    userData.online = false;
-    localStorage.setItem("user_" + currentUser, JSON.stringify(userData));
+// Logout
+document.getElementById("logoutBtn").addEventListener("click", function(){
+    localStorage.removeItem("current_user");
+    alert("✅ Logged out successfully.");
+    window.location.href = "login.html";
 });
 </script>
 
