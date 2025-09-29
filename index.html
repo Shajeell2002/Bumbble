@@ -5,38 +5,35 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Home</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; background: #fff; color: #333; }
-  header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #ffcb2b; }
-  header h1 { font-size: 24px; }
-  nav a { margin: 0 10px; text-decoration: none; color: #333; font-weight: bold; }
-  .hero { display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 60px 20px; background: #fefefe; }
-  .hero img { max-width: 300px; height: auto; margin-bottom: 20px; }
-  .hero h2 { font-size: 36px; margin: 20px 0 10px; }
-  .hero p { font-size: 18px; margin: 0 0 20px; }
-  .hero button { background: #ffcb2b; border: none; padding: 15px 30px; font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 30px; }
-  footer { text-align: center; padding: 20px; background: #f1f1f1; margin-top: 40px; }
-  @media (max-width: 768px) { .hero img { max-width: 90%; } }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: Arial, sans-serif; background:#fff; color:#333; min-height:100vh; display:flex; flex-direction:column; }
+
+  header { display:flex; justify-content:space-between; align-items:center; padding:20px; background:#ffcb2b; }
+  header h1 { font-size:24px; }
+  nav a { margin:0 10px; text-decoration:none; color:#333; font-weight:bold; }
+
+  .hero { display:flex; flex-direction:column; align-items:center; text-align:center; padding:60px 20px; background:#fefefe; }
+  .hero img { max-width:300px; height:auto; margin-bottom:20px; }
+  .hero h2 { font-size:36px; margin:20px 0 10px; }
+  .hero p { font-size:18px; margin-bottom:20px; }
+  .hero button { background:#ffcb2b; border:none; padding:15px 30px; font-size:18px; font-weight:bold; cursor:pointer; border-radius:30px; }
+
+  footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:auto; }
+
+  @media(max-width:768px) { .hero img { max-width:80%; } }
 </style>
 </head>
 <body>
 
 <header>
   <h1>Bumbble</h1>
-  <nav>
-    <a href="index.html">Home</a>
-    <a href="date.html">Date</a>
-    <a href="friends.html">Friends</a>
-    <a href="stories.html">Stories</a>
-    <a href="events.html">Events</a>
-    <a href="safety.html">Safety</a>
-    <a href="login.html">Login</a>
-    <a href="signup.html">Sign Up</a>
+  <nav id="navMenu">
+    <!-- Navigation links injected by JS -->
   </nav>
 </header>
 
 <section class="hero">
-  <img src="images/1b415313-97c5-47cc-a4da-8341ffbbc95a.png" alt="Two people using phones illustration">
+  <img src="images/1b415313-97c5-47cc-a4da-8341ffbbc95a.png" alt="Two people using phones">
   <h2>Meet. Match. Connect.</h2>
   <p>Your journey to meaningful connections starts here.</p>
   <button onclick="window.location.href='signup.html'">Join Bumbble Now</button>
@@ -45,6 +42,38 @@
 <footer>
   <p>&copy; 2025 Bumbble. All rights reserved.</p>
 </footer>
+
+<script>
+  const nav = document.getElementById("navMenu");
+  const currentUser = localStorage.getItem("current_user");
+
+  if(currentUser){
+    // User logged in → show profile and logout
+    nav.innerHTML = `
+      <a href="index.html">Home</a>
+      <a href="friends.html">Friends</a>
+      <a href="profile.html">Profile</a>
+      <a href="#" id="logoutBtn">Logout</a>
+    `;
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem("current_user");
+      alert("✅ You have been logged out!");
+      window.location.href = "index.html";
+    });
+  } else {
+    // Not logged in → show full menu
+    nav.innerHTML = `
+      <a href="index.html">Home</a>
+      <a href="date.html">Date</a>
+      <a href="friends.html">Friends</a>
+      <a href="stories.html">Stories</a>
+      <a href="events.html">Events</a>
+      <a href="safety.html">Safety</a>
+      <a href="login.html">Login</a>
+      <a href="signup.html">Sign Up</a>
+    `;
+  }
+</script>
 
 </body>
 </html>
