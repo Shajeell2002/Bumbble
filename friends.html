@@ -1,52 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bumbble - Friends</title>
-<style>
-* { margin:0; padding:0; box-sizing:border-box; }
-body { font-family: Arial, sans-serif; background:#fff; color:#333; min-height:100vh; display:flex; flex-direction:column; }
-header { display:flex; justify-content:space-between; align-items:center; padding:20px; background:#ffcb2b; }
-header h1 { font-size:24px; }
-nav a { margin:0 10px; text-decoration:none; color:#333; font-weight:bold; }
-nav a:hover { text-decoration: underline; }
-
-.section { flex:1; padding:40px 20px; }
-.section h2 { font-size:28px; margin-bottom:20px; text-align:center; }
-.friend-container { display:flex; flex-wrap:wrap; justify-content:center; gap:20px; }
-.friend-card { background:#f9f9f9; border-radius:15px; padding:20px; width:200px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.1); position:relative; }
-.friend-card img { width:100px; height:100px; border-radius:50%; margin-bottom:10px; object-fit:cover; }
-.friend-card h3 { margin-bottom:5px; }
-.friend-card p { color:#555; margin:2px 0; }
-.status-dot { width:15px; height:15px; border-radius:50%; position:absolute; top:10px; right:10px; border:2px solid #fff; }
-footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:40px; }
-@media(max-width:768px) { .friend-card { width:90%; } }
-</style>
-</head>
-<body>
-
-<header>
-  <h1>Bumbble</h1>
-  <nav id="navLinks"></nav>
-</header>
-
-<section class="section">
-  <h2>All Members</h2>
-  <div class="friend-container" id="friendContainer"></div>
-  <div id="noFriendsMsg" style="text-align:center; margin-top:30px; font-size:18px; color:#777; display:none;">No members found.</div>
-</section>
-
-<footer>
-  <p>&copy; 2025 Bumbble. All rights reserved.</p>
-</footer>
-
 <script>
 // NAVIGATION MENU
 const nav = document.getElementById("navLinks");
 const currentUser = localStorage.getItem("current_user");
 
 if(currentUser){
+    const currentUserData = JSON.parse(localStorage.getItem("user_" + currentUser)) || {};
     nav.innerHTML = `
         <a href="index.html">Home</a>
         <a href="date.html">Date</a>
@@ -57,6 +15,7 @@ if(currentUser){
         <a href="profile.html">Profile</a>
         <a href="#" id="logoutBtn">Logout</a>
     `;
+
     document.getElementById("logoutBtn").addEventListener("click", function(){
         localStorage.removeItem("current_user");
         alert("✅ Logged out successfully.");
@@ -79,24 +38,27 @@ if(currentUser){
 const friendContainer = document.getElementById("friendContainer");
 const noFriendsMsg = document.getElementById("noFriendsMsg");
 let friendsFound = false;
+
+// Current time in ms
 const now = new Date().getTime();
-const ONLINE_THRESHOLD = 15*60*1000; // 15 minutes
+
+// Consider "online" if lastLogin within last 15 min
+const ONLINE_THRESHOLD = 15*60*1000; // 15 minutes in ms
 
 for(let i=0; i<localStorage.length; i++){
     const key = localStorage.key(i);
     if(key.startsWith("user_")){
         const user = JSON.parse(localStorage.getItem(key));
-        if(user.email === currentUser) continue;
 
         const lastLogin = user.lastLogin || 0;
         const online = (now - lastLogin) <= ONLINE_THRESHOLD;
-        const imgSrc = user.pic && user.pic.trim() ? user.pic : "images/profile1.png";
 
+        const imgSrc = user.pic || "images/profile1.png";
         const card = document.createElement("div");
         card.classList.add("friend-card");
         card.innerHTML = `
             <img src="${imgSrc}" alt="Profile Picture">
-            <h3>${user.name}</h3>
+            <h3>${user.name}${user.email === currentUser ? " (You)" : ""}</h3>
             <p><strong>Gender:</strong> ${user.gender || "Unknown"}</p>
             <p><strong>Location:</strong> ${user.location || "Unknown"}</p>
             <span class="status-dot" style="background-color:${online?'green':'red'}"></span>
@@ -110,6 +72,3 @@ if(!friendsFound){
     noFriendsMsg.style.display = "block";
 }
 </script>
-
-</body>
-</html>
