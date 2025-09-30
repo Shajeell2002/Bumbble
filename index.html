@@ -5,45 +5,40 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Home</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; background: #fff; color: #333; display: flex; flex-direction: column; min-height: 100vh; }
+  /* Reset & global */
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: Arial, sans-serif; background:#fff; color:#333; display:flex; flex-direction:column; min-height:100vh; }
 
-  header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #ffcb2b; }
-  header h1 { font-size: 24px; }
-  nav a { margin: 0 10px; text-decoration: none; color: #333; font-weight: bold; }
+  /* Header & Navigation */
+  header { display:flex; justify-content:space-between; align-items:center; padding:20px; background:#ffcb2b; }
+  header h1 { font-size:24px; }
+  nav a { margin:0 10px; text-decoration:none; color:#333; font-weight:bold; }
   nav a:hover { text-decoration: underline; }
 
-  .hero { display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 60px 20px; background: #fefefe; }
-  .hero img { max-width: 300px; height: auto; margin-bottom: 20px; }
-  .hero h2 { font-size: 36px; margin: 20px 0 10px; }
-  .hero p { font-size: 18px; margin-bottom: 20px; }
-  .hero button { background: #ffcb2b; border: none; padding: 15px 30px; font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 30px; }
+  /* Hero Section */
+  .hero { display:flex; flex-direction:column; align-items:center; text-align:center; padding:60px 20px; background:#fefefe; }
+  .hero img { max-width:300px; height:auto; margin-bottom:20px; }
+  .hero h2 { font-size:36px; margin:20px 0 10px; }
+  .hero p { font-size:18px; margin-bottom:20px; }
+  .hero button { background:#ffcb2b; border:none; padding:15px 30px; font-size:18px; font-weight:bold; cursor:pointer; border-radius:30px; }
 
-  footer { text-align: center; padding: 20px; background: #f1f1f1; margin-top: auto; }
+  /* Footer */
+  footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:auto; }
 
-  @media (max-width: 768px) {
-    .hero img { max-width: 90%; }
-  }
+  /* Responsive */
+  @media(max-width:768px) { .hero img { max-width:90%; } }
 </style>
 </head>
 <body>
 
 <header>
   <h1>Bumbble</h1>
-  <nav>
-    <a href="index.html">Home</a>
-    <a href="date.html">Date</a>
-    <a href="friends.html">Friends</a>
-    <a href="stories.html">Stories</a>
-    <a href="events.html">Events</a>
-    <a href="safety.html">Safety</a>
-    <a href="login.html">Login</a>
-    <a href="signup.html">Sign Up</a>
+  <nav id="navLinks">
+    <!-- Links inserted dynamically -->
   </nav>
 </header>
 
 <section class="hero">
-  <!-- Hero image in images folder -->
   <img src="images/hero.png" alt="Two people using phones illustration">
   <h2>Meet. Match. Connect.</h2>
   <p>Your journey to meaningful connections starts here.</p>
@@ -53,6 +48,38 @@
 <footer>
   <p>&copy; 2025 Bumbble. All rights reserved.</p>
 </footer>
+
+<script>
+// Dynamic navigation
+const nav = document.getElementById("navLinks");
+const currentUser = localStorage.getItem("current_user");
+
+if(currentUser){
+    // Logged in: show Profile & Logout
+    nav.innerHTML = `
+        <a href="index.html">Home</a>
+        <a href="profile.html">Profile</a>
+        <a href="#" id="logoutBtn">Logout</a>
+    `;
+    document.getElementById("logoutBtn").addEventListener("click", function(){
+        localStorage.removeItem("current_user");
+        alert("✅ Logged out successfully.");
+        window.location.href = "login.html";
+    });
+} else {
+    // Not logged in: show default menu
+    nav.innerHTML = `
+        <a href="index.html">Home</a>
+        <a href="date.html">Date</a>
+        <a href="friends.html">Friends</a>
+        <a href="stories.html">Stories</a>
+        <a href="events.html">Events</a>
+        <a href="safety.html">Safety</a>
+        <a href="login.html">Login</a>
+        <a href="signup.html">Sign Up</a>
+    `;
+}
+</script>
 
 </body>
 </html>
