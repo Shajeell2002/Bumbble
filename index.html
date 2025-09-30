@@ -55,17 +55,28 @@ const nav = document.getElementById("navLinks");
 const currentUser = localStorage.getItem("current_user");
 
 if(currentUser){
-    // Logged in: show Profile & Logout
+    // Member is logged in: hide Login & Sign Up
     nav.innerHTML = `
         <a href="index.html">Home</a>
+        <a href="date.html">Date</a>
+        <a href="friends.html">Friends</a>
+        <a href="stories.html">Stories</a>
+        <a href="events.html">Events</a>
+        <a href="safety.html">Safety</a>
         <a href="profile.html">Profile</a>
         <a href="#" id="logoutBtn">Logout</a>
     `;
+
     document.getElementById("logoutBtn").addEventListener("click", function(){
         localStorage.removeItem("current_user");
         alert("✅ Logged out successfully.");
         window.location.href = "login.html";
     });
+
+    // Hide "Join Now" button for logged-in users
+    const joinBtn = document.querySelector(".hero button");
+    if(joinBtn) joinBtn.style.display = "none";
+
 } else {
     // Not logged in: show default menu
     nav.innerHTML = `
