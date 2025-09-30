@@ -5,19 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Sign Up</title>
 <style>
-* { margin:0; padding:0; box-sizing:border-box; }
-body { font-family: Arial,sans-serif; background:#fff; color:#333; display:flex; flex-direction:column; min-height:100vh; }
-header { display:flex; justify-content:space-between; align-items:center; padding:20px; background:#ffcb2b; }
-header h1 { font-size:24px; }
-nav a { margin:0 10px; text-decoration:none; color:#333; font-weight:bold; }
-.section { flex:1; display:flex; justify-content:center; align-items:center; padding:40px 20px; }
-.signup-form { background:#f9f9f9; padding:30px; border-radius:15px; box-shadow:0 2px 6px rgba(0,0,0,0.1); width:100%; max-width:400px; display:flex; flex-direction:column; gap:15px; }
-.signup-form h2 { text-align:center; margin-bottom:20px; font-size:28px; }
-.signup-form input { width:100%; padding:12px; border-radius:8px; border:1px solid #ccc; font-size:16px; }
-.signup-form button { width:100%; padding:12px; border:none; border-radius:8px; background:#ffcb2b; font-size:18px; font-weight:bold; cursor:pointer; }
-footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:auto; }
-.logo { width:150px; height:auto; margin-bottom:20px; display:block; margin-left:auto; margin-right:auto; }
-@media(max-width:768px){ .signup-form{ width:90%; } }
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Arial,sans-serif;background:#fff;color:#333;display:flex;flex-direction:column;min-height:100vh;}
+header{display:flex;justify-content:space-between;align-items:center;padding:20px;background:#ffcb2b;}
+header h1{font-size:24px;}
+nav a{margin:0 10px;text-decoration:none;color:#333;font-weight:bold;}
+.section{flex:1;display:flex;justify-content:center;align-items:center;padding:40px 20px;}
+.signup-form{background:#f9f9f9;padding:30px;border-radius:15px;box-shadow:0 2px 6px rgba(0,0,0,0.1);width:100%;max-width:400px;display:flex;flex-direction:column;gap:15px;}
+.signup-form h2{text-align:center;margin-bottom:20px;font-size:28px;}
+.signup-form input{width:100%;padding:12px;border-radius:8px;border:1px solid #ccc;font-size:16px;}
+.signup-form button{width:100%;padding:12px;border:none;border-radius:8px;background:#ffcb2b;font-size:18px;font-weight:bold;cursor:pointer;}
+footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:auto;}
+.logo{width:150px;height:auto;margin-bottom:20px;display:block;margin-left:auto;margin-right:auto;}
+@media(max-width:768px){.signup-form{width:90%;}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 <script>
@@ -29,12 +29,6 @@ emailjs.init(PUBLIC_KEY);
 
 document.addEventListener("DOMContentLoaded", function(){
     const form = document.getElementById("signupForm");
-
-    // Check if user is already logged in
-    const currentUser = localStorage.getItem("current_user");
-    if(currentUser){
-        document.querySelectorAll('.login-link, .signup-link').forEach(el => el.style.display = 'none');
-    }
 
     form.addEventListener("submit", function(e){
         e.preventDefault();
@@ -48,57 +42,44 @@ document.addEventListener("DOMContentLoaded", function(){
             return;
         }
 
-        if(localStorage.getItem("user_" + email)){
-            alert("This email is already registered. Please login instead.");
-            window.location.href = "login.html";
-            return;
-        }
+        // Store temporarily until verification
+        localStorage.setItem("signup_name", name);
+        localStorage.setItem("signup_email", email);
+        localStorage.setItem("signup_password", password);
 
         // Generate 6-digit OTP
-        const otp = Math.floor(100000 + Math.random() * 900000);
-        localStorage.setItem("otp_" + email, otp);
+        const passcode = Math.floor(100000 + Math.random() * 900000);
+        const expiry = new Date(Date.now() + 15*60*1000);
+        const time = expiry.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+
+        // Store OTP for verification
+        localStorage.setItem(email+"_otp", passcode);
+
+        const verificationLink = `https://bumbble.in/verify.html?email=${encodeURIComponent(email)}`;
 
         const btn = form.querySelector("button");
         btn.disabled = true;
         btn.innerText = "Sending OTP...";
 
-        // Send OTP via EmailJS
+        // Send EmailJS
         emailjs.send(SERVICE_ID, TEMPLATE_ID, {
             user_email: email,
             to_name: name,
-            passcode: otp
+            passcode: passcode,
+            time: time,
+            verification_link: verificationLink
         })
         .then(function(response){
+            alert("✅ OTP sent! Check your email for verification.");
             btn.disabled = false;
-            btn.innerText = "Verify OTP";
-            alert("OTP sent! Check your email.");
-
-            // Replace form with OTP input
-            form.innerHTML = `
-                <h2>Enter OTP</h2>
-                <input type="number" id="otpInput" placeholder="Enter 6-digit OTP" required>
-                <button type="submit">Verify OTP</button>
-            `;
-
-            form.addEventListener("submit", function(ev){
-                ev.preventDefault();
-                const enteredOtp = document.getElementById("otpInput").value.trim();
-                if(enteredOtp == otp){
-                    const userData = { name, email, password, bio:"", lastLogin: new Date().getTime(), pic:"" };
-                    localStorage.setItem("user_" + email, JSON.stringify(userData));
-                    localStorage.removeItem("otp_" + email);
-                    alert("✅ Signup successful! Please login.");
-                    window.location.href = "login.html";
-                } else {
-                    alert("❌ Invalid OTP. Try again.");
-                }
-            });
+            btn.innerText = "Sign Up";
+            form.reset();
         })
         .catch(function(error){
             console.error(error);
+            alert("❌ Failed to send OTP email.");
             btn.disabled = false;
             btn.innerText = "Sign Up";
-            alert("Failed to send OTP email. Try again later.");
         });
     });
 });
@@ -115,15 +96,15 @@ document.addEventListener("DOMContentLoaded", function(){
 <a href="stories.html">Stories</a>
 <a href="events.html">Events</a>
 <a href="safety.html">Safety</a>
-<a href="login.html" class="login-link">Login</a>
-<a href="signup.html" class="signup-link">Sign Up</a>
+<a href="login.html">Login</a>
+<a href="signup.html">Sign Up</a>
 </nav>
 </header>
 
 <section class="section">
 <form class="signup-form" id="signupForm">
 <img src="images/logo.png" alt="Bumbble Logo" class="logo">
-<h2>Create Account</h2>
+<h2>Sign Up</h2>
 <input type="text" id="name" placeholder="Full Name" required>
 <input type="email" id="email" placeholder="Email" required>
 <input type="password" id="password" placeholder="Password" required>
