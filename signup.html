@@ -23,20 +23,23 @@ footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:auto;}
 <!-- EmailJS -->
 <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 
-<!-- Firebase JS SDK -->
+<!-- Firebase JS SDK (compat version for browser) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
-  // TODO: Replace with your Firebase config
+  // Firebase configuration
   const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+    authDomain: "bumbble-c061f.firebaseapp.com",
+    projectId: "bumbble-c061f",
+    storageBucket: "bumbble-c061f.appspot.com",
+    messagingSenderId: "213165886981",
+    appId: "1:213165886981:web:c18652003444869b1bd66c",
+    measurementId: "G-YCK80FR1T9"
   };
+  // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
 </script>
 
 <script>
@@ -61,45 +64,57 @@ document.addEventListener("DOMContentLoaded", function(){
             return;
         }
 
-        // Store temporarily until verification
-        localStorage.setItem("signup_name", name);
-        localStorage.setItem("signup_email", email);
-        localStorage.setItem("signup_password", password);
-
-        // Generate 6-digit OTP
+        // 1️⃣ Generate 6-digit OTP
         const passcode = Math.floor(100000 + Math.random() * 900000);
         const expiry = new Date(Date.now() + 15*60*1000);
         const time = expiry.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-
-        // Store OTP for verification
         localStorage.setItem(email+"_otp", passcode);
 
         const verificationLink = `https://bumbble.in/verify.html?email=${encodeURIComponent(email)}`;
 
         const btn = form.querySelector("button");
         btn.disabled = true;
-        btn.innerText = "Sending OTP...";
+        btn.innerText = "Sending OTP & creating account...";
 
-        // Send EmailJS
-        emailjs.send(SERVICE_ID, TEMPLATE_ID, {
-            user_email: email,
-            to_name: name,
-            passcode: passcode,
-            time: time,
-            verification_link: verificationLink
-        })
-        .then(function(response){
-            alert("✅ OTP sent! Check your email for verification.");
-            btn.disabled = false;
-            btn.innerText = "Sign Up";
-            form.reset();
-        })
-        .catch(function(error){
-            console.error(error);
-            alert("❌ Failed to send OTP email.");
-            btn.disabled = false;
-            btn.innerText = "Sign Up";
-        });
+        // 2️⃣ Create Firebase user
+        auth.createUserWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+                const user = userCredential.user;
+
+                // Set display name
+                user.updateProfile({ displayName: name })
+                    .then(() => {
+                        // Send email verification
+                        user.sendEmailVerification()
+                            .then(() => console.log("Verification email sent to:", email));
+
+                        // 3️⃣ Send EmailJS OTP
+                        emailjs.send(SERVICE_ID, TEMPLATE_ID, {
+                            user_email: email,
+                            to_name: name,
+                            passcode: passcode,
+                            time: time,
+                            verification_link: verificationLink
+                        })
+                        .then(function(response){
+                            alert("✅ Signup successful! OTP sent to your email. Please verify.");
+                            btn.disabled = false;
+                            btn.innerText = "Sign Up";
+                            form.reset();
+                        })
+                        .catch(function(error){
+                            console.error(error);
+                            alert("❌ OTP email failed. But account created in Firebase.");
+                            btn.disabled = false;
+                            btn.innerText = "Sign Up";
+                        });
+                    });
+            })
+            .catch((error) => {
+                alert("❌ Firebase error: " + error.message);
+                btn.disabled = false;
+                btn.innerText = "Sign Up";
+            });
     });
 });
 </script>
