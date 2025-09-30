@@ -87,36 +87,20 @@ document.addEventListener("DOMContentLoaded", function(){
 </head>
 <body>
 
-if(currentUser){
-    const currentUserData = JSON.parse(localStorage.getItem("user_" + currentUser)) || {};
-    nav.innerHTML = `
-        <a href="index.html">Home</a>
-        <a href="date.html">Date</a>
-        <a href="friends.html">Friends</a>
-        <a href="stories.html">Stories</a>
-        <a href="events.html">Events</a>
-        <a href="safety.html">Safety</a>
-        <a href="profile.html">Profile</a>
-        <a href="#" id="logoutBtn">Logout</a>
-    `;
+<header>
+<h1>Bumbble</h1>
+<nav>
+<a href="index.html">Home</a>
+<a href="date.html">Date</a>
+<a href="friends.html">Friends</a>
+<a href="stories.html">Stories</a>
+<a href="events.html">Events</a>
+<a href="safety.html">Safety</a>
+<a href="login.html">Login</a>
+<a href="signup.html">Sign Up</a>
+</nav>
+</header>
 
-    document.getElementById("logoutBtn").addEventListener("click", function(){
-        localStorage.removeItem("current_user");
-        alert("✅ Logged out successfully.");
-        window.location.href = "login.html";
-    });
-} else {
-    nav.innerHTML = `
-        <a href="index.html">Home</a>
-        <a href="date.html">Date</a>
-        <a href="friends.html">Friends</a>
-        <a href="stories.html">Stories</a>
-        <a href="events.html">Events</a>
-        <a href="safety.html">Safety</a>
-        <a href="login.html">Login</a>
-        <a href="signup.html">Sign Up</a>
-    `;
-}
 <section class="section">
 <form class="signup-form" id="signupForm">
 <img src="images/logo.png" alt="Bumbble Logo" class="logo">
@@ -134,4 +118,3 @@ if(currentUser){
 
 </body>
 </html>
-
