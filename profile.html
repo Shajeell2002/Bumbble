@@ -27,20 +27,36 @@ footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:40px; }
 </head>
 <body>
 
-<header>
-<h1>Bumbble</h1>
-<nav>
-<a href="index.html">Home</a>
-<a href="date.html">Date</a>
-<a href="friends.html">Friends</a>
-<a href="stories.html">Stories</a>
-<a href="events.html">Events</a>
-<a href="safety.html">Safety</a>
-<a href="login.html">Login</a>
-<a href="signup.html">Sign Up</a>
-<a href="#" id="logoutBtn">Logout</a>
-</nav>
-</header>
+if(currentUser){
+    const currentUserData = JSON.parse(localStorage.getItem("user_" + currentUser)) || {};
+    nav.innerHTML = `
+        <a href="index.html">Home</a>
+        <a href="date.html">Date</a>
+        <a href="friends.html">Friends</a>
+        <a href="stories.html">Stories</a>
+        <a href="events.html">Events</a>
+        <a href="safety.html">Safety</a>
+        <a href="profile.html">Profile</a>
+        <a href="#" id="logoutBtn">Logout</a>
+    `;
+
+    document.getElementById("logoutBtn").addEventListener("click", function(){
+        localStorage.removeItem("current_user");
+        alert("✅ Logged out successfully.");
+        window.location.href = "login.html";
+    });
+} else {
+    nav.innerHTML = `
+        <a href="index.html">Home</a>
+        <a href="date.html">Date</a>
+        <a href="friends.html">Friends</a>
+        <a href="stories.html">Stories</a>
+        <a href="events.html">Events</a>
+        <a href="safety.html">Safety</a>
+        <a href="login.html">Login</a>
+        <a href="signup.html">Sign Up</a>
+    `;
+}
 
 <section class="section">
 <h2>Edit Profile</h2>
@@ -131,3 +147,4 @@ document.getElementById("logoutBtn").addEventListener("click", function(){
 
 </body>
 </html>
+
