@@ -5,26 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Home</title>
 <style>
-  /* Reset & Global Styles */
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: Arial, sans-serif; background: #fff; color: #333; display: flex; flex-direction: column; min-height: 100vh; }
 
-  /* Header & Navigation */
   header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #ffcb2b; }
   header h1 { font-size: 24px; }
   nav a { margin: 0 10px; text-decoration: none; color: #333; font-weight: bold; }
 
-  /* Hero Section */
   .hero { display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 60px 20px; background: #fefefe; }
   .hero img { max-width: 300px; height: auto; margin-bottom: 20px; }
   .hero h2 { font-size: 36px; margin: 20px 0 10px; }
   .hero p { font-size: 18px; margin-bottom: 20px; }
   .hero button { background: #ffcb2b; border: none; padding: 15px 30px; font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 30px; }
 
-  /* Footer */
   footer { text-align: center; padding: 20px; background: #f1f1f1; margin-top: auto; }
 
-  /* Responsive */
   @media (max-width: 768px) {
     .hero img { max-width: 90%; }
   }
@@ -47,7 +42,8 @@
 </header>
 
 <section class="hero">
-  <img src="images/1b415313-97c5-47cc-a4da-8341ffbbc95a.png" alt="Two people using phones illustration">
+  <!-- Correct relative path to image -->
+  <img src="images/hero.png" alt="Two people using phones illustration">
   <h2>Meet. Match. Connect.</h2>
   <p>Your journey to meaningful connections starts here.</p>
   <button onclick="window.location.href='signup.html'">Join Bumbble Now</button>
