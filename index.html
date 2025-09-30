@@ -11,6 +11,7 @@
   header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #ffcb2b; }
   header h1 { font-size: 24px; }
   nav a { margin: 0 10px; text-decoration: none; color: #333; font-weight: bold; }
+  nav a:hover { text-decoration: underline; }
 
   .hero { display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 60px 20px; background: #fefefe; }
   .hero img { max-width: 300px; height: auto; margin-bottom: 20px; }
@@ -42,8 +43,8 @@
 </header>
 
 <section class="hero">
-  <!-- Correct relative path to image -->
-  <img src="image/hero.png" alt="Two people using phones illustration">
+  <!-- Hero image in images folder -->
+  <img src="images/hero.png" alt="Two people using phones illustration">
   <h2>Meet. Match. Connect.</h2>
   <p>Your journey to meaningful connections starts here.</p>
   <button onclick="window.location.href='signup.html'">Join Bumbble Now</button>
@@ -55,4 +56,3 @@
 
 </body>
 </html>
-
