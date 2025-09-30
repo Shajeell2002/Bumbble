@@ -77,7 +77,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script>
-    // Replace with your Firebase project config
+    // Firebase config (replace with your own)
     const firebaseConfig = {
       apiKey: "YOUR_API_KEY",
       authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
@@ -87,7 +87,6 @@
       appId: "YOUR_APP_ID"
     };
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
   </script>
 </head>
 <body>
@@ -100,7 +99,7 @@
       <a href="date.html">Date</a>
       <a href="friends.html">Friends</a>
       <a href="stories.html">Stories</a>
-      <a href="events.html">Stories</a>
+      <a href="event.html">Stories</a>
       <a href="safety.html">Stories</a>
       <a href="login.html">Login</a>
       <a href="signup.html">Signup</a>
@@ -118,73 +117,30 @@
   </div>
 
   <script>
-    // ===== EXISTING LOCALSTORAGE LOGIN LOGIC =====
     document.getElementById("loginForm").addEventListener("submit", function(e) {
       e.preventDefault();
 
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value.trim();
 
-      const userData = JSON.parse(localStorage.getItem("user_" + email));
+      // Firebase login
+      firebase.auth().signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          const user = userCredential.user;
 
-      if (!userData) {
-        alert("❌ Account not found. Please sign up first.");
-        return;
-      }
+          if (!user.emailVerified) {
+            alert("⚠️ Please verify your email before logging in.");
+            return;
+          }
 
-      if (!userData.verified) {
-        alert("⚠️ Please verify your email before logging in.");
-        return;
-      }
-
-      if (userData.password !== password) {
-        alert("❌ Incorrect password.");
-        return;
-      }
-
-      // ✅ Save current user in localStorage
-      localStorage.setItem("current_user", email);
-
-      alert("✅ Login successful!");
-      window.location.href = "profile.html";
-    });
-
-    // ===== FIREBASE LOGIN DETECTION =====
-    const nav = document.querySelector("header nav");
-
-    auth.onAuthStateChanged((user) => {
-      if (user) {
-        // User logged in via Firebase
-        nav.innerHTML = `
-          <a href="index.html">Home</a>
-          <a href="date.html">Date</a>
-          <a href="friends.html">Friends</a>
-          <a href="stories.html">Stories</a>
-          <a href="events.html">Events</a>
-          <a href="safety.html">Safety</a>
-          <a href="profile.html">Profile</a>
-          <a href="#" id="logoutBtn">Logout</a>
-        `;
-        document.getElementById("logoutBtn").addEventListener("click", () => {
-          auth.signOut().then(() => {
-            localStorage.removeItem("current_user"); // keep existing logic
-            alert("✅ Logged out successfully.");
-            window.location.href = "login.html";
-          });
+          // ✅ Login successful
+          localStorage.setItem("current_user", email);
+          alert("✅ Login successful!");
+          window.location.href = "profile.html";
+        })
+        .catch((error) => {
+          alert("❌ " + error.message);
         });
-      } else {
-        // User not logged in via Firebase, default links
-        nav.innerHTML = `
-          <a href="index.html">Home</a>
-          <a href="date.html">Date</a>
-          <a href="friends.html">Friends</a>
-          <a href="stories.html">Stories</a>
-          <a href="events.html">Stories</a>
-          <a href="safety.html">Stories</a>
-          <a href="login.html">Login</a>
-          <a href="signup.html">Signup</a>
-        `;
-      }
     });
   </script>
 
