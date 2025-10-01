@@ -41,6 +41,21 @@
   <p>&copy; 2025 Bumbble. All rights reserved.</p>
 </footer>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+  authDomain: "bumbble-c061f.firebaseapp.com",
+  projectId: "bumbble-c061f",
+  storageBucket: "bumbble-c061f.firebasestorage.app",
+  messagingSenderId: "213165886981",
+  appId: "1:213165886981:web:c18652003444869b1bd66c",
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+</script>
+
 <script>
 // NAVIGATION MENU
 const nav = document.getElementById("navLinks");
@@ -49,7 +64,6 @@ const currentUser = localStorage.getItem("current_user"); // email of logged in 
 if(currentUser){
     nav.innerHTML = `
         <a href="index.html">Home</a>
-        <a href="date.html">Date</a>
         <a href="friends.html">Friends</a>
         <a href="stories.html">Stories</a>
         <a href="events.html">Events</a>
@@ -65,7 +79,6 @@ if(currentUser){
 } else {
     nav.innerHTML = `
         <a href="index.html">Home</a>
-        <a href="date.html">Date</a>
         <a href="friends.html">Friends</a>
         <a href="stories.html">Stories</a>
         <a href="events.html">Events</a>
@@ -89,7 +102,7 @@ for(let i=0; i<localStorage.length; i++){
     if(key.startsWith("user_")){
         const user = JSON.parse(localStorage.getItem(key));
 
-        if(!user || !user.email) continue;
+        if(!user || !user.email || !user.verified) continue; // only verified users
 
         const lastLogin = user.lastLogin || 0;
         const online = (now - lastLogin) <= ONLINE_THRESHOLD;
@@ -107,7 +120,7 @@ for(let i=0; i<localStorage.length; i++){
             <span class="status-dot" style="background-color:${online?'green':'red'}"></span>
         `;
 
-        // Ensure logged in user always shows on top
+        // Show logged-in user on top
         if(isSelf){
             friendContainer.prepend(card);
         } else {
