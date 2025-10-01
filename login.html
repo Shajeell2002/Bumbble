@@ -77,14 +77,14 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script>
-    // Firebase config (replace with your own)
+    // Replace with your Firebase project config
     const firebaseConfig = {
-      apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
-      authDomain: "bumbble-c061f.firebaseapp.com",
-      projectId: "bumbble-c061f",
-      storageBucket: "bumbble-c061f.firebasestorage.app",
-      messagingSenderId: "213165886981",
-      appId: "1:213165886981:web:c18652003444869b1bd66c"
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
     };
     firebase.initializeApp(firebaseConfig);
   </script>
@@ -123,7 +123,7 @@
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value.trim();
 
-      // Firebase login
+      // Firebase Authentication login
       firebase.auth().signInWithEmailAndPassword(email, password)
         .then((userCredential) => {
           const user = userCredential.user;
@@ -133,7 +133,7 @@
             return;
           }
 
-          // ✅ Login successful
+          // ✅ Login successful, save current user
           localStorage.setItem("current_user", email);
           alert("✅ Login successful!");
           window.location.href = "profile.html";
@@ -146,4 +146,3 @@
 
 </body>
 </html>
-
