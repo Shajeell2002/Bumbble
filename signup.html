@@ -3,156 +3,113 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bumbble - Signup</title>
+  <title>Bumbble - Sign Up</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin:0;
-      background:#fff;
-    }
-
-    /* ===== HEADER NAVBAR ===== */
-    header {
-      background:#ffcb2b;
-      padding:15px 30px;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-    }
-    header h1 {
-      margin:0;
-      font-size:24px;
-      font-weight:bold;
-    }
-    nav a {
-      margin:0 10px;
-      text-decoration:none;
-      color:#000;
-      font-weight:500;
-    }
-    nav a:hover {
-      text-decoration:underline;
-    }
-
-    /* ===== SIGNUP FORM ===== */
-    .container {
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      height:calc(100vh - 70px); /* leave space for header */
-    }
-    .signup-form {
-      background:#f9f9f9;
-      padding:30px;
-      border-radius:15px;
-      box-shadow:0 2px 6px rgba(0,0,0,0.1);
-      width:100%;
-      max-width:400px;
-      display:flex;
-      flex-direction:column;
-      gap:15px;
-    }
-    .signup-form h2 {
-      text-align:center;
-      margin-bottom:10px;
-    }
-    .signup-form input {
-      padding:12px;
-      border-radius:8px;
-      border:1px solid #ccc;
-      font-size:16px;
-    }
-    .signup-form button {
-      padding:12px;
-      border:none;
-      border-radius:8px;
-      background:#ffcb2b;
-      font-size:18px;
-      font-weight:bold;
-      cursor:pointer;
-    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:Arial,sans-serif; background:#fff; color:#333; display:flex; flex-direction:column; min-height:100vh; }
+    header { display:flex; justify-content:space-between; align-items:center; padding:20px; background:#ffcb2b; }
+    header h1 { font-size:24px; }
+    nav a { margin:0 10px; text-decoration:none; color:#333; font-weight:bold; }
+    .section { flex:1; display:flex; justify-content:center; align-items:center; padding:40px 20px; }
+    .signup-form { background:#f9f9f9; padding:30px; border-radius:15px; box-shadow:0 2px 6px rgba(0,0,0,0.1); width:100%; max-width:400px; display:flex; flex-direction:column; gap:15px; }
+    .signup-form h2 { text-align:center; margin-bottom:20px; font-size:28px; }
+    .signup-form input { width:100%; padding:12px; border-radius:8px; border:1px solid #ccc; font-size:16px; }
+    .signup-form button { width:100%; padding:12px; border:none; border-radius:8px; background:#ffcb2b; font-size:18px; font-weight:bold; cursor:pointer; }
+    footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:auto; }
+    .logo { width:150px; height:auto; margin-bottom:20px; display:block; margin-left:auto; margin-right:auto; }
+    @media(max-width:768px){ .signup-form { width:90%; } }
   </style>
 
-  <!-- ===== FIREBASE SDK ===== -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script>
-    // TODO: Replace with your Firebase project config (copy from Firebase console)
+    // ✅ Replace with your Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
       authDomain: "bumbble-c061f.firebaseapp.com",
       projectId: "bumbble-c061f",
-      storageBucket: "bumbble-c061f.firebasestorage.appspot.com",
+      storageBucket: "bumbble-c061f.appspot.com",
       messagingSenderId: "213165886981",
       appId: "1:213165886981:web:c18652003444869b1bd66c"
     };
+
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
   </script>
 </head>
 <body>
 
-  <!-- ===== HEADER ===== -->
-  <header>
-    <h1>Bumbble</h1>
-    <nav>
-      <a href="index.html">Home</a>
-      <a href="date.html">Date</a>
-      <a href="friends.html">Friends</a>
-      <a href="stories.html">Stories</a>
-      <a href="event.html">Event</a>
-      <a href="safety.html">Safety</a>
-      <a href="login.html">Login</a>
-      <a href="signup.html">Signup</a>
-    </nav>
-  </header>
+<header>
+  <h1>Bumbble</h1>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="date.html">Date</a>
+    <a href="friends.html">Friends</a>
+    <a href="stories.html">Stories</a>
+    <a href="events.html">Events</a>
+    <a href="safety.html">Safety</a>
+    <a href="login.html">Login</a>
+    <a href="signup.html">Sign Up</a>
+  </nav>
+</header>
 
-  <!-- ===== SIGNUP FORM ===== -->
-  <div class="container">
-    <form class="signup-form" id="signupForm">
-      <h2>Signup</h2>
-      <input type="text" id="name" placeholder="Full Name" required>
-      <input type="email" id="email" placeholder="Email" required>
-      <input type="password" id="password" placeholder="Password" required>
-      <button type="submit">Signup</button>
-    </form>
-  </div>
+<section class="section">
+  <form class="signup-form" id="signupForm">
+    <img src="images/logo.png" alt="Bumbble Logo" class="logo">
+    <h2>Sign Up</h2>
+    <input type="text" id="name" placeholder="Full Name" required>
+    <input type="email" id="email" placeholder="Email" required>
+    <input type="password" id="password" placeholder="Password" required>
+    <button type="submit">Sign Up</button>
+  </form>
+</section>
 
-  <script>
-    document.getElementById("signupForm").addEventListener("submit", function(e) {
-      e.preventDefault();
+<footer>
+  <p>&copy; 2025 Bumbble. All rights reserved.</p>
+</footer>
 
-      const name = document.getElementById("name").value.trim();
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
+<script>
+  const form = document.getElementById("signupForm");
 
-      // Create user with Firebase
-      auth.createUserWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-          const user = userCredential.user;
+  form.addEventListener("submit", function(e) {
+    e.preventDefault();
 
-          // Update profile with name
-          user.updateProfile({
-            displayName: name
-          });
+    const name = document.getElementById("name").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
 
-          // Send Firebase email verification
-          user.sendEmailVerification()
-            .then(() => {
-              alert("✅ Signup successful! A verification email has been sent to " + email + ". Please verify before logging in.");
-              document.getElementById("signupForm").reset();
-              window.location.href = "login.html"; // redirect to login
-            })
-            .catch((error) => {
-              alert("❌ Error sending verification email: " + error.message);
-            });
-        })
-        .catch((error) => {
-          alert("❌ Signup error: " + error.message);
+    if (!name || !email || !password) {
+      alert("⚠️ Please fill all fields.");
+      return;
+    }
+
+    auth.createUserWithEmailAndPassword(email, password)
+      .then((userCredential) => {
+        const user = userCredential.user;
+
+        // Set display name
+        user.updateProfile({ displayName: name }).then(() => {
+          console.log("Name set:", name);
         });
-    });
-  </script>
+
+        // Send Firebase email verification
+        user.sendEmailVerification()
+          .then(() => {
+            alert("✅ Signup successful! A verification email has been sent to " + email + ". Please verify before login.");
+            form.reset();
+          })
+          .catch((error) => {
+            console.error("Verification error:", error);
+            alert("❌ Failed to send verification email: " + error.message);
+          });
+      })
+      .catch((error) => {
+        console.error("Signup error:", error);
+        alert("❌ Signup error: " + error.message);
+      });
+  });
+</script>
 
 </body>
 </html>
-
