@@ -32,7 +32,7 @@
 </header>
 
 <section class="section">
-  <h2>All Members</h2>
+  <h2>Friends</h2>
   <div class="friend-container" id="friendContainer"></div>
   <div id="noFriendsMsg" style="text-align:center; margin-top:30px; font-size:18px; color:#777; display:none;">No members found.</div>
 </section>
@@ -47,26 +47,23 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
-  // Firebase config
-  const firebaseConfig = {
-    apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
-  authDomain: "bumbble-c061f.firebaseapp.com",
-  projectId: "bumbble-c061f",
-  storageBucket: "bumbble-c061f.firebasestorage.app",
-  messagingSenderId: "213165886981",
-  appId: "1:213165886981:web:c18652003444869b1bd66c",
-  };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
-</script>
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-<script>
 // NAVIGATION MENU
 const nav = document.getElementById("navLinks");
-const currentUser = localStorage.getItem("current_user"); // email of logged in user
+const currentUserEmail = localStorage.getItem("current_user"); // logged-in user email
 
-if(currentUser){
+if(currentUserEmail){
     nav.innerHTML = `
         <a href="index.html">Home</a>
         <a href="friends.html">Friends</a>
@@ -81,7 +78,7 @@ if(currentUser){
         alert("✅ Logged out successfully.");
         window.location.href = "login.html";
     });
-} else {
+}else{
     nav.innerHTML = `
         <a href="index.html">Home</a>
         <a href="friends.html">Friends</a>
@@ -96,21 +93,22 @@ if(currentUser){
 // FRIEND LIST LOGIC (Firebase)
 const friendContainer = document.getElementById("friendContainer");
 const noFriendsMsg = document.getElementById("noFriendsMsg");
+const ONLINE_THRESHOLD = 15*60*1000; // 15 minutes
 
 db.collection("users").get().then((querySnapshot) => {
     let friendsFound = false;
-    const now = new Date().getTime();
-    const ONLINE_THRESHOLD = 15*60*1000; // 15 minutes
+    const now = Date.now();
 
-    querySnapshot.forEach((doc) => {
+    querySnapshot.forEach(doc => {
         const user = doc.data();
-        if(!user.emailVerified) return; // show only verified users
+
+        // Show all verified users
+        if(!user.emailVerified) return;
 
         const lastLogin = user.lastLogin || 0;
         const online = (now - lastLogin) <= ONLINE_THRESHOLD;
-
         const imgSrc = user.pic || "images/profile1.png";
-        const isSelf = (user.email === currentUser);
+        const isSelf = (user.email === currentUserEmail);
 
         const card = document.createElement("div");
         card.classList.add("friend-card");
@@ -122,10 +120,10 @@ db.collection("users").get().then((querySnapshot) => {
             <span class="status-dot" style="background-color:${online?'green':'red'}"></span>
         `;
 
-        // Show logged-in user on top
+        // Self user on top
         if(isSelf){
             friendContainer.prepend(card);
-        } else {
+        }else{
             friendContainer.appendChild(card);
         }
 
@@ -135,12 +133,10 @@ db.collection("users").get().then((querySnapshot) => {
     if(!friendsFound){
         noFriendsMsg.style.display = "block";
     }
-}).catch((error) => {
+}).catch(error => {
     console.error("Error fetching users:", error);
     noFriendsMsg.style.display = "block";
 });
 </script>
-
 </body>
 </html>
-
