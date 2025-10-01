@@ -17,80 +17,30 @@ nav a{margin:0 10px;text-decoration:none;color:#333;font-weight:bold;}
 .signup-form button{width:100%;padding:12px;border:none;border-radius:8px;background:#ffcb2b;font-size:18px;font-weight:bold;cursor:pointer;}
 footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:auto;}
 .logo{width:150px;height:auto;margin-bottom:20px;display:block;margin-left:auto;margin-right:auto;}
-.note{font-size:14px;color:#555;text-align:center;margin-top:10px;}
 @media(max-width:768px){.signup-form{width:90%;}}
 </style>
 
-<!-- Firebase JS SDK -->
+<!-- EmailJS -->
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
-  // Firebase configuration
+  // Firebase config
   const firebaseConfig = {
-    apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
-  authDomain: "bumbble-c061f.firebaseapp.com",
-  projectId: "bumbble-c061f",
-  storageBucket: "bumbble-c061f.firebasestorage.app",
-  messagingSenderId: "213165886981",
-  appId: "1:213165886981:web:c18652003444869b1bd66c",
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
   };
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
-</script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function(){
-    const form = document.getElementById("signupForm");
-
-    form.addEventListener("submit", function(e){
-        e.preventDefault();
-
-        const name = document.getElementById("name").value.trim();
-        const email = document.getElementById("email").value.trim();
-        const password = document.getElementById("password").value.trim();
-
-        if(!name || !email || !password){
-            alert("Please fill all fields.");
-            return;
-        }
-
-        const btn = form.querySelector("button");
-        btn.disabled = true;
-        btn.innerText = "Signing up...";
-
-        // Firebase Authentication: create user
-        auth.createUserWithEmailAndPassword(email, password)
-            .then((userCredential) => {
-                const user = userCredential.user;
-
-                // Set display name
-                user.updateProfile({ displayName: name })
-                    .then(() => {
-                        // Send email verification
-                        user.sendEmailVerification()
-                            .then(() => {
-                                alert("✅ Signup successful! A verification email has been sent to " + email + ". Please check your Inbox, Spam, or Promotions folder.");
-                                form.reset();
-                                btn.disabled = false;
-                                btn.innerText = "Sign Up";
-                            })
-                            .catch((err) => {
-                                console.error("Error sending verification email:", err);
-                                alert("❌ Failed to send verification email.");
-                                btn.disabled = false;
-                                btn.innerText = "Sign Up";
-                            });
-                    });
-            })
-            .catch((error) => {
-                console.error(error);
-                alert("❌ " + error.message);
-                btn.disabled = false;
-                btn.innerText = "Sign Up";
-            });
-    });
-});
+  const db = firebase.firestore();
 </script>
 </head>
 <body>
@@ -116,13 +66,84 @@ document.addEventListener("DOMContentLoaded", function(){
 <input type="email" id="email" placeholder="Email" required>
 <input type="password" id="password" placeholder="Password" required>
 <button type="submit">Sign Up</button>
-<p class="note">After signing up, please check your Inbox, Spam, or Promotions folder for the verification email.</p>
 </form>
 </section>
 
 <footer>
 <p>&copy; 2025 Bumbble. All rights reserved.</p>
 </footer>
+
+<script>
+const PUBLIC_KEY = "U-X66-kC_8WKaopWx";
+const SERVICE_ID = "service_q5dp62l";
+const TEMPLATE_ID = "template_2hkocdj";
+emailjs.init(PUBLIC_KEY);
+
+document.addEventListener("DOMContentLoaded", function(){
+    const form = document.getElementById("signupForm");
+
+    form.addEventListener("submit", function(e){
+        e.preventDefault();
+
+        const name = document.getElementById("name").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value.trim();
+
+        if(!name || !email || !password){
+            alert("Please fill all fields.");
+            return;
+        }
+
+        const btn = form.querySelector("button");
+        btn.disabled = true;
+        btn.innerText = "Signing up...";
+
+        // Create Firebase user
+        auth.createUserWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+            const user = userCredential.user;
+
+            // Set display name
+            user.updateProfile({ displayName: name }).then(() => {
+                // Send Firebase email verification
+                user.sendEmailVerification().then(() => {
+                    alert("✅ Signup successful! Check your email to verify your account.");
+
+                    // Save user info to Firestore
+                    db.collection("users").doc(user.uid).set({
+                        name: name,
+                        email: email,
+                        pic: "images/profile1.png",
+                        emailVerified: false,
+                        lastLogin: 0,
+                        gender: "",
+                        location: ""
+                    }).then(() => {
+                        console.log("User saved in Firestore.");
+                    });
+
+                    // Send EmailJS OTP (optional)
+                    const passcode = Math.floor(100000 + Math.random() * 900000);
+                    emailjs.send(SERVICE_ID, TEMPLATE_ID, {
+                        user_email: email,
+                        to_name: name,
+                        passcode: passcode
+                    });
+
+                    form.reset();
+                    btn.disabled = false;
+                    btn.innerText = "Sign Up";
+                });
+            });
+        })
+        .catch((error) => {
+            alert("❌ Signup error: " + error.message);
+            btn.disabled = false;
+            btn.innerText = "Sign Up";
+        });
+    });
+});
+</script>
 
 </body>
 </html>
