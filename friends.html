@@ -47,7 +47,7 @@ const db = firebase.database();
 </header>
 
 <div class="friends-container" id="friendsContainer">
-<p>Loading friends...</p>
+<p>Loading users...</p>
 </div>
 
 <footer>
@@ -82,10 +82,9 @@ auth.onAuthStateChanged(user => {
     function loadFriends(){
       friendsRef.on("value", fSnap => {
         const friends = fSnap.val() || {};
-
-        usersRef.once("value").then(uSnap => {
+        usersRef.on("value", uSnap => {
           const users = uSnap.val() || {};
-          friendsContainer.innerHTML = "";  // clear loading message
+          friendsContainer.innerHTML = ""; // Clear previous content
 
           let otherUsersExist = false;
 
@@ -147,7 +146,7 @@ auth.onAuthStateChanged(user => {
       <a href="login.html">Login</a>
       <a href="signup.html">Sign Up</a>
     `;
-    friendsContainer.innerHTML = "<p>Please login to view friends.</p>";
+    friendsContainer.innerHTML = "<p>Please login to view users.</p>";
   }
 });
 </script>
