@@ -70,6 +70,7 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
+
     document.getElementById("logoutBtn").addEventListener("click", ()=>{
       auth.signOut().then(()=>{
         localStorage.removeItem("current_user");
@@ -80,17 +81,16 @@ auth.onAuthStateChanged(user => {
     const profileContainer = document.getElementById("profileContainer");
     const userRef = db.ref("users/" + user.uid);
 
-    // Set online status real-time
+    // Real-time online status
     const onlineRef = userRef.child("online");
     onlineRef.set(true);
     onlineRef.onDisconnect().set(false);
 
-    // Load profile in real-time
+    // Load profile
     userRef.on("value", snapshot => {
       const u = snapshot.val();
       if(u){
         const online = u.online ? true : false;
-
         profileContainer.innerHTML = `
           <img id="profilePic" src="${u.pic || 'images/profile1.png'}" alt="Profile">
           <input type="file" id="picUpload" accept="image/*">
@@ -133,15 +133,21 @@ auth.onAuthStateChanged(user => {
               picInput.value = "";
               return;
             }
+
             const ext = file.name.split('.').pop();
             const storageRef = storage.ref(`profile_pics/${user.uid}.${ext}`);
 
-            storageRef.put(file).then(()=> {
-              storageRef.getDownloadURL().then(url=>{
+            // Upload and get URL
+            storageRef.put(file).then(snapshot=>{
+              snapshot.ref.getDownloadURL().then(url=>{
+                // Save URL in database
                 userRef.update({ pic: url }).then(()=>{
-                  profileImg.src = url; // display immediately
+                  profileImg.src = url; // immediate update
                 });
               });
+            }).catch(err=>{
+              console.error("Upload failed:", err);
+              alert("❌ Upload failed: " + err.message);
             });
           }
         });
@@ -178,7 +184,7 @@ auth.onAuthStateChanged(user => {
       <a href="login.html">Login</a>
       <a href="signup.html">Sign Up</a>
     `;
-    document.getElementById("profileContainer").innerHTML = "<p>Please login to view profile.</p>";
+    profileContainer.innerHTML = "<p>Please login to view profile.</p>";
   }
 });
 </script>
