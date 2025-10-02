@@ -21,9 +21,9 @@ footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:auto;}
 </style>
 
 <!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
 const firebaseConfig = {
@@ -35,6 +35,7 @@ const firebaseConfig = {
   messagingSenderId: "213165886981",
   appId: "1:213165886981:web:c18652003444869b1bd66c"
 };
+
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
@@ -72,41 +73,40 @@ const db = firebase.database();
 
 <script>
 document.getElementById("signupForm").addEventListener("submit", function(e){
-    e.preventDefault();
+  e.preventDefault();
 
-    const name = document.getElementById("name").value.trim();
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
+  const name = document.getElementById("name").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
 
-    if(!name || !email || !password){
-        alert("Please fill all fields.");
-        return;
-    }
+  if(!name || !email || !password){
+    alert("Please fill all fields.");
+    return;
+  }
 
-    auth.createUserWithEmailAndPassword(email, password)
-    .then((userCredential) => {
-        const user = userCredential.user;
+  auth.createUserWithEmailAndPassword(email, password)
+  .then((userCredential)=>{
+    const user = userCredential.user;
 
-        user.updateProfile({ displayName: name }).then(() => {
-            // Save user in Realtime Database
-            const userData = {
-                name: name,
-                email: email,
-                lastLogin: Date.now(),
-                online: true
-            };
-            db.ref("users/" + user.uid).set(userData);
+    // Send verification email
+    user.sendEmailVerification()
+    .then(()=>{
+      alert("✅ Signup successful! Check your email for verification.");
 
-            // Send verification email
-            user.sendEmailVerification().then(() => {
-                alert("✅ Signup successful! Verification email sent. Please check your inbox.");
-                document.getElementById("signupForm").reset();
-            });
-        });
-    })
-    .catch((error) => {
-        alert("❌ " + error.message);
+      // Save user to Realtime Database
+      db.ref('users/' + user.uid).set({
+        name: name,
+        email: email,
+        lastLogin: 0,
+        pic: "images/profile1.png"
+      });
+
+      document.getElementById("signupForm").reset();
     });
+  })
+  .catch((error)=>{
+    alert("❌ " + error.message);
+  });
 });
 </script>
 
