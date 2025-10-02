@@ -70,7 +70,9 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
+
     document.getElementById("logoutBtn").addEventListener("click", ()=>{
+      db.ref("users/" + user.uid + "/online").set(false);
       auth.signOut().then(()=>{
         localStorage.removeItem("current_user");
         window.location.href="login.html";
@@ -90,16 +92,17 @@ auth.onAuthStateChanged(user => {
       const u = snapshot.val();
       if(u){
         const online = u.online ? true : false;
+
         profileContainer.innerHTML = `
           <img id="profilePic" src="${u.pic || 'images/profile1.png'}" alt="Profile">
           <input type="file" id="picUpload" accept="image/*">
-
+          
           <label>Name</label>
           <input type="text" id="name" value="${u.name || ''}">
-
+          
           <label>Email (readonly)</label>
           <input type="email" id="email" value="${u.email || ''}" readonly>
-
+          
           <label>Gender</label>
           <select id="gender">
             <option value="">Select Gender</option>
@@ -119,21 +122,25 @@ auth.onAuthStateChanged(user => {
           <button id="saveBtn">Save Profile</button>
         `;
 
-        // Profile picture upload with size limit
-        document.getElementById("picUpload").addEventListener("change", (e)=>{
+        // Profile picture upload
+        const picInput = document.getElementById("picUpload");
+        const profileImg = document.getElementById("profilePic");
+
+        picInput.addEventListener("change", e=>{
           const file = e.target.files[0];
           if(file){
             const MAX_SIZE = 2*1024*1024; // 2 MB
             if(file.size > MAX_SIZE){
-              alert("⚠️ File size exceeds 2 MB. Please choose a smaller image.");
-              e.target.value = "";
+              alert("⚠️ File exceeds 2 MB. Choose smaller image.");
+              picInput.value = "";
               return;
             }
-            const storageRef = storage.ref("profile_pics/" + user.uid + ".jpg");
-            storageRef.put(file).then(()=>{
-              storageRef.getDownloadURL().then(url=>{
+            const ext = file.name.split('.').pop();
+            const storageRef = storage.ref(`profile_pics/${user.uid}.${ext}`);
+            storageRef.put(file).then(() => {
+              storageRef.getDownloadURL().then(url => {
                 userRef.update({pic: url}).then(()=>{
-                  document.getElementById("profilePic").src = url; // Update immediately
+                  profileImg.src = url; // update immediately
                 });
               });
             });
@@ -157,8 +164,11 @@ auth.onAuthStateChanged(user => {
             gender: updatedGender,
             location: updatedLocation,
             age: updatedAge
-          }).then(()=>alert("✅ Profile updated successfully!"))
-            .catch(err=>alert("❌ Error updating profile: " + err.message));
+          }).then(()=>{
+            alert("✅ Profile updated successfully!");
+          }).catch(err=>{
+            alert("❌ Error updating profile: " + err.message);
+          });
         });
 
       } else {
@@ -172,7 +182,7 @@ auth.onAuthStateChanged(user => {
       <a href="login.html">Login</a>
       <a href="signup.html">Sign Up</a>
     `;
-    document.getElementById("profileContainer").innerHTML = "<p>Please login to view profile.</p>";
+    profileContainer.innerHTML = "<p>Please login to view profile.</p>";
   }
 });
 </script>
