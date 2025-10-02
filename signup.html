@@ -79,36 +79,48 @@ document.getElementById("signupForm").addEventListener("submit", function(e){
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value.trim();
 
-  if(!name || !email || !password){
-    alert("Please fill all fields.");
+  if (!name || !email || !password) {
+    alert("⚠️ Please fill all fields.");
     return;
   }
 
   auth.createUserWithEmailAndPassword(email, password)
-.then((userCredential)=>{
-  const user = userCredential.user;
+    .then((userCredential) => {
+      const user = userCredential.user;
 
-  // Send verification email
-  user.sendEmailVerification();
+      // Send verification email
+      return user.sendEmailVerification()
+        .then(() => {
+          alert("✅ Verification email sent to " + email + ". Please check your inbox or spam folder.");
 
-  // Save user in Realtime Database
-  db.ref('users/' + user.uid).set({
-    name: name,
-    email: email,
-    lastLogin: 0,
-    pic: "images/profile1.png"
-  });
+          // Save user in Realtime Database
+          return db.ref('users/' + user.uid).set({
+            name: name,
+            email: email,
+            lastLogin: Date.now(),
+            verified: false,
+            pic: "images/profile1.png"
+          });
+        });
+    })
+    .then(() => {
+      document.getElementById("signupForm").reset();
+    })
+    .catch((error) => {
+      alert("❌ " + error.message);
+    });
 });
 
-      document.getElementById("signupForm").reset();
-    });
-  })
-  .catch((error)=>{
-    alert("❌ " + error.message);
-  });
+// Prevent unverified users from logging in
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    if (!user.emailVerified) {
+      alert("⚠️ Please verify your email before logging in.");
+      auth.signOut();
+    }
+  }
 });
 </script>
 
 </body>
 </html>
-
