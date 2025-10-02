@@ -33,56 +33,95 @@
       .card-container { flex-direction: column; align-items: center; }
     }
   </style>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+      authDomain: "bumbble-c061f.firebaseapp.com",
+      databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
+      projectId: "bumbble-c061f",
+      storageBucket: "bumbble-c061f.appspot.com",
+      messagingSenderId: "213165886981",
+      appId: "1:213165886981:web:c18652003444869b1bd66c"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+  </script>
 </head>
 <body>
   <header>
     <h1>Bumbble</h1>
-    <nav>
-      <a href="index.html">Home</a>
-      <a href="friends.html">Friends</a>
-      <a href="stories.html">Stories</a>
-      <a href="events.html">Events</a>
-      <a href="safety.html">Safety</a>
-      <a href="login.html">Login</a>
-      <a href="signup.html">Sign Up</a>
-      <a href="profile.html">Profile</a>
-      <a href="#" id="logoutBtn">Logout</a>
+    <nav id="navbar">
+      <!-- Links will be injected dynamically -->
     </nav>
   </header>
 
   <section class="section">
     <h2>Success Stories</h2>
     <div class="card-container">
-
-      <!-- Story 1 -->
       <div class="card">
         <img src="images/couple1.png" alt="Couple story">
         <h3>Radhika & Sam</h3>
-        <p>“We were just curious when we joined Bumbble. A few chats later, it felt like we had known each other forever. From long calls to weekend meet-ups, our journey turned into love. Today, we’re building a future together.”</p>
+        <p>“We met on Bumbble and instantly clicked! Now we’re planning our wedding.”</p>
         <button>Read More</button>
       </div>
-
-      <!-- Story 2 -->
       <div class="card">
         <img src="images/friends1.png" alt="Friends story">
         <h3>Rajeev & Roshan</h3>
-        <p>“Moving to a new city wasn’t easy, but Bumbble helped us connect. We bonded instantly over our love for cricket and late-night food hunts. What started as a random swipe is now a friendship that feels like family.”</p>
+        <p>“Bumbble helped us find friends in a new city. Couldn’t be happier.”</p>
         <button>Read More</button>
       </div>
-
-      <!-- Story 3 -->
       <div class="card">
         <img src="images/friends2.png" alt="Community story">
         <h3>Divya & Preeti</h3>
-        <p>“Bumbble gave us more than a connection — it gave us a sisterhood. From study sessions to travel adventures, we’ve been inseparable ever since. Sometimes, the best matches are the friends you never expected.”</p>
+        <p>“From matches to best friends, Bumbble gave us a lifelong connection.”</p>
         <button>Read More</button>
       </div>
-
     </div>
   </section>
 
   <footer>
     <p>&copy; 2025 Bumbble. All rights reserved.</p>
   </footer>
+
+  <script>
+    // Dynamically update header links based on auth state
+    const navbar = document.getElementById("navbar");
+
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        // If logged in → show logout + other links
+        navbar.innerHTML = `
+          <a href="index.html">Home</a>
+          <a href="friends.html">Friends</a>
+          <a href="stories.html">Stories</a>
+          <a href="events.html">Events</a>
+          <a href="safety.html">Safety</a>
+          <a href="profile.html">Profile</a>
+          <a href="#" id="logoutBtn">Logout</a>
+        `;
+
+        // Handle logout
+        document.getElementById("logoutBtn").addEventListener("click", () => {
+          auth.signOut().then(() => {
+            window.location.href = "login.html";
+          });
+        });
+
+      } else {
+        // If logged out → show login/signup
+        navbar.innerHTML = `
+          <a href="index.html">Home</a>
+          <a href="stories.html">Stories</a>
+          <a href="login.html">Login</a>
+          <a href="signup.html">Sign Up</a>
+        `;
+      }
+    });
+  </script>
 </body>
 </html>
