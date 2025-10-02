@@ -66,32 +66,27 @@ auth.onAuthStateChanged(user => {
       const profileImg = document.getElementById("profilePic");
       const picInput = document.getElementById("picUpload");
 
-      let selectedFile = null; // Store selected file before saving
+      let selectedBase64 = null;
 
-      // Show preview immediately
       picInput.addEventListener("change", e => {
         const file = e.target.files[0];
         if(file){
-          selectedFile = file;
+          const MAX_SIZE = 200*1024; // 200KB
+          if(file.size > MAX_SIZE){
+            alert("⚠️ File exceeds 200KB.");
+            e.target.value = "";
+            return;
+          }
 
           const reader = new FileReader();
           reader.onload = function(event){
-            profileImg.src = event.target.result;
+            selectedBase64 = event.target.result;
+            profileImg.src = selectedBase64;
           };
           reader.readAsDataURL(file);
-
-          const MAX_SIZE = 2*1024*1024; // 2 MB
-          if(file.size > MAX_SIZE){
-            alert("⚠️ File exceeds 2MB.");
-            selectedFile = null;
-            e.target.value = "";
-            profileImg.src = u.pic || 'images/profile1.png';
-            return;
-          }
         }
       });
 
-      // Save profile updates
       document.getElementById("saveBtn").addEventListener("click", async () => {
         const updatedName = document.getElementById("name").value.trim();
         const updatedGender = document.getElementById("gender").value;
@@ -104,27 +99,16 @@ auth.onAuthStateChanged(user => {
         }
 
         try {
-          // Upload profile pic first if selected
-          let picURL = u.pic || null;
-          if(selectedFile){
-            const storageRef = storage.ref("profile_pics/" + user.uid + ".jpg");
-            const snapshot = await storageRef.put(selectedFile);
-            picURL = await snapshot.ref.getDownloadURL();
-          }
-
-          // Update profile data
           await userRef.update({
             name: updatedName,
             gender: updatedGender,
             location: updatedLocation,
             age: updatedAge,
-            pic: picURL
+            pic: selectedBase64 || u.pic || null
           });
-
           alert("✅ Profile updated successfully!");
-          selectedFile = null; // reset selected file
-
-        } catch(err) {
+          selectedBase64 = null;
+        } catch(err){
           alert("❌ Error updating profile: " + err.message);
         }
       });
