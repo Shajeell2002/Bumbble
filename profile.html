@@ -39,8 +39,8 @@ const db = firebase.database();
 const storage = firebase.storage();
 </script>
 </head>
-
 <body>
+
 <header>
 <h1>Bumbble</h1>
 <nav id="navLinks"></nav>
@@ -109,21 +109,23 @@ auth.onAuthStateChanged(user => {
       <button id="saveBtn">Save Profile</button>
     `;
 
-    const profilePic = document.getElementById("profilePic");
-    const picUpload = document.getElementById("picUpload");
+    const profileImg = document.getElementById("profilePic");
+    const picInput = document.getElementById("picUpload");
 
-    // Preview before save
-    picUpload.addEventListener("change", e=>{
+    let selectedFile = null;
+
+    // Preview file
+    picInput.addEventListener("change", e=>{
       const file = e.target.files[0];
-      if(file){
-        if(file.size > 2*1024*1024){ alert("File exceeds 2MB"); e.target.value=""; return; }
-        const reader = new FileReader();
-        reader.onload = evt => profilePic.src = evt.target.result;
-        reader.readAsDataURL(file);
-      }
+      if(!file) return;
+      if(file.size > 2*1024*1024){ alert("File >2MB"); e.target.value=""; return; }
+      selectedFile = file;
+      const reader = new FileReader();
+      reader.onload = evt => profileImg.src = evt.target.result;
+      reader.readAsDataURL(file);
     });
 
-    // Save profile button
+    // Save profile
     document.getElementById("saveBtn").addEventListener("click", async ()=>{
       const name = document.getElementById("name").value.trim();
       const gender = document.getElementById("gender").value;
@@ -132,13 +134,12 @@ auth.onAuthStateChanged(user => {
 
       if(!name || !gender || !location || !age){ alert("Fill all fields"); return; }
 
-      let updates = {name, gender, location, age};
-      const file = picUpload.files[0];
+      const updates = {name, gender, location, age};
 
       try{
-        if(file){
+        if(selectedFile){
           const storageRef = storage.ref("profile_pics/"+uid+".jpg");
-          await storageRef.put(file);
+          await storageRef.put(selectedFile);
           const downloadURL = await storageRef.getDownloadURL();
           updates.pic = downloadURL;
         }
@@ -146,7 +147,7 @@ auth.onAuthStateChanged(user => {
         await userRef.update(updates);
         alert("✅ Profile saved successfully!");
       }catch(err){
-        alert("❌ Error saving profile: "+err.message);
+        alert("❌ Error: "+err.message);
       }
     });
   });
