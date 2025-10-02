@@ -66,6 +66,7 @@ const nav = document.getElementById("navLinks");
 auth.onAuthStateChanged(user => {
   if(user && user.emailVerified){
     localStorage.setItem("current_user", user.uid);
+
     nav.innerHTML = `
       <a href="index.html">Home</a>
       <a href="friends.html">Friends</a>
@@ -75,6 +76,7 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
+
     document.getElementById("logoutBtn").addEventListener("click", ()=>{
       auth.signOut().then(()=>{
         localStorage.removeItem("current_user");
@@ -87,7 +89,7 @@ auth.onAuthStateChanged(user => {
     // Listen for realtime updates
     db.ref("users").on("value", snapshot => {
       const now = Date.now();
-      const ONLINE_THRESHOLD = 15*60*1000; // 15 minutes
+      const ONLINE_THRESHOLD = 15*60*1000; // 15 min
       let html = "";
 
       snapshot.forEach(child => {
@@ -97,15 +99,16 @@ auth.onAuthStateChanged(user => {
         const name = u.name || "Unnamed";
         const gender = u.gender || "-";
         const location = u.location || "-";
+        const age = u.age || "-";
         const pic = u.pic || ""; // blank if no profile pic
-        const lastLogin = u.lastLogin || 0;
-        const online = u.online ? true : ((now - lastLogin) <= ONLINE_THRESHOLD);
+        const online = u.online ? true : ((now - (u.lastLogin||0)) <= ONLINE_THRESHOLD);
 
         html += `<div class="friend-card">
-                  <img src="${pic}" alt="Profile" onerror="this.style.display='none'">
+                  ${pic ? `<img src="${pic}" alt="Profile">` : `<div style="width:100px;height:100px;border-radius:50%;background:#ccc;margin:0 auto 10px;"></div>`}
                   <h3>${name}</h3>
                   <p>Gender: ${gender}</p>
                   <p>Location: ${location}</p>
+                  <p>Age: ${age}</p>
                   <span class="status-dot" style="background-color:${online?'green':'red'}"></span>
                 </div>`;
       });
