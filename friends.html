@@ -3,21 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bumbble - Friends</title>
+<title>Test Friends</title>
 <style>
-body {font-family: Arial, sans-serif; background: #fff; color: #333; display: flex; flex-direction: column; min-height: 100vh;}
-header {display:flex; justify-content: space-between; align-items:center; padding:20px; background:#ffcb2b;}
-header h1 {font-size:24px;}
-nav a {margin:0 10px; text-decoration:none; color:#333; font-weight:bold;}
-.friends-container {flex:1; padding:40px; max-width:600px; margin:auto;}
-.friend-card {display:flex; justify-content: space-between; align-items:center; padding:10px 15px; margin-bottom:10px; background:#f9f9f9; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,0.1);}
-.friend-info {display:flex; align-items:center;}
-.friend-info img {width:50px; height:50px; border-radius:50%; object-fit:cover; margin-right:10px;}
-.status-dot {width:12px; height:12px; border-radius:50%; display:inline-block; margin-left:5px; border:1px solid #fff;}
-.addBtn, .removeBtn {padding:5px 12px; border:none; border-radius:5px; cursor:pointer; font-weight:bold;}
-.addBtn {background:#4CAF50; color:white;}
-.removeBtn {background:#f44336; color:white;}
-footer {text-align:center; padding:20px; background:#f1f1f1; margin-top:auto;}
+body { font-family: Arial, sans-serif; padding: 20px; }
+.user-card { padding: 10px; border: 1px solid #ccc; margin-bottom: 10px; border-radius: 5px; display: flex; align-items: center; }
+.user-card img { width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; object-fit: cover; }
+.status-dot { width: 12px; height: 12px; border-radius: 50%; margin-left: auto; border: 1px solid #fff; }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -41,113 +32,51 @@ const db = firebase.database();
 </head>
 <body>
 
-<header>
-<h1>Bumbble</h1>
-<nav id="navLinks"></nav>
-</header>
-
-<div class="friends-container" id="friendsContainer">
-<p>Loading users...</p>
-</div>
-
-<footer>
-<p>&copy; 2025 Bumbble. All rights reserved.</p>
-</footer>
+<h2>All Registered Users</h2>
+<div id="usersContainer">Loading users...</div>
 
 <script>
-const nav = document.getElementById("navLinks");
-const friendsContainer = document.getElementById("friendsContainer");
-
 auth.onAuthStateChanged(user => {
-  if(user && user.emailVerified){
-    const uid = user.uid;
-    localStorage.setItem("current_user", uid);
+  if(user){
+    const usersContainer = document.getElementById("usersContainer");
+    const usersRef = db.ref("users");
 
-    nav.innerHTML = `
-      <a href="index.html">Home</a>
-      <a href="friends.html">Friends</a>
-      <a href="profile.html">Profile</a>
-      <a href="#" id="logoutBtn">Logout</a>
-    `;
-    document.getElementById("logoutBtn").addEventListener("click", ()=> {
-      auth.signOut().then(()=> {
-        localStorage.removeItem("current_user");
-        window.location.href="login.html";
-      });
+    usersRef.once("value").then(snapshot => {
+      const users = snapshot.val() || {};
+      usersContainer.innerHTML = "";
+
+      if(Object.keys(users).length === 0){
+        usersContainer.innerHTML = "<p>No users found.</p>";
+      }
+
+      for(let key in users){
+        if(key === user.uid) continue; // skip self
+        const u = users[key];
+        const div = document.createElement("div");
+        div.className = "user-card";
+
+        const img = document.createElement("img");
+        img.src = u.pic || "images/profile1.png";
+
+        const name = document.createElement("span");
+        name.textContent = u.name || "No Name";
+
+        const status = document.createElement("span");
+        status.className = "status-dot";
+        status.style.backgroundColor = u.online ? "green" : "red";
+
+        div.appendChild(img);
+        div.appendChild(name);
+        div.appendChild(status);
+        usersContainer.appendChild(div);
+      }
+    }).catch(err => {
+      usersContainer.innerHTML = "<p>Error loading users.</p>";
+      console.error("Firebase read error:", err);
     });
 
-    const usersRef = db.ref("users");
-    const friendsRef = db.ref("friends/" + uid);
-
-    function loadFriends(){
-      friendsRef.on("value", fSnap => {
-        const friends = fSnap.val() || {};
-
-        usersRef.once("value").then(uSnap => {
-          const users = uSnap.val() || {};
-          friendsContainer.innerHTML = ""; // clear loading
-
-          let otherUsersExist = false;
-
-          for(let key in users){
-            if(key === uid) continue; // skip self
-            otherUsersExist = true;
-            const u = users[key];
-            const isFriend = friends[key] ? true : false;
-
-            const friendCard = document.createElement("div");
-            friendCard.className = "friend-card";
-
-            const info = document.createElement("div");
-            info.className = "friend-info";
-
-            const img = document.createElement("img");
-            img.src = u.pic || "images/profile1.png";
-
-            const name = document.createElement("span");
-            name.textContent = u.name || "Unknown";
-
-            const status = document.createElement("span");
-            status.className = "status-dot";
-            status.style.backgroundColor = u.online ? "green" : "red";
-
-            info.appendChild(img);
-            info.appendChild(name);
-            info.appendChild(status);
-
-            const btn = document.createElement("button");
-            btn.textContent = isFriend ? "Remove" : "Add";
-            btn.className = isFriend ? "removeBtn" : "addBtn";
-
-            btn.addEventListener("click", () => {
-              if(isFriend){
-                friendsRef.child(key).remove();
-              } else {
-                friendsRef.update({[key]: true});
-              }
-            });
-
-            friendCard.appendChild(info);
-            friendCard.appendChild(btn);
-            friendsContainer.appendChild(friendCard);
-          }
-
-          if(!otherUsersExist){
-            friendsContainer.innerHTML = "<p>No other users found.</p>";
-          }
-        });
-      });
-    }
-
-    loadFriends();
-
   } else {
-    nav.innerHTML = `
-      <a href="index.html">Home</a>
-      <a href="login.html">Login</a>
-      <a href="signup.html">Sign Up</a>
-    `;
-    friendsContainer.innerHTML = "<p>Please login to view users.</p>";
+    document.getElementById("usersContainer").innerHTML = "<p>Please login to see users.</p>";
   }
 });
 </script>
