@@ -90,10 +90,9 @@ auth.onAuthStateChanged(user=>{
     `;
     document.getElementById("logoutBtn").addEventListener("click", ()=>{ auth.signOut().then(()=>window.location.href="login.html"); });
 
-    const usersRef = db.ref("users");
+    const usersRef = db.ref("users").child("userPublic"); // <-- read only public info
     const friendsRef = db.ref("friends/"+uid);
-
-    const onlineRef = db.ref("users/"+uid+"/online"); 
+    const onlineRef = db.ref("users/"+uid+"/userPublic/online"); 
     onlineRef.set(true); onlineRef.onDisconnect().set(false);
 
     function loadFriends(){
@@ -109,10 +108,9 @@ auth.onAuthStateChanged(user=>{
             const info=document.createElement("div"); info.className="friend-info";
             const img=document.createElement("img"); img.src=u.pic||"images/profile1.png";
             const name=document.createElement("span"); name.textContent=`${u.name||"Unknown"}, ${u.age||"N/A"}`;
-            const location=document.createElement("span"); location.textContent=u.location||"";
             const status=document.createElement("span"); status.className="status-dot";
             status.style.backgroundColor=u.online?"green":"red";
-            info.appendChild(img); info.appendChild(name); info.appendChild(location); info.appendChild(status);
+            info.appendChild(img); info.appendChild(name); info.appendChild(status);
 
             const btnContainer=document.createElement("div");
             if(key!==uid){
@@ -148,90 +146,98 @@ auth.onAuthStateChanged(user=>{
               });
               btnContainer.appendChild(chatBtn);
             } else {
-              const selfBtn=document.createElement("button"); selfBtn.textContent="You"; selfBtn.disabled=true; selfBtn.style.background="#ccc"; selfBtn.style.cursor="default"; btnContainer.appendChild(selfBtn);
+              const selfBtn=document.createElement("button"); selfBtn.textContent="You"; selfBtn.disabled=true; selfBtn.style.background="#ccc"; selfBtn.style.cursor="default";
+              btnContainer.appendChild(selfBtn);
             }
 
-            friendCard.appendChild(info); friendCard.appendChild(btnContainer); friendsContainer.appendChild(friendCard);
+            friendCard.appendChild(info);
+            friendCard.appendChild(btnContainer);
+            friendsContainer.appendChild(friendCard);
           }
+
+          if(Object.keys(users).length===0) friendsContainer.innerHTML="<p>No users found.</p>";
         });
       });
     }
-
     loadFriends();
+
   } else {
     nav.innerHTML=`<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
     friendsContainer.innerHTML="<p>Please login to view users.</p>";
   }
 });
 
-// Chat functionality
+//////////////////// Chat logic ////////////////////
+const chatModal=document.getElementById("chatModal");
+const chatWithSpan=document.getElementById("chatWith");
+const chatMessages=document.getElementById("chatMessages");
 const chatInput=document.getElementById("chatInput");
+const chatSendBtn=document.getElementById("chatSendBtn");
+const typingIndicator=document.getElementById("typingIndicator");
 
-chatInput.addEventListener("input", ()=>{
-  if(!currentChatId) return;
-  const typingRef=db.ref("chats/"+currentChatId+"/typing/"+auth.currentUser.uid);
-  typingRef.set(chatInput.value.length>0); 
-  typingRef.onDisconnect().set(false);
-});
+function openChat(myUid, friendUid, friendName){
+  chatModal.style.display="flex";
+  chatFriendUid=friendUid; chatFriendName=friendName;
+  chatWithSpan.textContent=friendName;
+  currentChatId=[myUid,friendUid].sort().join("_");
+  chatMessages.innerHTML='<div id="typingIndicator"></div>';
 
-// Enter = send, Shift+Enter = newline
-chatInput.addEventListener("keydown", (e)=>{
-  if(e.key === "Enter"){
-    if(e.shiftKey){
-      // insert newline
-      chatInput.value += "\n";
-    } else {
-      e.preventDefault();
-      sendMessage();
-    }
+  const chatRef=db.ref("chats/"+currentChatId+"/messages");
+  chatRef.off(); // remove old listeners
+
+  chatRef.on("child_added", snap=>{
+    const msg=snap.val();
+    displayMessage(msg);
+  });
+
+  const lastReadRef=db.ref("chats/"+currentChatId+"/lastRead/"+myUid);
+  lastReadRef.set(Date.now());
+
+  // Typing indicator
+  const typingRef=db.ref("chats/"+currentChatId+"/typing/"+friendUid);
+  typingRef.on("value", snap=>{
+    typingIndicator.textContent=snap.val()?"Typing...":"";
+  });
+}
+
+function closeChat(){ chatModal.style.display="none"; chatFriendUid=""; chatFriendName=""; currentChatId=""; }
+
+function displayMessage(msg){
+  const div=document.createElement("div");
+  div.className=msg.sender===auth.currentUser.uid?"sent":"received";
+  div.textContent=msg.text;
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop=chatMessages.scrollHeight;
+}
+
+// Send message with Enter/Shift+Enter logic
+chatInput.addEventListener("keydown", e=>{
+  if(e.key==="Enter" && !e.shiftKey){
+    e.preventDefault(); sendMessage();
   }
 });
 
-function openChat(myUid, friendUid, friendName){
-  chatFriendUid=friendUid; chatFriendName=friendName;
-  document.getElementById("chatWith").textContent="Chat with "+friendName;
-  document.getElementById("chatModal").style.display="flex";
-  currentChatId=[myUid,friendUid].sort().join("_");
-
-  const chatRef=db.ref("chats/"+currentChatId+"/messages");
-  const typingRef=db.ref("chats/"+currentChatId+"/typing");
-  const lastReadRef=db.ref("chats/"+currentChatId+"/lastRead/"+myUid);
-
-  chatRef.off(); typingRef.off();
-  document.getElementById("chatMessages").innerHTML='<div id="typingIndicator"></div>';
-
-  // load messages
-  chatRef.on("child_added", snap=>{
-    const msg=snap.val();
-    const msgDiv=document.createElement("div");
-    msgDiv.textContent=msg.text;
-    msgDiv.className=msg.sender===myUid?"sent":"received";
-    document.getElementById("chatMessages").appendChild(msgDiv);
-    document.getElementById("chatMessages").scrollTop=document.getElementById("chatMessages").scrollHeight;
-  });
-
-  // typing indicator
-  typingRef.on("value", snap=>{
-    const typingData=snap.val()||{};
-    const friendTyping=typingData[friendUid];
-    const typingEl=document.getElementById("typingIndicator");
-    typingEl.textContent=friendTyping?friendName+" is typing...":"";
-  });
-
-  lastReadRef.set(Date.now());
-}
-
-function closeChat(){
-  document.getElementById("chatModal").style.display="none";
-  document.getElementById("chatMessages").innerHTML='<div id="typingIndicator"></div>';
-}
-
 function sendMessage(){
-  if(!currentChatId) return alert("Open a chat first!");
-  const text=chatInput.value.trim(); if(!text) return;
-  const msgRef=db.ref("chats/"+currentChatId+"/messages").push();
-  msgRef.set({sender:auth.currentUser.uid,text:text,timestamp:Date.now()}).then(()=>chatInput.value="").catch(err=>console.error("Message not sent:",err));
+  const text=chatInput.value.trim();
+  if(!text) return;
+  const chatRef=db.ref("chats/"+currentChatId+"/messages");
+  const msg={sender:auth.currentUser.uid,text,timestamp:Date.now()};
+  chatRef.push(msg);
+  chatInput.value="";
+  chatInput.focus();
+
+  // Update lastRead for sender
+  db.ref("chats/"+currentChatId+"/lastRead/"+auth.currentUser.uid).set(Date.now());
+
+  // Typing indicator
+  db.ref("chats/"+currentChatId+"/typing/"+auth.currentUser.uid).set(false);
 }
+
+// Typing indicator
+chatInput.addEventListener("input",()=>{
+  if(!currentChatId) return;
+  db.ref("chats/"+currentChatId+"/typing/"+auth.currentUser.uid).set(chatInput.value.length>0);
+});
 </script>
 </body>
 </html>
