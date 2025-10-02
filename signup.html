@@ -98,44 +98,36 @@ document.getElementById("signupForm").addEventListener("submit", function(e){
   }
 
   auth.createUserWithEmailAndPassword(email, password)
-    .then((userCredential) => {
-      const user = userCredential.user;
-
-      // Save user to Realtime Database
-      return db.ref("users/" + user.uid).set({
-        name: name,
-        email: email,
-        gender: gender,
-        location: location,
-        lastLogin: Date.now(),
-        verified: user.emailVerified,
-        pic: "images/profile1.png", // default profile
-        online: false
-      }).then(() => {
-        console.log("✅ User saved in DB");
-        return user.sendEmailVerification();
-      });
-    })
     .then(() => {
-      alert("✅ Verification email sent! Please check your inbox or spam folder.");
-      document.getElementById("signupForm").reset();
-
-      // Log user out until email is verified
-      auth.signOut().then(() => {
-        window.location.href = "login.html";
+      // wait until user is authenticated before writing to DB
+      auth.onAuthStateChanged((user) => {
+        if (user) {
+          db.ref("users/" + user.uid).set({
+            name: name,
+            email: email,
+            gender: gender,
+            location: location,
+            lastLogin: Date.now(),
+            verified: user.emailVerified,
+            pic: "images/profile1.png",
+            online: true
+          }).then(() => {
+            return user.sendEmailVerification();
+          }).then(() => {
+            alert("✅ Verification email sent! Check inbox or spam.");
+            document.getElementById("signupForm").reset();
+            auth.signOut();
+            window.location.href = "login.html";
+          }).catch((error) => {
+            alert("❌ " + error.message);
+          });
+        }
       });
     })
     .catch((error) => {
       alert("❌ " + error.message);
       console.error(error);
     });
-});
-
-// Auto logout unverified users if somehow logged in
-auth.onAuthStateChanged((user) => {
-  if (user && !user.emailVerified) {
-    auth.signOut();
-  }
 });
 </script>
 
