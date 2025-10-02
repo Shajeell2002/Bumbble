@@ -109,19 +109,21 @@ document.getElementById("signupForm").addEventListener("submit", function(e){
         location: location,
         lastLogin: Date.now(),
         verified: user.emailVerified,
-        pic: "images/profile1.png",
+        pic: "images/profile1.png", // default profile
         online: false
       }).then(() => {
-        console.log("✅ User saved in DB with gender & location");
-
-        // Send verification email
+        console.log("✅ User saved in DB");
         return user.sendEmailVerification();
       });
     })
     .then(() => {
-      alert("✅ Verification email sent! Check inbox or spam.");
+      alert("✅ Verification email sent! Please check your inbox or spam folder.");
       document.getElementById("signupForm").reset();
-      window.location.href = "login.html"; // Redirect to login
+
+      // Log user out until email is verified
+      auth.signOut().then(() => {
+        window.location.href = "login.html";
+      });
     })
     .catch((error) => {
       alert("❌ " + error.message);
@@ -129,7 +131,7 @@ document.getElementById("signupForm").addEventListener("submit", function(e){
     });
 });
 
-// Optional: prevent unverified users from staying logged in
+// Auto logout unverified users if somehow logged in
 auth.onAuthStateChanged((user) => {
   if (user && !user.emailVerified) {
     auth.signOut();
