@@ -85,7 +85,7 @@ auth.onAuthStateChanged(user => {
 
     // Real-time friends list
     const friendContainer = document.getElementById("friendContainer");
-    db.ref("users").on("value", snapshot => {
+    db.ref("users").once("value", snapshot => {
       const now = Date.now();
       const ONLINE_THRESHOLD = 15*60*1000; // 15 min
       let html = "";
@@ -123,3 +123,4 @@ auth.onAuthStateChanged(user => {
 </script>
 </body>
 </html>
+
