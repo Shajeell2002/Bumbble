@@ -1,99 +1,118 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Signup - Bumbble</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-    header { background: #ffcc00; padding: 15px; text-align: center; }
-    header h1 { margin: 0; }
-    form { max-width: 400px; margin: 40px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
-    label { display: block; margin: 10px 0 5px; }
-    input { width: 100%; padding: 10px; margin-bottom: 15px; }
-    button { background: #ffcc00; border: none; padding: 10px 15px; cursor: pointer; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bumbble - Sign Up</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Arial,sans-serif;background:#fff;color:#333;display:flex;flex-direction:column;min-height:100vh;}
+header{display:flex;justify-content:space-between;align-items:center;padding:20px;background:#ffcb2b;}
+header h1{font-size:24px;}
+nav a{margin:0 10px;text-decoration:none;color:#333;font-weight:bold;}
+.section{flex:1;display:flex;justify-content:center;align-items:center;padding:40px 20px;}
+.signup-form{background:#f9f9f9;padding:30px;border-radius:15px;box-shadow:0 2px 6px rgba(0,0,0,0.1);width:100%;max-width:400px;display:flex;flex-direction:column;gap:15px;}
+.signup-form h2{text-align:center;margin-bottom:20px;font-size:28px;}
+.signup-form input{width:100%;padding:12px;border-radius:8px;border:1px solid #ccc;font-size:16px;}
+.signup-form button{width:100%;padding:12px;border:none;border-radius:8px;background:#ffcb2b;font-size:18px;font-weight:bold;cursor:pointer;}
+footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:auto;}
+.logo{width:150px;height:auto;margin-bottom:20px;display:block;margin-left:auto;margin-right:auto;}
+@media(max-width:768px){.signup-form{width:90%;}}
+</style>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
 </head>
 <body>
-  <header>
-    <h1>Bumbble - Signup</h1>
-  </header>
 
-  <form id="signupForm">
-    <label for="name">Name</label>
-    <input type="text" id="name" required>
+<header>
+<h1>Bumbble</h1>
+<nav>
+<a href="index.html">Home</a>
+<a href="friends.html">Friends</a>
+<a href="stories.html">Stories</a>
+<a href="events.html">Events</a>
+<a href="safety.html">Safety</a>
+<a href="login.html">Login</a>
+<a href="signup.html">Sign Up</a>
+</nav>
+</header>
 
-    <label for="email">Email</label>
-    <input type="email" id="email" required>
+<section class="section">
+<form class="signup-form" id="signupForm">
+<img src="images/logo.png" alt="Bumbble Logo" class="logo">
+<h2>Sign Up</h2>
+<input type="text" id="name" placeholder="Full Name" required>
+<input type="email" id="email" placeholder="Email" required>
+<input type="password" id="password" placeholder="Password" required>
+<button type="submit">Sign Up</button>
+</form>
+</section>
 
-    <label for="password">Password</label>
-    <input type="password" id="password" required>
+<footer>
+<p>&copy; 2025 Bumbble. All rights reserved.</p>
+</footer>
 
-    <button type="submit">Signup</button>
-  </form>
-
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-  <script>
-    // Your Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
   authDomain: "bumbble-c061f.firebaseapp.com",
-      databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
-projectId: "bumbble-c061f",
-  storageBucket: "bumbble-c061f.firebasestorage.app",
+  databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
+  projectId: "bumbble-c061f",
+  storageBucket: "bumbble-c061f.appspot.com",
   messagingSenderId: "213165886981",
   appId: "1:213165886981:web:c18652003444869b1bd66c"
-    };
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.database();
+document.getElementById("signupForm").addEventListener("submit", function(e){
+    e.preventDefault();
 
-    const form = document.getElementById("signupForm");
+    const name = document.getElementById("name").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
 
-    form.addEventListener("submit", function(e){
-      e.preventDefault();
-
-      const name = document.getElementById("name").value.trim();
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
-
-      if(!name || !email || !password){
+    if(!name || !email || !password){
         alert("Please fill all fields.");
         return;
-      }
+    }
 
-      // Create user
-      auth.createUserWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-          const user = userCredential.user;
+    // Create user in Firebase Auth
+    auth.createUserWithEmailAndPassword(email, password)
+    .then((userCredential) => {
+        const user = userCredential.user;
 
-          // Update display name
-          return user.updateProfile({ displayName: name })
-            .then(() => {
-              // Save user in Realtime Database
-              return db.ref("users/" + user.uid).set({
-                uid: user.uid,
-                name: name,
-                email: email
-              });
-            })
-            .then(() => {
-              // Send verification email
-              user.sendEmailVerification();
-              alert("✅ Signup successful! A verification email has been sent.");
-              form.reset();
-            });
-        })
-        .catch((error) => {
-          alert("❌ " + error.message);
+        // Update display name
+        user.updateProfile({ displayName: name });
+
+        // Send email verification
+        user.sendEmailVerification()
+        .then(() => {
+            alert("✅ Signup successful! Verification email sent.");
         });
+
+        // Save user to Realtime Database
+        db.ref("users/" + user.uid).set({
+            uid: user.uid,
+            name: name,
+            email: email,
+            lastLogin: Date.now(),
+            pic: "images/profile1.png"
+        });
+
+        // Reset form
+        document.getElementById("signupForm").reset();
+    })
+    .catch((error) => {
+        alert("❌ Signup error: " + error.message);
     });
-  </script>
+});
+</script>
+
 </body>
 </html>
-
