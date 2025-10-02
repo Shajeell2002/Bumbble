@@ -10,7 +10,7 @@ header{display:flex;justify-content:space-between;align-items:center;padding:20p
 header h1{font-size:24px;}
 nav a{margin:0 10px;text-decoration:none;color:#333;font-weight:bold;}
 .profile-container{flex:1;padding:40px;max-width:400px;margin:auto;background:#f9f9f9;border-radius:15px;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
-.profile-container img{width:120px;height:120px;border-radius:50%;margin-bottom:15px;object-fit:cover;}
+.profile-container img{width:120px;height:120px;border-radius:50%;margin-bottom:15px;object-fit:cover;display:block;}
 .profile-container label{display:block;margin-top:10px;font-weight:bold;}
 .profile-container input, .profile-container select{width:100%;padding:10px;margin-top:5px;border-radius:5px;border:1px solid #ccc;}
 .profile-container button{margin-top:20px;width:100%;padding:12px;background:#ffcb2b;border:none;border-radius:8px;font-weight:bold;cursor:pointer;}
@@ -81,98 +81,94 @@ auth.onAuthStateChanged(user => {
     const profileContainer = document.getElementById("profileContainer");
     const userRef = db.ref("users/" + user.uid);
 
-    // Real-time online status
-    const onlineRef = userRef.child("online");
-    onlineRef.set(true);
-    onlineRef.onDisconnect().set(false);
+    // Set online status
+    userRef.child("online").set(true);
+    userRef.child("online").onDisconnect().set(false);
 
-    // Load profile
-    userRef.on("value", snapshot => {
-      const u = snapshot.val();
-      if(u){
-        const online = u.online ? true : false;
-        profileContainer.innerHTML = `
-          <img id="profilePic" src="${u.pic || 'images/profile1.png'}" alt="Profile">
-          <input type="file" id="picUpload" accept="image/*">
+    function renderProfile(u){
+      const online = u.online || false;
+      profileContainer.innerHTML = `
+        <img id="profilePic" src="${u.pic || 'images/profile1.png'}" alt="Profile">
+        <input type="file" id="picUpload" accept="image/*">
 
-          <label>Name</label>
-          <input type="text" id="name" value="${u.name || ''}">
+        <label>Name</label>
+        <input type="text" id="name" value="${u.name || ''}">
 
-          <label>Email (readonly)</label>
-          <input type="email" id="email" value="${u.email || ''}" readonly>
+        <label>Email (readonly)</label>
+        <input type="email" id="email" value="${u.email || ''}" readonly>
 
-          <label>Gender</label>
-          <select id="gender">
-            <option value="">Select Gender</option>
-            <option value="Male" ${u.gender==='Male'?'selected':''}>Male</option>
-            <option value="Female" ${u.gender==='Female'?'selected':''}>Female</option>
-            <option value="Other" ${u.gender==='Other'?'selected':''}>Other</option>
-          </select>
+        <label>Gender</label>
+        <select id="gender">
+          <option value="">Select Gender</option>
+          <option value="Male" ${u.gender==='Male'?'selected':''}>Male</option>
+          <option value="Female" ${u.gender==='Female'?'selected':''}>Female</option>
+          <option value="Other" ${u.gender==='Other'?'selected':''}>Other</option>
+        </select>
 
-          <label>Location</label>
-          <input type="text" id="location" value="${u.location || ''}">
+        <label>Location</label>
+        <input type="text" id="location" value="${u.location || ''}">
 
-          <label>Age</label>
-          <input type="number" id="age" value="${u.age || ''}">
+        <label>Age</label>
+        <input type="number" id="age" value="${u.age || ''}">
 
-          <p>Status: <span class="status-dot" style="background-color:${online?'green':'red'}"></span></p>
+        <p>Status: <span class="status-dot" style="background-color:${online?'green':'red'}"></span></p>
 
-          <button id="saveBtn">Save Profile</button>
-        `;
+        <button id="saveBtn">Save Profile</button>
+      `;
 
-        const profileImg = document.getElementById("profilePic");
-        const picInput = document.getElementById("picUpload");
+      const profileImg = document.getElementById("profilePic");
+      const picInput = document.getElementById("picUpload");
 
-        // Profile picture upload
-        picInput.addEventListener("change", e=>{
-          const file = e.target.files[0];
-          if(file){
-            const MAX_SIZE = 2*1024*1024; // 2MB
-            if(file.size > MAX_SIZE){
-              alert("⚠️ File exceeds 2 MB. Choose smaller image.");
-              picInput.value = "";
-              return;
-            }
-
-            const ext = file.name.split('.').pop();
-            const storageRef = storage.ref(`profile_pics/${user.uid}.${ext}`);
-
-            // Upload and get URL
-            storageRef.put(file).then(snapshot=>{
-              snapshot.ref.getDownloadURL().then(url=>{
-                // Save URL in database
-                userRef.update({ pic: url }).then(()=>{
-                  profileImg.src = url; // immediate update
-                });
-              });
-            }).catch(err=>{
-              console.error("Upload failed:", err);
-              alert("❌ Upload failed: " + err.message);
-            });
-          }
-        });
-
-        // Save profile updates
-        document.getElementById("saveBtn").addEventListener("click", ()=>{
-          const updatedName = document.getElementById("name").value.trim();
-          const updatedGender = document.getElementById("gender").value;
-          const updatedLocation = document.getElementById("location").value.trim();
-          const updatedAge = parseInt(document.getElementById("age").value);
-
-          if(!updatedName || !updatedGender || !updatedLocation || !updatedAge){
-            alert("⚠️ Please fill all fields");
+      // Handle profile picture upload
+      picInput.addEventListener("change", e=>{
+        const file = e.target.files[0];
+        if(file){
+          if(file.size > 2*1024*1024){
+            alert("File exceeds 2MB. Choose a smaller image.");
+            e.target.value = "";
             return;
           }
+          const storageRef = storage.ref("profile_pics/" + user.uid + ".jpg");
+          storageRef.put(file).then(snapshot=>{
+            snapshot.ref.getDownloadURL().then(url=>{
+              // Save URL to DB
+              userRef.update({ pic: url }).then(()=>{
+                profileImg.src = url; // immediate update
+              });
+            });
+          }).catch(err=>{
+            alert("Upload failed: " + err.message);
+          });
+        }
+      });
 
-          userRef.update({
-            name: updatedName,
-            gender: updatedGender,
-            location: updatedLocation,
-            age: updatedAge
-          }).then(()=> alert("✅ Profile updated successfully!"))
-            .catch(err=> alert("❌ Error updating profile: "+err.message));
-        });
+      // Save profile updates
+      document.getElementById("saveBtn").addEventListener("click", ()=>{
+        const updatedName = document.getElementById("name").value.trim();
+        const updatedGender = document.getElementById("gender").value;
+        const updatedLocation = document.getElementById("location").value.trim();
+        const updatedAge = parseInt(document.getElementById("age").value);
 
+        if(!updatedName || !updatedGender || !updatedLocation || !updatedAge){
+          alert("⚠️ Please fill all fields");
+          return;
+        }
+
+        userRef.update({
+          name: updatedName,
+          gender: updatedGender,
+          location: updatedLocation,
+          age: updatedAge
+        }).then(()=> alert("✅ Profile updated successfully!"))
+          .catch(err=> alert("❌ Error updating profile: "+err.message));
+      });
+    }
+
+    // Listen for profile changes in real-time
+    userRef.on("value", snapshot=>{
+      const u = snapshot.val();
+      if(u){
+        renderProfile(u);
       } else {
         profileContainer.innerHTML = "<p>Profile not found.</p>";
       }
@@ -184,7 +180,7 @@ auth.onAuthStateChanged(user => {
       <a href="login.html">Login</a>
       <a href="signup.html">Sign Up</a>
     `;
-    profileContainer.innerHTML = "<p>Please login to view profile.</p>";
+    document.getElementById("profileContainer").innerHTML = "<p>Please login to view profile.</p>";
   }
 });
 </script>
