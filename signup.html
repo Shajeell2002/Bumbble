@@ -3,77 +3,91 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bumbble - Sign Up</title>
+  <title>Signup - Bumbble</title>
   <style>
-    body { font-family: Arial, sans-serif; background:#fff8e1; margin:0; display:flex; justify-content:center; align-items:center; height:100vh; }
-    .container { background:#fff; padding:30px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1); width:100%; max-width:400px; }
-    h2 { text-align:center; margin-bottom:20px; }
-    input, button { width:100%; padding:12px; margin:10px 0; border:1px solid #ccc; border-radius:5px; }
-    button { background:#ffcb2b; border:none; font-weight:bold; cursor:pointer; }
-    button:hover { background:#f1b500; }
-    .link { text-align:center; margin-top:15px; }
-    .link a { color:#ff9800; text-decoration:none; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    header { background: #ffcc00; padding: 15px; text-align: center; }
+    header h1 { margin: 0; }
+    form { max-width: 400px; margin: 40px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+    label { display: block; margin: 10px 0 5px; }
+    input { width: 100%; padding: 10px; margin-bottom: 15px; }
+    button { background: #ffcc00; border: none; padding: 10px 15px; cursor: pointer; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Create Account</h2>
-    <input type="text" id="name" placeholder="Full Name" required>
-    <input type="email" id="email" placeholder="Email" required>
-    <input type="password" id="password" placeholder="Password" required>
-    <button id="signupBtn">Sign Up</button>
-    <div class="link">Already have an account? <a href="login.html">Login</a></div>
-  </div>
+  <header>
+    <h1>Bumbble - Signup</h1>
+  </header>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <form id="signupForm">
+    <label for="name">Name</label>
+    <input type="text" id="name" required>
+
+    <label for="email">Email</label>
+    <input type="email" id="email" required>
+
+    <label for="password">Password</label>
+    <input type="password" id="password" required>
+
+    <button type="submit">Signup</button>
+  </form>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <script>
+    // Your Firebase config
     const firebaseConfig = {
-      apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+      apiKey: "YOUR_API_KEY",
       authDomain: "bumbble-c061f.firebaseapp.com",
+      databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
       projectId: "bumbble-c061f",
-      storageBucket: "bumbble-c061f.firebasestorage.app",
-      messagingSenderId: "213165886981",
-      appId: "1:213165886981:web:c18652003444869b1bd66c",
+      storageBucket: "bumbble-c061f.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
     };
+
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
-    const db = firebase.firestore();
+    const db = firebase.database();
 
-    document.getElementById("signupBtn").addEventListener("click", () => {
+    const form = document.getElementById("signupForm");
+
+    form.addEventListener("submit", function(e){
+      e.preventDefault();
+
       const name = document.getElementById("name").value.trim();
       const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
+      const password = document.getElementById("password").value.trim();
 
       if(!name || !email || !password){
-        alert("⚠️ Please fill all fields");
+        alert("Please fill all fields.");
         return;
       }
 
+      // Create user
       auth.createUserWithEmailAndPassword(email, password)
         .then((userCredential) => {
           const user = userCredential.user;
 
-          // save in Firestore
-          db.collection("users").doc(user.uid).set({
-            name: name,
-            email: email,
-            emailVerified: user.emailVerified,
-            gender: "Not set",
-            location: "Not set",
-            lastLogin: new Date().getTime()
-          }).then(() => {
-            console.log("User saved to Firestore");
-          }).catch(err => console.error("Firestore save error:", err));
-
-          // send email verification
-          user.sendEmailVerification();
-
-          alert("✅ Account created! Please verify your email before login.");
-          window.location.href = "login.html";
+          // Update display name
+          return user.updateProfile({ displayName: name })
+            .then(() => {
+              // Save user in Realtime Database
+              return db.ref("users/" + user.uid).set({
+                uid: user.uid,
+                name: name,
+                email: email
+              });
+            })
+            .then(() => {
+              // Send verification email
+              user.sendEmailVerification();
+              alert("✅ Signup successful! A verification email has been sent.");
+              form.reset();
+            });
         })
         .catch((error) => {
           alert("❌ " + error.message);
