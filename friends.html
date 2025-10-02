@@ -1,56 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Friends - Bumbble</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-    header { background: #ffcc00; padding: 15px; text-align: center; }
-    header h1 { margin: 0; }
-    ul { list-style: none; padding: 0; max-width: 400px; margin: 20px auto; }
-    li { padding: 10px; border-bottom: 1px solid #ccc; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bumbble - Friends</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Arial,sans-serif;background:#fff;color:#333;display:flex;flex-direction:column;min-height:100vh;}
+header{display:flex;justify-content:space-between;align-items:center;padding:20px;background:#ffcb2b;}
+header h1{font-size:24px;}
+nav a{margin:0 10px;text-decoration:none;color:#333;font-weight:bold;}
+nav a:hover{text-decoration:underline;}
+.section{flex:1;padding:40px 20px;}
+.section h2{text-align:center;margin-bottom:20px;font-size:28px;}
+.friend-container{display:flex;flex-wrap:wrap;justify-content:center;gap:20px;}
+.friend-card{background:#f9f9f9;border-radius:15px;padding:20px;width:200px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,0.1);position:relative;}
+.friend-card img{width:100px;height:100px;border-radius:50%;margin-bottom:10px;object-fit:cover;}
+.friend-card h3{margin-bottom:5px;}
+.friend-card p{color:#555;margin:2px 0;font-size:14px;}
+.status-dot{width:15px;height:15px;border-radius:50%;position:absolute;top:10px;right:10px;border:2px solid #fff;}
+footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:40px;}
+@media(max-width:768px){.friend-card{width:90%;}}
+</style>
 </head>
 <body>
-  <header>
-    <h1>Bumbble - Friends</h1>
-  </header>
 
-  <ul id="friendsList">
-    <li>Loading friends...</li>
-  </ul>
+<header>
+<h1>Bumbble</h1>
+<nav id="navLinks"></nav>
+</header>
 
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<section class="section">
+<h2>All Members</h2>
+<div class="friend-container" id="friendContainer"></div>
+<div id="noFriendsMsg" style="text-align:center;margin-top:30px;font-size:18px;color:#777;display:none;">No members found.</div>
+</section>
 
-  <script>
-    const firebaseConfig = {
-apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+<footer>
+<p>&copy; 2025 Bumbble. All rights reserved.</p>
+</footer>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
   authDomain: "bumbble-c061f.firebaseapp.com",
-      databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
-projectId: "bumbble-c061f",
-  storageBucket: "bumbble-c061f.firebasestorage.app",
+  databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
+  projectId: "bumbble-c061f",
+  storageBucket: "bumbble-c061f.appspot.com",
   messagingSenderId: "213165886981",
-  appId: "1:213165886981:web:c18652003444869b1bd66c"    };
+  appId: "1:213165886981:web:c18652003444869b1bd66c"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+// Navigation
+const nav = document.getElementById("navLinks");
+const currentUser = localStorage.getItem("current_user");
 
-    const friendsList = document.getElementById("friendsList");
-
-    // Fetch all users from Realtime Database
-    db.ref("users").on("value", (snapshot) => {
-      let html = "";
-      snapshot.forEach((child) => {
-        const user = child.val();
-        html += `<li>${user.name} (${user.email})</li>`;
-      });
-
-      friendsList.innerHTML = html || "<li>No friends yet.</li>";
-    });
-  </script>
-</body>
-</html>
+if(currentUser){
+    nav.innerHTML = `
+        <a href="index.html">Home</a>
+        <a href="friends.html">Friends</a>
+        <a href="stories.html">Stories</a>
+        <a href="events.html">Events</a>
+        <a href="safety.html">Safety</a>
+        <
