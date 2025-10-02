@@ -3,34 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bumbble - Friends</title>
+<title>Bumbble - Sign Up</title>
 <style>
-body{font-family:Arial,sans-serif;background:#fff;color:#333;display:flex;flex-direction:column;min-height:100vh;margin:0;}
-header{display:flex;justify-content:space-between;align-items:center;padding:20px;background:#ffcb2b;}
-header h1{font-size:24px;}
-nav a{margin:0 10px;text-decoration:none;color:#333;font-weight:bold;}
-.friends-container{flex:1;padding:20px;max-width:600px;margin:auto;background:#f9f9f9;border-radius:15px;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
-.friend-card{display:flex;align-items:center;justify-content:space-between;padding:10px;margin-bottom:10px;border:1px solid #ddd;border-radius:8px;background:#fff;}
-.friend-info{display:flex;align-items:center;gap:10px;}
-.friend-info img{width:50px;height:50px;border-radius:50%;object-fit:cover;}
-.status-dot{width:15px;height:15px;border-radius:50%;display:inline-block;border:2px solid #fff;}
-.addBtn,.removeBtn,.chatBtn{padding:6px 12px;border:none;border-radius:6px;font-weight:bold;cursor:pointer;margin-left:5px;}
-.addBtn{background:#4caf50;color:#fff;}
-.removeBtn{background:#f44336;color:#fff;}
-.chatBtn{background:#2196f3;color:#fff;position:relative;}
-footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:auto;}
-#chatModal{display:none;position:fixed;bottom:0;right:20px;width:320px;height:400px;background:#fff;border:1px solid #ddd;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.2);flex-direction:column;overflow:hidden;display:flex;}
-#chatHeader{padding:10px;background:#ffcb2b;border-top-left-radius:10px;border-top-right-radius:10px;position:relative;}
-#chatHeader button{position:absolute;right:10px;top:5px;background:#f44336;color:#fff;border:none;border-radius:5px;cursor:pointer;}
-#chatMessages{flex:1;padding:10px;overflow-y:auto;background:#f5f5f5;}
-#chatMessages div{margin-bottom:8px;padding:6px 10px;border-radius:10px;max-width:80%;}
-#chatMessages .sent{background:#4caf50;color:#fff;margin-left:auto;text-align:right;}
-#chatMessages .received{background:#e0e0e0;color:#333;text-align:left;}
-#typingIndicator{font-size:12px;color:#666;margin-bottom:5px;}
-#chatInputContainer{display:flex;padding:10px;border-top:1px solid #ddd;}
-#chatInput{flex:1;padding:6px;border-radius:5px;border:1px solid #ccc;resize:none;}
-#chatSendBtn{margin-left:5px;padding:6px 10px;background:#2196f3;color:#fff;border:none;border-radius:5px;cursor:pointer;}
-.badge{background:red;color:white;border-radius:50%;padding:2px 6px;font-size:12px;margin-left:5px;display:none;position:absolute;top:-5px;right:-10px;}
+body{font-family:Arial,sans-serif;background:#fff;color:#333;display:flex;flex-direction:column;align-items:center;min-height:100vh;margin:0;padding:0;}
+h1{margin-top:40px;color:#ffcb2b;}
+form{display:flex;flex-direction:column;width:300px;margin-top:20px;}
+input,button{margin:8px 0;padding:10px;border-radius:6px;border:1px solid #ccc;font-size:14px;}
+button{background:#ffcb2b;color:#333;font-weight:bold;border:none;cursor:pointer;}
+#otpContainer{display:none;}
+#message{color:red;font-size:14px;margin-top:5px;}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -39,23 +20,26 @@ footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:auto;}
 </head>
 <body>
 
-<header>
-<h1>Bumbble</h1>
-<nav id="navLinks"></nav>
-</header>
+<h1>Bumbble - Sign Up</h1>
 
-<div class="friends-container" id="friendsContainer"><p>Loading users...</p></div>
+<form id="signupForm">
+  <input type="text" id="name" placeholder="Full Name" required>
+  <input type="number" id="age" placeholder="Age" required>
+  <input type="email" id="email" placeholder="Email" required>
+  <input type="password" id="password" placeholder="Password" required>
+  <input type="text" id="phone" placeholder="Mobile Number (+CountryCode)" required>
+  <button type="submit">Sign Up</button>
+</form>
 
-<div id="chatModal">
-  <div id="chatHeader"><span id="chatWith"></span><button onclick="closeChat()">X</button></div>
-  <div id="chatMessages"><div id="typingIndicator"></div></div>
-  <div id="chatInputContainer">
-    <textarea id="chatInput" placeholder="Type a message..."></textarea>
-    <button id="chatSendBtn" onclick="sendMessage()">Send</button>
-  </div>
+<div id="otpContainer">
+  <h3>Enter OTP sent to your mobile</h3>
+  <input type="text" id="otpInput" placeholder="OTP">
+  <button id="verifyOtpBtn">Verify OTP</button>
 </div>
 
-<footer><p>&copy; 2025 Bumbble. All rights reserved.</p></footer>
+<div id="message"></div>
+
+<div id="recaptcha-container"></div>
 
 <script>
 const firebaseConfig = {
@@ -71,172 +55,73 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-const nav = document.getElementById("navLinks");
-const friendsContainer = document.getElementById("friendsContainer");
+// Setup reCAPTCHA
+const recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+  'size': 'invisible'
+});
 
-let currentChatId="", chatFriendUid="", chatFriendName="";
+document.getElementById("signupForm").addEventListener("submit", e=>{
+  e.preventDefault();
+  const name=document.getElementById("name").value.trim();
+  const age=document.getElementById("age").value.trim();
+  const email=document.getElementById("email").value.trim();
+  const password=document.getElementById("password").value.trim();
+  const phone=document.getElementById("phone").value.trim();
+  const messageDiv=document.getElementById("message");
 
-auth.onAuthStateChanged(user=>{
-  if(user && user.emailVerified){
-    const uid = user.uid;
-    nav.innerHTML=`
-      <a href="index.html">Home</a>
-      <a href="friends.html">Friends</a>
-      <a href="stories.html">Stories</a>
-      <a href="events.html">Events</a>
-      <a href="safety.html">Safety</a>
-      <a href="profile.html">Profile</a>
-      <a href="#" id="logoutBtn">Logout</a>
-    `;
-    document.getElementById("logoutBtn").addEventListener("click", ()=>{ auth.signOut().then(()=>window.location.href="login.html"); });
+  messageDiv.textContent="";
 
-    const usersRef = db.ref("users").child("userPublic"); // <-- read only public info
-    const friendsRef = db.ref("friends/"+uid);
-    const onlineRef = db.ref("users/"+uid+"/userPublic/online"); 
-    onlineRef.set(true); onlineRef.onDisconnect().set(false);
+  // Create user with email/password
+  auth.createUserWithEmailAndPassword(email,password).then(userCredential=>{
+    const user=userCredential.user;
 
-    function loadFriends(){
-      usersRef.on("value", snapshot=>{
-        const users = snapshot.val()||{};
-        friendsRef.once("value").then(fSnap=>{
-          const friends = fSnap.val()||{};
-          friendsContainer.innerHTML="";
-          for(let key in users){
-            const u=users[key];
-            const isFriend=(friends[key]||false)||(key===uid);
-            const friendCard=document.createElement("div"); friendCard.className="friend-card";
-            const info=document.createElement("div"); info.className="friend-info";
-            const img=document.createElement("img"); img.src=u.pic||"images/profile1.png";
-            const name=document.createElement("span"); name.textContent=`${u.name||"Unknown"}, ${u.age||"N/A"}`;
-            const status=document.createElement("span"); status.className="status-dot";
-            status.style.backgroundColor=u.online?"green":"red";
-            info.appendChild(img); info.appendChild(name); info.appendChild(status);
+    // Send email verification
+    user.sendEmailVerification().then(()=>{
+      alert("Email verification sent. Please check your inbox.");
 
-            const btnContainer=document.createElement("div");
-            if(key!==uid){
-              const friendBtn=document.createElement("button");
-              friendBtn.textContent=isFriend?"Remove":"Add";
-              friendBtn.className=isFriend?"removeBtn":"addBtn";
-              friendBtn.addEventListener("click",()=>{ isFriend?friendsRef.child(key).remove():friendsRef.update({[key]:true}); });
-              btnContainer.appendChild(friendBtn);
-
-              // Chat button
-              const chatBtn=document.createElement("button");
-              chatBtn.textContent="Chat"; chatBtn.className="chatBtn";
-              const badge=document.createElement("span"); badge.className="badge"; chatBtn.appendChild(badge);
-
-              const chatId=[uid,key].sort().join("_");
-              const chatRef=db.ref("chats/"+chatId+"/messages");
-              const lastReadRef=db.ref("chats/"+chatId+"/lastRead/"+uid);
-
-              chatRef.on("child_added", snap=>{
-                const msg=snap.val();
-                lastReadRef.once("value").then(lSnap=>{
-                  const lastRead=lSnap.val()||0;
-                  if(msg.timestamp>lastRead && msg.sender!==uid){ 
-                    badge.style.display="inline-block"; 
-                    badge.textContent=parseInt(badge.textContent||"0")+1;
-                  }
-                });
-              });
-
-              chatBtn.addEventListener("click", ()=>{
-                badge.style.display="none"; lastReadRef.set(Date.now());
-                openChat(uid,key,u.name||"Unknown");
-              });
-              btnContainer.appendChild(chatBtn);
-            } else {
-              const selfBtn=document.createElement("button"); selfBtn.textContent="You"; selfBtn.disabled=true; selfBtn.style.background="#ccc"; selfBtn.style.cursor="default";
-              btnContainer.appendChild(selfBtn);
-            }
-
-            friendCard.appendChild(info);
-            friendCard.appendChild(btnContainer);
-            friendsContainer.appendChild(friendCard);
-          }
-
-          if(Object.keys(users).length===0) friendsContainer.innerHTML="<p>No users found.</p>";
-        });
+      // Save minimal public info
+      db.ref("users/"+user.uid+"/userPublic").set({
+        name, age, pic:"default.png", online:false
       });
-    }
-    loadFriends();
 
-  } else {
-    nav.innerHTML=`<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
-    friendsContainer.innerHTML="<p>Please login to view users.</p>";
-  }
+      // Phone verification
+      const appVerifier = recaptchaVerifier;
+      auth.signInWithPhoneNumber(phone, appVerifier).then(confirmationResult=>{
+        window.confirmationResult = confirmationResult;
+        document.getElementById("otpContainer").style.display="block";
+      }).catch(err=>{
+        console.error(err);
+        messageDiv.textContent="Error sending OTP: "+err.message;
+      });
+    }).catch(err=>{
+      console.error(err);
+      messageDiv.textContent="Error sending email verification: "+err.message;
+    });
+
+  }).catch(err=>{
+    console.error(err);
+    messageDiv.textContent="Signup failed: "+err.message;
+  });
 });
 
-//////////////////// Chat logic ////////////////////
-const chatModal=document.getElementById("chatModal");
-const chatWithSpan=document.getElementById("chatWith");
-const chatMessages=document.getElementById("chatMessages");
-const chatInput=document.getElementById("chatInput");
-const chatSendBtn=document.getElementById("chatSendBtn");
-const typingIndicator=document.getElementById("typingIndicator");
+// OTP verification
+document.getElementById("verifyOtpBtn").addEventListener("click", ()=>{
+  const code=document.getElementById("otpInput").value.trim();
+  const messageDiv=document.getElementById("message");
+  messageDiv.textContent="";
 
-function openChat(myUid, friendUid, friendName){
-  chatModal.style.display="flex";
-  chatFriendUid=friendUid; chatFriendName=friendName;
-  chatWithSpan.textContent=friendName;
-  currentChatId=[myUid,friendUid].sort().join("_");
-  chatMessages.innerHTML='<div id="typingIndicator"></div>';
-
-  const chatRef=db.ref("chats/"+currentChatId+"/messages");
-  chatRef.off(); // remove old listeners
-
-  chatRef.on("child_added", snap=>{
-    const msg=snap.val();
-    displayMessage(msg);
-  });
-
-  const lastReadRef=db.ref("chats/"+currentChatId+"/lastRead/"+myUid);
-  lastReadRef.set(Date.now());
-
-  // Typing indicator
-  const typingRef=db.ref("chats/"+currentChatId+"/typing/"+friendUid);
-  typingRef.on("value", snap=>{
-    typingIndicator.textContent=snap.val()?"Typing...":"";
-  });
-}
-
-function closeChat(){ chatModal.style.display="none"; chatFriendUid=""; chatFriendName=""; currentChatId=""; }
-
-function displayMessage(msg){
-  const div=document.createElement("div");
-  div.className=msg.sender===auth.currentUser.uid?"sent":"received";
-  div.textContent=msg.text;
-  chatMessages.appendChild(div);
-  chatMessages.scrollTop=chatMessages.scrollHeight;
-}
-
-// Send message with Enter/Shift+Enter logic
-chatInput.addEventListener("keydown", e=>{
-  if(e.key==="Enter" && !e.shiftKey){
-    e.preventDefault(); sendMessage();
+  if(!code){
+    messageDiv.textContent="Please enter OTP.";
+    return;
   }
-});
 
-function sendMessage(){
-  const text=chatInput.value.trim();
-  if(!text) return;
-  const chatRef=db.ref("chats/"+currentChatId+"/messages");
-  const msg={sender:auth.currentUser.uid,text,timestamp:Date.now()};
-  chatRef.push(msg);
-  chatInput.value="";
-  chatInput.focus();
-
-  // Update lastRead for sender
-  db.ref("chats/"+currentChatId+"/lastRead/"+auth.currentUser.uid).set(Date.now());
-
-  // Typing indicator
-  db.ref("chats/"+currentChatId+"/typing/"+auth.currentUser.uid).set(false);
-}
-
-// Typing indicator
-chatInput.addEventListener("input",()=>{
-  if(!currentChatId) return;
-  db.ref("chats/"+currentChatId+"/typing/"+auth.currentUser.uid).set(chatInput.value.length>0);
+  window.confirmationResult.confirm(code).then(result=>{
+    alert("Mobile verified successfully! You can now login.");
+    window.location.href="login.html";
+  }).catch(err=>{
+    console.error(err);
+    messageDiv.textContent="Invalid OTP: "+err.message;
+  });
 });
 </script>
 </body>
