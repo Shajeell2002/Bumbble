@@ -5,15 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Friends</title>
 <style>
-body{font-family:Arial,sans-serif;background:#fff;color:#333;display:flex;flex-direction:column;min-height:100vh;}
-header{display:flex;justify-content:space-between;align-items:center;padding:20px;background:#ffcb2b;}
-header h1{font-size:24px;}
-nav a{margin:0 10px;text-decoration:none;color:#333;font-weight:bold;}
-.friends-container{flex:1;padding:20px;max-width:600px;margin:auto;}
-.friend-card{display:flex;align-items:center;margin-bottom:15px;padding:10px;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.1);}
-.friend-card img{width:60px;height:60px;border-radius:50%;margin-right:15px;object-fit:cover;}
-.friend-card .info{flex:1;}
-.status-dot{width:12px;height:12px;border-radius:50%;display:inline-block;margin-left:5px;border:2px solid #fff;}
+body {font-family: Arial,sans-serif; background:#fff; color:#333; margin:0; padding:0;}
+header {display:flex; justify-content:space-between; align-items:center; padding:20px; background:#ffcb2b;}
+header h1 {font-size:24px;}
+nav a {margin:0 10px; text-decoration:none; color:#333; font-weight:bold;}
+.container {max-width:600px; margin:40px auto; padding:20px; background:#f9f9f9; border-radius:15px; box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+h2 {margin-top:30px;}
+.user, .friend {display:flex; align-items:center; justify-content:space-between; padding:10px; border-bottom:1px solid #ddd;}
+.user img, .friend img {width:50px; height:50px; border-radius:50%; object-fit:cover; margin-right:15px;}
+button {padding:6px 12px; border:none; border-radius:5px; cursor:pointer;}
+.add {background:#4CAF50; color:#fff;}
+.remove {background:#f44336; color:#fff;}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -27,11 +29,19 @@ nav a{margin:0 10px;text-decoration:none;color:#333;font-weight:bold;}
 <nav id="navLinks"></nav>
 </header>
 
-<div class="friends-container" id="friendsContainer">
-  <p>Loading friends...</p>
+<div class="container" id="friendsContainer">
+<h2>Your Friends</h2>
+<div id="friendList">Loading...</div>
+
+<h2>All Users</h2>
+<div id="allUsersList">Loading...</div>
 </div>
 
 <script>
+const nav = document.getElementById("navLinks");
+const friendListDiv = document.getElementById("friendList");
+const allUsersListDiv = document.getElementById("allUsersList");
+
 const firebaseConfig = {
   apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
   authDomain: "bumbble-c061f.firebaseapp.com",
@@ -45,69 +55,78 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-const nav = document.getElementById("navLinks");
-const friendsContainer = document.getElementById("friendsContainer");
-
 auth.onAuthStateChanged(user => {
-  if(user && user.emailVerified){
-    const uid = user.uid;
-    localStorage.setItem("current_user", uid);
+  if (!user || !user.emailVerified) {
+    nav.innerHTML = `<a href="index.html">Home</a>
+                     <a href="login.html">Login</a>
+                     <a href="signup.html">Sign Up</a>`;
+    friendListDiv.innerHTML = "<p>Please login to view friends.</p>";
+    allUsersListDiv.innerHTML = "";
+    return;
+  }
 
-    nav.innerHTML = `
-      <a href="index.html">Home</a>
-      <a href="friends.html">Friends</a>
-      <a href="stories.html">Stories</a>
-      <a href="events.html">Events</a>
-      <a href="safety.html">Safety</a>
-      <a href="profile.html">Profile</a>
-      <a href="#" id="logoutBtn">Logout</a>
-    `;
+  const uid = user.uid;
 
-    document.getElementById("logoutBtn").addEventListener("click", ()=>{
-      auth.signOut().then(()=>{
-        localStorage.removeItem("current_user");
-        window.location.href="login.html";
-      });
-    });
+  nav.innerHTML = `
+    <a href="index.html">Home</a>
+    <a href="friends.html">Friends</a>
+    <a href="stories.html">Stories</a>
+    <a href="events.html">Events</a>
+    <a href="safety.html">Safety</a>
+    <a href="profile.html">Profile</a>
+    <a href="#" id="logoutBtn">Logout</a>
+  `;
+  document.getElementById("logoutBtn").addEventListener("click", ()=> auth.signOut().then(()=> window.location.href="login.html"));
 
-    // Listen to friends in real-time
-    const friendsRef = db.ref("friends/" + uid);
-    friendsRef.on("value", snapshot => {
-      const friendsData = snapshot.val();
-      friendsContainer.innerHTML = "";
+  const usersRef = db.ref("users");
+  const friendsRef = db.ref("friends/" + uid);
 
-      if(friendsData){
-        Object.keys(friendsData).forEach(friendUID => {
-          // Fetch friend details from users/<friendUID>
-          db.ref("users/" + friendUID).once("value").then(snap => {
-            const f = snap.val();
-            if(f){
-              const friendCard = document.createElement("div");
-              friendCard.className = "friend-card";
-              friendCard.innerHTML = `
-                <img src="${f.pic || 'images/profile1.png'}" alt="Profile">
-                <div class="info">
-                  <strong>${f.name || "Unknown"}</strong> 
-                  <span class="status-dot" style="background-color:${f.online?'green':'red'}"></span><br>
-                  <small>${f.email || ""}</small>
-                </div>
-              `;
-              friendsContainer.appendChild(friendCard);
-            }
-          });
+  let currentFriends = {};
+
+  friendsRef.on("value", snapshot => {
+    currentFriends = snapshot.val() || {};
+    renderLists();
+  });
+
+  function renderLists() {
+    usersRef.once("value").then(snapshot => {
+      const users = snapshot.val() || {};
+      friendListDiv.innerHTML = "";
+      allUsersListDiv.innerHTML = "";
+
+      for (let otherUid in users) {
+        if (otherUid === uid) continue;
+
+        const u = users[otherUid];
+        const isFriend = !!currentFriends[otherUid];
+
+        const div = document.createElement("div");
+        div.classList.add(isFriend ? "friend" : "user");
+        div.innerHTML = `
+          <div style="display:flex; align-items:center;">
+            <img src="${u.pic || 'images/profile1.png'}" alt="Profile">
+            <span>${u.name || 'Unnamed'}</span>
+          </div>
+          <button class="${isFriend?'remove':'add'}">${isFriend?'Remove':'Add'}</button>
+        `;
+
+        div.querySelector("button").addEventListener("click", () => {
+          if (isFriend) {
+            db.ref(`friends/${uid}/${otherUid}`).remove();
+            db.ref(`friends/${otherUid}/${uid}`).remove();
+          } else {
+            db.ref(`friends/${uid}/${otherUid}`).set(true);
+            db.ref(`friends/${otherUid}/${uid}`).set(true);
+          }
         });
-      } else {
-        friendsContainer.innerHTML = "<p>No friends found.</p>";
-      }
-    });
 
-  } else {
-    nav.innerHTML = `
-      <a href="index.html">Home</a>
-      <a href="login.html">Login</a>
-      <a href="signup.html">Sign Up</a>
-    `;
-    friendsContainer.innerHTML = "<p>Please login to view friends.</p>";
+        if (isFriend) friendListDiv.appendChild(div);
+        else allUsersListDiv.appendChild(div);
+      }
+
+      if (!Object.keys(currentFriends).length) friendListDiv.innerHTML = "<p>No friends yet.</p>";
+      if (!Object.keys(users).filter(u => u !== uid && !currentFriends[u]).length) allUsersListDiv.innerHTML = "<p>All users are already your friends.</p>";
+    });
   }
 });
 </script>
