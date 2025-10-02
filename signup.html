@@ -1,27 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bumbble - Sign Up</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:Arial,sans-serif;background:#fff;color:#333;display:flex;flex-direction:column;min-height:100vh;}
-header{display:flex;justify-content:space-between;align-items:center;padding:20px;background:#ffcb2b;}
-header h1{font-size:24px;}
-nav a{margin:0 10px;text-decoration:none;color:#333;font-weight:bold;}
-.section{flex:1;display:flex;justify-content:center;align-items:center;padding:40px 20px;}
-.signup-form{background:#f9f9f9;padding:30px;border-radius:15px;box-shadow:0 2px 6px rgba(0,0,0,0.1);width:100%;max-width:400px;display:flex;flex-direction:column;gap:15px;}
-.signup-form h2{text-align:center;margin-bottom:20px;font-size:28px;}
-.signup-form input{width:100%;padding:12px;border-radius:8px;border:1px solid #ccc;font-size:16px;}
-.signup-form button{width:100%;padding:12px;border:none;border-radius:8px;background:#ffcb2b;font-size:18px;font-weight:bold;cursor:pointer;}
-footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:auto;}
-.logo{width:150px;height:auto;margin-bottom:20px;display:block;margin-left:auto;margin-right:auto;}
-@media(max-width:768px){.signup-form{width:90%;}}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bumbble - Sign Up</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: Arial, sans-serif; background:#fff; color:#333; min-height:100vh; display:flex; flex-direction:column; }
+    header { display:flex; justify-content:space-between; align-items:center; padding:20px; background:#ffcb2b; }
+    header h1 { font-size:24px; }
+    nav a { margin:0 10px; text-decoration:none; color:#333; font-weight:bold; }
+    nav a:hover { text-decoration: underline; }
+    .container { flex:1; display:flex; justify-content:center; align-items:center; padding:40px; }
+    form { background:#f9f9f9; padding:30px; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.1); width:100%; max-width:400px; }
+    form h2 { text-align:center; margin-bottom:20px; }
+    form input, form select { width:100%; padding:10px; margin:10px 0; border:1px solid #ccc; border-radius:5px; }
+    form button { width:100%; padding:12px; background:#ffcb2b; border:none; border-radius:5px; font-weight:bold; cursor:pointer; }
+    form button:hover { background:#f0b800; }
+    footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:40px; }
+  </style>
+</head>
+<body>
 
-<!-- EmailJS -->
-<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+<header>
+  <h1>Bumbble</h1>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="login.html">Login</a>
+    <a href="signup.html">Sign Up</a>
+  </nav>
+</header>
+
+<div class="container">
+  <form id="signupForm">
+    <h2>Create Account</h2>
+    <input type="text" id="name" placeholder="Full Name" required>
+    <input type="email" id="email" placeholder="Email" required>
+    <input type="password" id="password" placeholder="Password" required>
+    <select id="gender">
+      <option value="">Select Gender</option>
+      <option value="Male">Male</option>
+      <option value="Female">Female</option>
+      <option value="Other">Other</option>
+    </select>
+    <input type="text" id="location" placeholder="Location">
+    <button type="submit">Sign Up</button>
+  </form>
+</div>
+
+<footer>
+  <p>&copy; 2025 Bumbble. All rights reserved.</p>
+</footer>
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -29,122 +58,75 @@ footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:auto;}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
-  // Firebase config
+  // Firebase Config (replace with your values)
   const firebaseConfig = {
     apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
-  authDomain: "bumbble-c061f.firebaseapp.com",
-  projectId: "bumbble-c061f",
-  storageBucket: "bumbble-c061f.firebasestorage.app",
-  messagingSenderId: "213165886981",
-  appId: "1:213165886981:web:c18652003444869b1bd66c"
+    authDomain: "bumbble-c061f.firebaseapp.com",
+    projectId: "bumbble-c061f",
+    storageBucket: "bumbble-c061f.firebasestorage.app",
+    messagingSenderId: "213165886981",
+    appId: "1:213165886981:web:c18652003444869b1bd66c"
   };
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
 </script>
-</head>
-<body>
-
-<header>
-<h1>Bumbble</h1>
-<nav>
-<a href="index.html">Home</a>
-<a href="friends.html">Friends</a>
-<a href="stories.html">Stories</a>
-<a href="events.html">Events</a>
-<a href="safety.html">Safety</a>
-<a href="login.html">Login</a>
-<a href="signup.html">Sign Up</a>
-</nav>
-</header>
-
-<section class="section">
-<form class="signup-form" id="signupForm">
-<img src="images/logo.png" alt="Bumbble Logo" class="logo">
-<h2>Sign Up</h2>
-<input type="text" id="name" placeholder="Full Name" required>
-<input type="email" id="email" placeholder="Email" required>
-<input type="password" id="password" placeholder="Password" required>
-<button type="submit">Sign Up</button>
-</form>
-</section>
-
-<footer>
-<p>&copy; 2025 Bumbble. All rights reserved.</p>
-</footer>
 
 <script>
-const PUBLIC_KEY = "U-X66-kC_8WKaopWx";
-const SERVICE_ID = "service_q5dp62l";
-const TEMPLATE_ID = "template_2hkocdj";
-emailjs.init(PUBLIC_KEY);
+const form = document.getElementById("signupForm");
 
-document.addEventListener("DOMContentLoaded", function(){
-    const form = document.getElementById("signupForm");
+form.addEventListener("submit", function(e){
+    e.preventDefault();
 
-    form.addEventListener("submit", function(e){
-        e.preventDefault();
+    const name = document.getElementById("name").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const gender = document.getElementById("gender").value;
+    const location = document.getElementById("location").value.trim();
 
-        const name = document.getElementById("name").value.trim();
-        const email = document.getElementById("email").value.trim();
-        const password = document.getElementById("password").value.trim();
+    if(!name || !email || !password){
+        alert("⚠️ Please fill all required fields.");
+        return;
+    }
 
-        if(!name || !email || !password){
-            alert("Please fill all fields.");
-            return;
-        }
-
-        const btn = form.querySelector("button");
-        btn.disabled = true;
-        btn.innerText = "Signing up...";
-
-        // Create Firebase user
-        auth.createUserWithEmailAndPassword(email, password)
+    // Create Firebase user
+    auth.createUserWithEmailAndPassword(email, password)
         .then((userCredential) => {
             const user = userCredential.user;
 
-            // Set display name
-            user.updateProfile({ displayName: name }).then(() => {
-                // Send Firebase email verification
-                user.sendEmailVerification().then(() => {
-                    alert("✅ Signup successful! Check your email to verify your account.");
+            // Update profile
+            user.updateProfile({ displayName: name });
 
-                    // Save user info to Firestore
-                    db.collection("users").doc(user.uid).set({
-                        name: name,
-                        email: email,
-                        pic: "images/profile1.png",
-                        emailVerified: false,
-                        lastLogin: 0,
-                        gender: "",
-                        location: ""
-                    }).then(() => {
-                        console.log("User saved in Firestore.");
-                    });
-
-                    // Send EmailJS OTP (optional)
-                    const passcode = Math.floor(100000 + Math.random() * 900000);
-                    emailjs.send(SERVICE_ID, TEMPLATE_ID, {
-                        user_email: email,
-                        to_name: name,
-                        passcode: passcode
-                    });
-
-                    form.reset();
-                    btn.disabled = false;
-                    btn.innerText = "Sign Up";
+            // Send verification email
+            user.sendEmailVerification()
+                .then(() => {
+                    alert("✅ Signup successful! Verification email sent. Please check Inbox/Spam folder.");
                 });
+
+            // Save user to Firestore
+            db.collection("users").doc(user.uid).set({
+                name: name,
+                email: email,
+                gender: gender,
+                location: location,
+                pic: "",
+                emailVerified: false,
+                lastLogin: Date.now()
+            })
+            .then(() => {
+                console.log("✅ User added to Firestore");
+            })
+            .catch((error) => {
+                console.error("❌ Firestore Error:", error);
             });
+
+            form.reset();
         })
         .catch((error) => {
             alert("❌ Signup error: " + error.message);
-            btn.disabled = false;
-            btn.innerText = "Sign Up";
         });
-    });
 });
 </script>
 
 </body>
 </html>
-
