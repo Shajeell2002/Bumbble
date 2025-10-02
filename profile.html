@@ -1,59 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bumbble - Profile</title>
-<style>
-body{font-family:Arial,sans-serif;background:#fff;color:#333;display:flex;flex-direction:column;min-height:100vh;}
-header{display:flex;justify-content:space-between;align-items:center;padding:20px;background:#ffcb2b;}
-header h1{font-size:24px;}
-nav a{margin:0 10px;text-decoration:none;color:#333;font-weight:bold;}
-.profile-container{flex:1;padding:40px;max-width:400px;margin:auto;background:#f9f9f9;border-radius:15px;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
-.profile-container img{width:120px;height:120px;border-radius:50%;margin-bottom:15px;object-fit:cover;}
-.profile-container label{display:block;margin-top:10px;font-weight:bold;}
-.profile-container input, .profile-container select{width:100%;padding:10px;margin-top:5px;border-radius:5px;border:1px solid #ccc;}
-.profile-container button{margin-top:20px;width:100%;padding:12px;background:#ffcb2b;border:none;border-radius:8px;font-weight:bold;cursor:pointer;}
-.status-dot{width:15px;height:15px;border-radius:50%;display:inline-block;margin-left:10px;border:2px solid #fff;}
-footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:auto;}
-</style>
-
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
-
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
-  authDomain: "bumbble-c061f.firebaseapp.com",
-  databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
-  projectId: "bumbble-c061f",
-  storageBucket: "bumbble-c061f.appspot.com",
-  messagingSenderId: "213165886981",
-  appId: "1:213165886981:web:c18652003444869b1bd66c"
-};
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.database();
-const storage = firebase.storage();
-</script>
-</head>
-<body>
-
-<header>
-<h1>Bumbble</h1>
-<nav id="navLinks"></nav>
-</header>
-
-<div class="profile-container" id="profileContainer">
-<p>Loading profile...</p>
-</div>
-
-<footer>
-<p>&copy; 2025 Bumbble. All rights reserved.</p>
-</footer>
-
 <script>
 const nav = document.getElementById("navLinks");
 
@@ -70,8 +14,8 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
-    document.getElementById("logoutBtn").addEventListener("click", ()=>{
-      auth.signOut().then(()=>{
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      auth.signOut().then(() => {
         localStorage.removeItem("current_user");
         window.location.href="login.html";
       });
@@ -87,97 +31,104 @@ auth.onAuthStateChanged(user => {
 
     // Load profile
     userRef.on("value", snapshot => {
-      const u = snapshot.val();
-      if(u){
-        const online = u.online ? true : false;
-        profileContainer.innerHTML = `
-          <img id="profilePic" src="${u.pic || 'images/profile1.png'}" alt="Profile">
-          <input type="file" id="picUpload" accept="image/*">
+      const u = snapshot.val() || {};
+      const online = u.online ? true : false;
 
-          <label>Name</label>
-          <input type="text" id="name" value="${u.name || ''}">
+      profileContainer.innerHTML = `
+        <img id="profilePic" src="${u.pic || 'images/profile1.png'}" alt="Profile">
+        <input type="file" id="picUpload" accept="image/*">
 
-          <label>Email (readonly)</label>
-          <input type="email" id="email" value="${u.email || ''}" readonly>
+        <label>Name</label>
+        <input type="text" id="name" value="${u.name || ''}">
 
-          <label>Gender</label>
-          <select id="gender">
-            <option value="">Select Gender</option>
-            <option value="Male" ${u.gender==='Male'?'selected':''}>Male</option>
-            <option value="Female" ${u.gender==='Female'?'selected':''}>Female</option>
-            <option value="Other" ${u.gender==='Other'?'selected':''}>Other</option>
-          </select>
+        <label>Email (readonly)</label>
+        <input type="email" id="email" value="${u.email || user.email}" readonly>
 
-          <label>Location</label>
-          <input type="text" id="location" value="${u.location || ''}">
+        <label>Gender</label>
+        <select id="gender">
+          <option value="">Select Gender</option>
+          <option value="Male" ${u.gender==='Male'?'selected':''}>Male</option>
+          <option value="Female" ${u.gender==='Female'?'selected':''}>Female</option>
+          <option value="Other" ${u.gender==='Other'?'selected':''}>Other</option>
+        </select>
 
-          <label>Age</label>
-          <input type="number" id="age" value="${u.age || ''}">
+        <label>Location</label>
+        <input type="text" id="location" value="${u.location || ''}">
 
-          <p>Status: <span class="status-dot" style="background-color:${online?'green':'red'}"></span></p>
+        <label>Age</label>
+        <input type="number" id="age" value="${u.age || ''}">
 
-          <button id="saveBtn">Save Profile</button>
-        `;
+        <p>Status: <span class="status-dot" style="background-color:${online?'green':'red'}"></span></p>
 
-        const profileImg = document.getElementById("profilePic");
-        const picInput = document.getElementById("picUpload");
+        <button id="saveBtn">Save Profile</button>
+      `;
 
-        // Show preview immediately
-        picInput.addEventListener("change", e => {
-          const file = e.target.files[0];
-          if(file){
-            // Preview
-            const reader = new FileReader();
-            reader.onload = function(event){
-              profileImg.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
+      const profileImg = document.getElementById("profilePic");
+      const picInput = document.getElementById("picUpload");
 
-            // Check size
-            const MAX_SIZE = 2*1024*1024; // 2 MB
-            if(file.size > MAX_SIZE){
-              alert("⚠️ File exceeds 2MB.");
-              e.target.value = "";
-              profileImg.src = u.pic || 'images/profile1.png';
-              return;
-            }
+      let selectedFile = null; // Store selected file before saving
 
-            // Upload to Firebase Storage
-            const storageRef = storage.ref("profile_pics/" + user.uid + ".jpg");
-            storageRef.put(file).then(snapshot=>{
-              snapshot.ref.getDownloadURL().then(url=>{
-                userRef.update({ pic: url });
-              });
-            }).catch(err=>{
-              alert("Upload failed: " + err.message);
-            });
-          }
-        });
+      // Show preview immediately
+      picInput.addEventListener("change", e => {
+        const file = e.target.files[0];
+        if(file){
+          selectedFile = file;
 
-        // Save profile updates
-        document.getElementById("saveBtn").addEventListener("click", ()=>{
-          const updatedName = document.getElementById("name").value.trim();
-          const updatedGender = document.getElementById("gender").value;
-          const updatedLocation = document.getElementById("location").value.trim();
-          const updatedAge = parseInt(document.getElementById("age").value);
+          const reader = new FileReader();
+          reader.onload = function(event){
+            profileImg.src = event.target.result;
+          };
+          reader.readAsDataURL(file);
 
-          if(!updatedName || !updatedGender || !updatedLocation || !updatedAge){
-            alert("⚠️ Please fill all fields");
+          const MAX_SIZE = 2*1024*1024; // 2 MB
+          if(file.size > MAX_SIZE){
+            alert("⚠️ File exceeds 2MB.");
+            selectedFile = null;
+            e.target.value = "";
+            profileImg.src = u.pic || 'images/profile1.png';
             return;
           }
+        }
+      });
 
-          userRef.update({
+      // Save profile updates
+      document.getElementById("saveBtn").addEventListener("click", async () => {
+        const updatedName = document.getElementById("name").value.trim();
+        const updatedGender = document.getElementById("gender").value;
+        const updatedLocation = document.getElementById("location").value.trim();
+        const updatedAge = parseInt(document.getElementById("age").value);
+
+        if(!updatedName || !updatedGender || !updatedLocation || !updatedAge){
+          alert("⚠️ Please fill all fields");
+          return;
+        }
+
+        try {
+          // Upload profile pic first if selected
+          let picURL = u.pic || null;
+          if(selectedFile){
+            const storageRef = storage.ref("profile_pics/" + user.uid + ".jpg");
+            const snapshot = await storageRef.put(selectedFile);
+            picURL = await snapshot.ref.getDownloadURL();
+          }
+
+          // Update profile data
+          await userRef.update({
             name: updatedName,
             gender: updatedGender,
             location: updatedLocation,
-            age: updatedAge
-          }).then(()=>alert("✅ Profile updated successfully!"))
-            .catch(err=>alert("❌ Error updating profile: " + err.message));
-        });
+            age: updatedAge,
+            pic: picURL
+          });
 
-      } else {
-        profileContainer.innerHTML = "<p>Profile not found.</p>";
-      }
+          alert("✅ Profile updated successfully!");
+          selectedFile = null; // reset selected file
+
+        } catch(err) {
+          alert("❌ Error updating profile: " + err.message);
+        }
+      });
+
     });
 
   } else {
@@ -186,9 +137,7 @@ auth.onAuthStateChanged(user => {
       <a href="login.html">Login</a>
       <a href="signup.html">Sign Up</a>
     `;
-    document.getElementById("profileContainer").innerHTML = "<p>Please login to view profile.</p>";
+    profileContainer.innerHTML = "<p>Please login to view profile.</p>";
   }
 });
 </script>
-</body>
-</html>
