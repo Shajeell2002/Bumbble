@@ -23,9 +23,11 @@ footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:40px;}
 @media(max-width:768px){.friend-card{width:90%;}}
 </style>
 
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
 <script>
 const firebaseConfig = {
@@ -40,6 +42,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
+const storage = firebase.storage();
 </script>
 </head>
 
@@ -78,20 +81,23 @@ auth.onAuthStateChanged(user => {
     `;
 
     document.getElementById("logoutBtn").addEventListener("click", ()=>{
+      db.ref("users/" + user.uid + "/online").set(false);
       auth.signOut().then(()=>{
         localStorage.removeItem("current_user");
         window.location.href="login.html";
       });
     });
 
+    // Set user online
+    const userOnlineRef = db.ref("users/" + user.uid + "/online");
+    userOnlineRef.set(true);
+    userOnlineRef.onDisconnect().set(false); // Auto set offline on disconnect
+
     const friendContainer = document.getElementById("friendContainer");
 
-    // Listen for realtime updates
+    // Listen for all users real-time
     db.ref("users").on("value", snapshot => {
-      const now = Date.now();
-      const ONLINE_THRESHOLD = 15*60*1000; // 15 min
       let html = "";
-
       snapshot.forEach(child => {
         const u = child.val();
         if(!u) return;
@@ -101,7 +107,7 @@ auth.onAuthStateChanged(user => {
         const location = u.location || "-";
         const age = u.age || "-";
         const pic = u.pic || ""; // blank if no profile pic
-        const online = u.online ? true : ((now - (u.lastLogin||0)) <= ONLINE_THRESHOLD);
+        const online = u.online ? true : false; // real-time
 
         html += `<div class="friend-card">
                   ${pic ? `<img src="${pic}" alt="Profile">` : `<div style="width:100px;height:100px;border-radius:50%;background:#ccc;margin:0 auto 10px;"></div>`}
