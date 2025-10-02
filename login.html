@@ -1,84 +1,97 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bumbble - Login</title>
-  <style>
-    body { font-family: Arial, sans-serif; background:#fff8e1; margin:0; display:flex; justify-content:center; align-items:center; height:100vh; }
-    .container { background:#fff; padding:30px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1); width:100%; max-width:400px; }
-    h2 { text-align:center; margin-bottom:20px; }
-    input, button { width:100%; padding:12px; margin:10px 0; border:1px solid #ccc; border-radius:5px; }
-    button { background:#ffcb2b; border:none; font-weight:bold; cursor:pointer; }
-    button:hover { background:#f1b500; }
-    .link { text-align:center; margin-top:15px; }
-    .link a { color:#ff9800; text-decoration:none; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bumbble - Login</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#fff;}
+header{background:#ffcb2b;padding:15px 30px;display:flex;justify-content:space-between;align-items:center;}
+header h1{margin:0;font-size:24px;font-weight:bold;}
+nav a{margin:0 10px;text-decoration:none;color:#000;font-weight:500;}
+nav a:hover{text-decoration:underline;}
+.container{display:flex;justify-content:center;align-items:center;height:calc(100vh - 70px);}
+.login-form{background:#f9f9f9;padding:30px;border-radius:15px;box-shadow:0 2px 6px rgba(0,0,0,0.1);width:100%;max-width:400px;display:flex;flex-direction:column;gap:15px;}
+.login-form h2{text-align:center;margin-bottom:10px;}
+.login-form input{padding:12px;border-radius:8px;border:1px solid #ccc;font-size:16px;}
+.login-form button{padding:12px;border:none;border-radius:8px;background:#ffcb2b;font-size:18px;font-weight:bold;cursor:pointer;}
+</style>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+  authDomain: "bumbble-c061f.firebaseapp.com",
+  databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
+  projectId: "bumbble-c061f",
+  storageBucket: "bumbble-c061f.appspot.com",
+  messagingSenderId: "213165886981",
+  appId: "1:213165886981:web:c18652003444869b1bd66c"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+</script>
+
 </head>
 <body>
-  <div class="container">
-    <h2>Login</h2>
-    <input type="email" id="email" placeholder="Email" required>
-    <input type="password" id="password" placeholder="Password" required>
-    <button id="loginBtn">Login</button>
-    <div class="link">Don’t have an account? <a href="signup.html">Sign Up</a></div>
-  </div>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<header>
+<h1>Bumbble</h1>
+<nav>
+<a href="index.html">Home</a>
+<a href="friends.html">Friends</a>
+<a href="stories.html">Stories</a>
+<a href="events.html">Events</a>
+<a href="safety.html">Safety</a>
+<a href="login.html">Login</a>
+<a href="signup.html">Sign Up</a>
+</nav>
+</header>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
-      authDomain: "bumbble-c061f.firebaseapp.com",
-      projectId: "bumbble-c061f",
-      storageBucket: "bumbble-c061f.firebasestorage.app",
-      messagingSenderId: "213165886981",
-      appId: "1:213165886981:web:c18652003444869b1bd66c",
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+<div class="container">
+<form class="login-form" id="loginForm">
+<h2>Login</h2>
+<input type="email" id="email" placeholder="Email" required>
+<input type="password" id="password" placeholder="Password" required>
+<button type="submit">Login</button>
+</form>
+</div>
 
-    document.getElementById("loginBtn").addEventListener("click", () => {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
+<script>
+document.getElementById("loginForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
 
-      if(!email || !password){
-        alert("⚠️ Please enter email and password");
-        return;
-      }
+  auth.signInWithEmailAndPassword(email,password)
+  .then((userCredential)=>{
+    const user = userCredential.user;
 
-      auth.signInWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-          const user = userCredential.user;
+    if(!user.emailVerified){
+      alert("⚠️ Please verify your email before login.");
+      auth.signOut();
+      return;
+    }
 
-          if(!user.emailVerified){
-            alert("⚠️ Please verify your email first.");
-            auth.signOut();
-            return;
-          }
+    // Update lastLogin timestamp
+    db.ref('users/' + user.uid).update({ lastLogin: Date.now() });
 
-          // update Firestore with last login
-          db.collection("users").doc(user.uid).update({
-            lastLogin: new Date().getTime(),
-            emailVerified: true
-          }).then(() => {
-            console.log("Login timestamp updated");
-          }).catch(err => console.error("Update error:", err));
+    localStorage.setItem("current_user", user.uid); // store current logged in UID
 
-          // store in localStorage
-          localStorage.setItem("current_user", user.email);
+    alert("✅ Login successful!");
+    window.location.href = "friends.html";
+  })
+  .catch((error)=>{
+    alert("❌ " + error.message);
+  });
+});
+</script>
 
-          alert("✅ Login successful!");
-          window.location.href = "index.html";
-        })
-        .catch((error) => {
-          alert("❌ " + error.message);
-        });
-    });
-  </script>
 </body>
 </html>
