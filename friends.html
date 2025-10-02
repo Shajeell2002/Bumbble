@@ -15,7 +15,6 @@ nav a:hover{text-decoration: underline;}
 .section h2{text-align:center;margin-bottom:20px;}
 .friend-container{display:flex;flex-wrap:wrap;justify-content:center;gap:20px;}
 .friend-card{background:#f9f9f9;border-radius:15px;padding:20px;width:200px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,0.1);position:relative;}
-.friend-card img{width:100px;height:100px;border-radius:50%;margin-bottom:10px;object-fit:cover;}
 .friend-card h3{margin-bottom:5px;}
 .friend-card p{color:#555;margin:2px 0;font-size:14px;}
 .status-dot{width:15px;height:15px;border-radius:50%;position:absolute;top:10px;right:10px;border:2px solid #fff;}
@@ -83,27 +82,31 @@ auth.onAuthStateChanged(user => {
       });
     });
 
-    // Real-time friends list
     const friendContainer = document.getElementById("friendContainer");
-    db.ref("users").once("value", snapshot => {
+
+    // Real-time friends list
+    db.ref("users").on("value", snapshot => {
       const now = Date.now();
       const ONLINE_THRESHOLD = 15*60*1000; // 15 min
       let html = "";
+
       snapshot.forEach(child => {
         const u = child.val();
         const name = u.name || "Unnamed";
-        const email = u.email || "";
-        const pic = u.pic || "images/profile1.png";
+        const gender = u.gender || "Not set";
+        const location = u.location || "Unknown";
         const lastLogin = u.lastLogin || 0;
         const online = (now - lastLogin) <= ONLINE_THRESHOLD;
 
-        html += `<div class="friend-card">
-                  <img src="${pic}" alt="Profile">
-                  <h3>${name}</h3>
-                  <p>${email}</p>
-                  <span class="status-dot" style="background-color:${online?'green':'red'}"></span>
-                </div>`;
+        html += `
+        <div class="friend-card">
+          <h3>${name}</h3>
+          <p>Gender: ${gender}</p>
+          <p>Location: ${location}</p>
+          <span class="status-dot" style="background-color:${online?'green':'red'}"></span>
+        </div>`;
       });
+
       friendContainer.innerHTML = html || "<p>No friends found.</p>";
     });
 
