@@ -38,14 +38,13 @@ const firebaseConfig = {
   messagingSenderId: "213165886981",
   appId: "1:213165886981:web:c18652003444869b1bd66c"
 };
-
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 </script>
+</head>
 
 <body>
-
 <header>
 <h1>Bumbble</h1>
 <nav id="navLinks"></nav>
@@ -63,10 +62,11 @@ const db = firebase.database();
 </footer>
 
 <script>
-// Navigation menu
+// Dynamic header
 const nav = document.getElementById("navLinks");
-auth.onAuthStateChanged((user)=>{
-  if(user){
+auth.onAuthStateChanged(user => {
+  if(user && user.emailVerified){
+    localStorage.setItem("current_user", user.uid);
     nav.innerHTML = `
       <a href="index.html">Home</a>
       <a href="friends.html">Friends</a>
@@ -83,26 +83,31 @@ auth.onAuthStateChanged((user)=>{
       });
     });
 
-    // Load all friends
-    db.ref("users").once("value").then(snapshot=>{
+    // Real-time friends list
+    const friendContainer = document.getElementById("friendContainer");
+    db.ref("users").on("value", snapshot => {
       const now = Date.now();
-      const ONLINE_THRESHOLD = 15*60*1000; // 15 mins
+      const ONLINE_THRESHOLD = 15*60*1000; // 15 min
       let html = "";
-      snapshot.forEach(child=>{
+      snapshot.forEach(child => {
         const u = child.val();
-        const online = (now - u.lastLogin) <= ONLINE_THRESHOLD;
+        const name = u.name || "Unnamed";
+        const email = u.email || "";
+        const pic = u.pic || "images/profile1.png";
+        const lastLogin = u.lastLogin || 0;
+        const online = (now - lastLogin) <= ONLINE_THRESHOLD;
+
         html += `<div class="friend-card">
-                  <img src="${u.pic}" alt="Profile">
-                  <h3>${u.name}</h3>
-                  <p>${u.email}</p>
+                  <img src="${pic}" alt="Profile">
+                  <h3>${name}</h3>
+                  <p>${email}</p>
                   <span class="status-dot" style="background-color:${online?'green':'red'}"></span>
                 </div>`;
       });
-      document.getElementById("friendContainer").innerHTML = html;
+      friendContainer.innerHTML = html || "<p>No friends found.</p>";
     });
 
   } else {
-    // Not logged in
     nav.innerHTML = `
       <a href="index.html">Home</a>
       <a href="friends.html">Friends</a>
@@ -116,6 +121,5 @@ auth.onAuthStateChanged((user)=>{
   }
 });
 </script>
-
 </body>
 </html>
