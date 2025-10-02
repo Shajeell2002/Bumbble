@@ -71,7 +71,6 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
-
     document.getElementById("logoutBtn").addEventListener("click", () => {
       auth.signOut().then(()=>{
         localStorage.removeItem("current_user");
@@ -81,21 +80,23 @@ auth.onAuthStateChanged(user => {
 
     const userRef = db.ref("users/" + user.uid);
 
-    // Set real-time online status
+    // Online status
     userRef.child("online").set(true);
     userRef.child("online").onDisconnect().set(false);
 
-    // Listen for profile changes
+    // Fetch profile
     userRef.on("value", snapshot => {
       const u = snapshot.val();
-      if(!u) {
+      if(!u){
         profileContainer.innerHTML = "<p>Profile not found.</p>";
         return;
       }
 
       const online = u.online ? true : false;
+      const picURL = u.pic || "images/profile1.png";
+
       profileContainer.innerHTML = `
-        <img id="profilePic" src="${u.pic || 'images/profile1.png'}" alt="Profile">
+        <img id="profilePic" src="${picURL}" alt="Profile">
         <input type="file" id="picUpload" accept="image/*">
 
         <label>Name</label>
@@ -126,42 +127,39 @@ auth.onAuthStateChanged(user => {
       const profileImg = document.getElementById("profilePic");
       const picInput = document.getElementById("picUpload");
 
-      // Preview and upload profile pic
+      // Profile preview
       picInput.addEventListener("change", e => {
         const file = e.target.files[0];
         if(!file) return;
-
-        const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
+        const MAX_SIZE = 2*1024*1024;
         if(file.size > MAX_SIZE){
-          alert("⚠️ File exceeds 2MB.");
+          alert("⚠️ File exceeds 2MB");
           e.target.value = "";
           return;
         }
 
-        // Preview
+        // Preview locally
         const reader = new FileReader();
-        reader.onload = function(ev){
-          profileImg.src = ev.target.result;
-        };
+        reader.onload = ev => profileImg.src = ev.target.result;
         reader.readAsDataURL(file);
 
         // Upload to Firebase Storage
         const storageRef = storage.ref("profile_pics/" + user.uid + ".jpg");
         storageRef.put(file)
-          .then(snapshot => snapshot.ref.getDownloadURL())
+          .then(() => storageRef.getDownloadURL())
           .then(url => userRef.update({ pic: url }))
           .catch(err => alert("Upload failed: " + err.message));
       });
 
-      // Save profile updates
-      document.getElementById("saveBtn").addEventListener("click", () => {
+      // Save profile
+      document.getElementById("saveBtn").addEventListener("click", ()=>{
         const updatedName = document.getElementById("name").value.trim();
         const updatedGender = document.getElementById("gender").value;
         const updatedLocation = document.getElementById("location").value.trim();
         const updatedAge = parseInt(document.getElementById("age").value);
 
         if(!updatedName || !updatedGender || !updatedLocation || !updatedAge){
-          alert("⚠️ Please fill all fields");
+          alert("⚠️ Fill all fields");
           return;
         }
 
@@ -170,8 +168,8 @@ auth.onAuthStateChanged(user => {
           gender: updatedGender,
           location: updatedLocation,
           age: updatedAge
-        }).then(()=> alert("✅ Profile updated successfully!"))
-          .catch(err => alert("❌ Error updating profile: " + err.message));
+        }).then(()=>alert("✅ Profile updated successfully!"))
+          .catch(err=>alert("❌ Error updating profile: " + err.message));
       });
     });
 
