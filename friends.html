@@ -69,4 +69,60 @@ if(currentUser){
         <a href="stories.html">Stories</a>
         <a href="events.html">Events</a>
         <a href="safety.html">Safety</a>
-        <
+        <a href="profile.html">Profile</a>
+        <a href="#" id="logoutBtn">Logout</a>
+    `;
+    document.getElementById("logoutBtn").addEventListener("click", function(){
+        localStorage.removeItem("current_user");
+        alert("✅ Logged out successfully.");
+        window.location.href = "login.html";
+    });
+} else {
+    nav.innerHTML = `
+        <a href="index.html">Home</a>
+        <a href="friends.html">Friends</a>
+        <a href="stories.html">Stories</a>
+        <a href="events.html">Events</a>
+        <a href="safety.html">Safety</a>
+        <a href="login.html">Login</a>
+        <a href="signup.html">Sign Up</a>
+    `;
+}
+
+// Friends list
+const friendContainer = document.getElementById("friendContainer");
+const noFriendsMsg = document.getElementById("noFriendsMsg");
+
+db.ref("users").on("value", (snapshot) => {
+    friendContainer.innerHTML = "";
+    let hasMembers = false;
+    snapshot.forEach((child) => {
+        const user = child.val();
+        if(!user) return;
+
+        const imgSrc = user.pic || "images/profile1.png";
+        const isSelf = (user.email === currentUser);
+
+        const card = document.createElement("div");
+        card.classList.add("friend-card");
+        card.innerHTML = `
+            <img src="${imgSrc}" alt="Profile Picture">
+            <h3>${user.name || "Unnamed"} ${isSelf ? "(You)" : ""}</h3>
+            <p><strong>Email:</strong> ${user.email}</p>
+            <span class="status-dot" style="background-color:green"></span>
+        `;
+
+        friendContainer.appendChild(card);
+        hasMembers = true;
+    });
+
+    if(!hasMembers){
+        noFriendsMsg.style.display = "block";
+    } else {
+        noFriendsMsg.style.display = "none";
+    }
+});
+</script>
+
+</body>
+</html>
