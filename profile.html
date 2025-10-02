@@ -10,7 +10,7 @@ header{display:flex;justify-content:space-between;align-items:center;padding:20p
 header h1{font-size:24px;}
 nav a{margin:0 10px;text-decoration:none;color:#333;font-weight:bold;}
 .profile-container{flex:1;padding:40px;max-width:400px;margin:auto;background:#f9f9f9;border-radius:15px;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
-.profile-container img{width:120px;height:120px;border-radius:50%;margin-bottom:15px;}
+.profile-container img{width:120px;height:120px;border-radius:50%;margin-bottom:15px;object-fit:cover;}
 .profile-container label{display:block;margin-top:10px;font-weight:bold;}
 .profile-container input, .profile-container select{width:100%;padding:10px;margin-top:5px;border-radius:5px;border:1px solid #ccc;}
 .profile-container button{margin-top:20px;width:100%;padding:12px;background:#ffcb2b;border:none;border-radius:8px;font-weight:bold;cursor:pointer;}
@@ -21,6 +21,7 @@ footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:auto;}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
 <script>
 const firebaseConfig = {
@@ -35,6 +36,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
+const storage = firebase.storage();
 </script>
 </head>
 
@@ -58,6 +60,7 @@ const nav = document.getElementById("navLinks");
 auth.onAuthStateChanged(user => {
   if(user && user.emailVerified){
     localStorage.setItem("current_user", user.uid);
+
     nav.innerHTML = `
       <a href="index.html">Home</a>
       <a href="friends.html">Friends</a>
@@ -75,4 +78,92 @@ auth.onAuthStateChanged(user => {
       });
     });
 
-    const profileContainer = d
+    const profileContainer = document.getElementById("profileContainer");
+    const userRef = db.ref("users/" + user.uid);
+
+    // Set user online and auto-offline on disconnect
+    const onlineRef = userRef.child("online");
+    onlineRef.set(true);
+    onlineRef.onDisconnect().set(false);
+
+    // Load existing profile
+    userRef.on("value", snapshot => {
+      const u = snapshot.val();
+      if(u){
+        const online = u.online ? true : false;
+        profileContainer.innerHTML = `
+          <img id="profilePic" src="${u.pic || 'images/profile1.png'}" alt="Profile">
+          <input type="file" id="picUpload" accept="image/*">
+          
+          <label>Name</label>
+          <input type="text" id="name" value="${u.name || ''}">
+          
+          <label>Email (readonly)</label>
+          <input type="email" id="email" value="${u.email || ''}" readonly>
+          
+          <label>Gender</label>
+          <select id="gender">
+            <option value="">Select Gender</option>
+            <option value="Male" ${u.gender==='Male'?'selected':''}>Male</option>
+            <option value="Female" ${u.gender==='Female'?'selected':''}>Female</option>
+            <option value="Other" ${u.gender==='Other'?'selected':''}>Other</option>
+          </select>
+          
+          <label>Location</label>
+          <input type="text" id="location" value="${u.location || ''}">
+          
+          <p>Status: <span class="status-dot" style="background-color:${online?'green':'red'}"></span></p>
+          
+          <button id="saveBtn">Save Profile</button>
+        `;
+
+        // Handle profile picture upload
+        document.getElementById("picUpload").addEventListener("change", (e)=>{
+          const file = e.target.files[0];
+          if(file){
+            const storageRef = storage.ref("profile_pics/" + user.uid + ".jpg");
+            storageRef.put(file).then(() => {
+              storageRef.getDownloadURL().then(url => {
+                document.getElementById("profilePic").src = url;
+                userRef.update({pic: url});
+              });
+            });
+          }
+        });
+
+        document.getElementById("saveBtn").addEventListener("click", ()=>{
+          const updatedName = document.getElementById("name").value.trim();
+          const updatedGender = document.getElementById("gender").value;
+          const updatedLocation = document.getElementById("location").value.trim();
+
+          if(!updatedName || !updatedGender || !updatedLocation){
+            alert("⚠️ Please fill all fields");
+            return;
+          }
+
+          userRef.update({
+            name: updatedName,
+            gender: updatedGender,
+            location: updatedLocation
+          })
+          .then(()=>alert("✅ Profile updated successfully!"))
+          .catch(err=>alert("❌ Error updating profile: " + err.message));
+        });
+
+      } else {
+        profileContainer.innerHTML = "<p>Profile not found.</p>";
+      }
+    });
+
+  } else {
+    nav.innerHTML = `
+      <a href="index.html">Home</a>
+      <a href="login.html">Login</a>
+      <a href="signup.html">Sign Up</a>
+    `;
+    document.getElementById("profileContainer").innerHTML = "<p>Please login to view profile.</p>";
+  }
+});
+</script>
+</body>
+</html>
