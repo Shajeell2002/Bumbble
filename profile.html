@@ -39,8 +39,8 @@ const db = firebase.database();
 const storage = firebase.storage();
 </script>
 </head>
-
 <body>
+
 <header>
 <h1>Bumbble</h1>
 <nav id="navLinks"></nav>
@@ -70,9 +70,7 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
-
     document.getElementById("logoutBtn").addEventListener("click", ()=>{
-      db.ref("users/" + user.uid + "/online").set(false);
       auth.signOut().then(()=>{
         localStorage.removeItem("current_user");
         window.location.href="login.html";
@@ -82,12 +80,12 @@ auth.onAuthStateChanged(user => {
     const profileContainer = document.getElementById("profileContainer");
     const userRef = db.ref("users/" + user.uid);
 
-    // Set online status
+    // Set online status real-time
     const onlineRef = userRef.child("online");
     onlineRef.set(true);
     onlineRef.onDisconnect().set(false);
 
-    // Load profile
+    // Load profile in real-time
     userRef.on("value", snapshot => {
       const u = snapshot.val();
       if(u){
@@ -96,13 +94,13 @@ auth.onAuthStateChanged(user => {
         profileContainer.innerHTML = `
           <img id="profilePic" src="${u.pic || 'images/profile1.png'}" alt="Profile">
           <input type="file" id="picUpload" accept="image/*">
-          
+
           <label>Name</label>
           <input type="text" id="name" value="${u.name || ''}">
-          
+
           <label>Email (readonly)</label>
           <input type="email" id="email" value="${u.email || ''}" readonly>
-          
+
           <label>Gender</label>
           <select id="gender">
             <option value="">Select Gender</option>
@@ -122,14 +120,14 @@ auth.onAuthStateChanged(user => {
           <button id="saveBtn">Save Profile</button>
         `;
 
-        // Profile picture upload
-        const picInput = document.getElementById("picUpload");
         const profileImg = document.getElementById("profilePic");
+        const picInput = document.getElementById("picUpload");
 
+        // Profile picture upload
         picInput.addEventListener("change", e=>{
           const file = e.target.files[0];
           if(file){
-            const MAX_SIZE = 2*1024*1024; // 2 MB
+            const MAX_SIZE = 2*1024*1024; // 2MB
             if(file.size > MAX_SIZE){
               alert("⚠️ File exceeds 2 MB. Choose smaller image.");
               picInput.value = "";
@@ -137,10 +135,11 @@ auth.onAuthStateChanged(user => {
             }
             const ext = file.name.split('.').pop();
             const storageRef = storage.ref(`profile_pics/${user.uid}.${ext}`);
-            storageRef.put(file).then(() => {
-              storageRef.getDownloadURL().then(url => {
-                userRef.update({pic: url}).then(()=>{
-                  profileImg.src = url; // update immediately
+
+            storageRef.put(file).then(()=> {
+              storageRef.getDownloadURL().then(url=>{
+                userRef.update({ pic: url }).then(()=>{
+                  profileImg.src = url; // display immediately
                 });
               });
             });
@@ -164,11 +163,8 @@ auth.onAuthStateChanged(user => {
             gender: updatedGender,
             location: updatedLocation,
             age: updatedAge
-          }).then(()=>{
-            alert("✅ Profile updated successfully!");
-          }).catch(err=>{
-            alert("❌ Error updating profile: " + err.message);
-          });
+          }).then(()=> alert("✅ Profile updated successfully!"))
+            .catch(err=> alert("❌ Error updating profile: "+err.message));
         });
 
       } else {
@@ -182,7 +178,7 @@ auth.onAuthStateChanged(user => {
       <a href="login.html">Login</a>
       <a href="signup.html">Sign Up</a>
     `;
-    profileContainer.innerHTML = "<p>Please login to view profile.</p>";
+    document.getElementById("profileContainer").innerHTML = "<p>Please login to view profile.</p>";
   }
 });
 </script>
