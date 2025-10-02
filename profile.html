@@ -70,7 +70,6 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
-
     document.getElementById("logoutBtn").addEventListener("click", ()=>{
       auth.signOut().then(()=>{
         localStorage.removeItem("current_user");
@@ -81,7 +80,7 @@ auth.onAuthStateChanged(user => {
     const profileContainer = document.getElementById("profileContainer");
     const userRef = db.ref("users/" + user.uid);
 
-    // Online status handling
+    // Set online status
     const onlineRef = userRef.child("online");
     onlineRef.set(true);
     onlineRef.onDisconnect().set(false);
@@ -120,15 +119,22 @@ auth.onAuthStateChanged(user => {
           <button id="saveBtn">Save Profile</button>
         `;
 
-        // Profile picture upload
+        // Profile picture upload with size limit
         document.getElementById("picUpload").addEventListener("change", (e)=>{
           const file = e.target.files[0];
           if(file){
+            const MAX_SIZE = 2*1024*1024; // 2 MB
+            if(file.size > MAX_SIZE){
+              alert("⚠️ File size exceeds 2 MB. Please choose a smaller image.");
+              e.target.value = "";
+              return;
+            }
             const storageRef = storage.ref("profile_pics/" + user.uid + ".jpg");
             storageRef.put(file).then(()=>{
               storageRef.getDownloadURL().then(url=>{
-                document.getElementById("profilePic").src = url;
-                userRef.update({pic: url});
+                userRef.update({pic: url}).then(()=>{
+                  document.getElementById("profilePic").src = url; // Update immediately
+                });
               });
             });
           }
