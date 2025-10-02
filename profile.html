@@ -58,100 +58,153 @@ const storage = firebase.storage();
 const nav = document.getElementById("navLinks");
 
 auth.onAuthStateChanged(user => {
-  if(!user || !user.emailVerified){
-    nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
-    document.getElementById("profileContainer").innerHTML = "<p>Please login to view profile.</p>";
-    return;
-  }
+  if(user && user.emailVerified){
+    localStorage.setItem("current_user", user.uid);
 
-  const uid = user.uid;
-  localStorage.setItem("current_user", uid);
-
-  nav.innerHTML = `
-    <a href="index.html">Home</a>
-    <a href="friends.html">Friends</a>
-    <a href="stories.html">Stories</a>
-    <a href="events.html">Events</a>
-    <a href="safety.html">Safety</a>
-    <a href="profile.html">Profile</a>
-    <a href="#" id="logoutBtn">Logout</a>
-  `;
-  document.getElementById("logoutBtn").addEventListener("click", ()=>{ auth.signOut().then(()=>{ localStorage.removeItem("current_user"); window.location.href="login.html"; }); });
-
-  const profileContainer = document.getElementById("profileContainer");
-  const userRef = db.ref("users/" + uid);
-
-  // Online status
-  userRef.child("online").set(true);
-  userRef.child("online").onDisconnect().set(false);
-
-  // Load profile
-  userRef.once("value").then(snapshot=>{
-    const u = snapshot.val() || {};
-    const online = u.online || false;
-
-    profileContainer.innerHTML = `
-      <img id="profilePic" src="${u.pic || 'images/profile1.png'}" alt="Profile">
-      <input type="file" id="picUpload" accept="image/*">
-
-      <label>Name</label><input type="text" id="name" value="${u.name || ''}">
-      <label>Email (readonly)</label><input type="email" id="email" value="${u.email || ''}" readonly>
-      <label>Gender</label>
-      <select id="gender">
-        <option value="">Select Gender</option>
-        <option value="Male" ${u.gender==='Male'?'selected':''}>Male</option>
-        <option value="Female" ${u.gender==='Female'?'selected':''}>Female</option>
-        <option value="Other" ${u.gender==='Other'?'selected':''}>Other</option>
-      </select>
-      <label>Location</label><input type="text" id="location" value="${u.location || ''}">
-      <label>Age</label><input type="number" id="age" value="${u.age || ''}">
-      <p>Status: <span class="status-dot" style="background-color:${online?'green':'red'}"></span></p>
-      <button id="saveBtn">Save Profile</button>
+    nav.innerHTML = `
+      <a href="index.html">Home</a>
+      <a href="friends.html">Friends</a>
+      <a href="stories.html">Stories</a>
+      <a href="events.html">Events</a>
+      <a href="safety.html">Safety</a>
+      <a href="profile.html">Profile</a>
+      <a href="#" id="logoutBtn">Logout</a>
     `;
-
-    const profileImg = document.getElementById("profilePic");
-    const picInput = document.getElementById("picUpload");
-
-    let selectedFile = null;
-
-    // Preview file
-    picInput.addEventListener("change", e=>{
-      const file = e.target.files[0];
-      if(!file) return;
-      if(file.size > 2*1024*1024){ alert("File >2MB"); e.target.value=""; return; }
-      selectedFile = file;
-      const reader = new FileReader();
-      reader.onload = evt => profileImg.src = evt.target.result;
-      reader.readAsDataURL(file);
+    document.getElementById("logoutBtn").addEventListener("click", ()=>{
+      auth.signOut().then(()=>{
+        localStorage.removeItem("current_user");
+        window.location.href="login.html";
+      });
     });
 
-    // Save profile
-    document.getElementById("saveBtn").addEventListener("click", async ()=>{
-      const name = document.getElementById("name").value.trim();
-      const gender = document.getElementById("gender").value;
-      const location = document.getElementById("location").value.trim();
-      const age = parseInt(document.getElementById("age").value);
+    const profileContainer = document.getElementById("profileContainer");
+    const userRef = db.ref("users/" + user.uid);
 
-      if(!name || !gender || !location || !age){ alert("Fill all fields"); return; }
+    // Set online status
+    const onlineRef = userRef.child("online");
+    onlineRef.set(true);
+    onlineRef.onDisconnect().set(false);
 
-      const updates = {name, gender, location, age};
+    // Load profile
+    userRef.on("value", snapshot => {
+      const u = snapshot.val();
+      if(u){
+        const online = u.online ? true : false;
+        profileContainer.innerHTML = `
+          <img id="profilePic" src="${u.pic || 'images/profile1.png'}" alt="Profile">
+          <input type="file" id="picUpload" accept="image/*">
 
-      try{
-        if(selectedFile){
-          const storageRef = storage.ref("profile_pics/"+uid+".jpg");
-          await storageRef.put(selectedFile);
-          const downloadURL = await storageRef.getDownloadURL();
-          updates.pic = downloadURL;
-        }
+          <label>Name</label>
+          <input type="text" id="name" value="${u.name || ''}">
 
-        await userRef.update(updates);
-        alert("✅ Profile saved successfully!");
-      }catch(err){
-        alert("❌ Error: "+err.message);
+          <label>Email (readonly)</label>
+          <input type="email" id="email" value="${u.email || ''}" readonly>
+
+          <label>Gender</label>
+          <select id="gender">
+            <option value="">Select Gender</option>
+            <option value="Male" ${u.gender==='Male'?'selected':''}>Male</option>
+            <option value="Female" ${u.gender==='Female'?'selected':''}>Female</option>
+            <option value="Other" ${u.gender==='Other'?'selected':''}>Other</option>
+          </select>
+
+          <label>Location</label>
+          <input type="text" id="location" value="${u.location || ''}">
+
+          <label>Age</label>
+          <input type="number" id="age" value="${u.age || ''}">
+
+          <p>Status: <span class="status-dot" style="background-color:${online?'green':'red'}"></span></p>
+
+          <button id="saveBtn">Save Profile</button>
+        `;
+
+        const profileImg = document.getElementById("profilePic");
+        const picInput = document.getElementById("picUpload");
+
+        let selectedFile = null;
+
+        // Show preview immediately
+        picInput.addEventListener("change", e => {
+          const file = e.target.files[0];
+          if(file){
+            selectedFile = file; // store to upload on save
+            const reader = new FileReader();
+            reader.onload = function(event){
+              profileImg.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+
+            const MAX_SIZE = 2*1024*1024; // 2 MB
+            if(file.size > MAX_SIZE){
+              alert("⚠️ File exceeds 2MB.");
+              e.target.value = "";
+              selectedFile = null;
+              profileImg.src = u.pic || 'images/profile1.png';
+            }
+          }
+        });
+
+        // Save profile updates
+        document.getElementById("saveBtn").addEventListener("click", ()=>{
+          const updatedName = document.getElementById("name").value.trim();
+          const updatedGender = document.getElementById("gender").value;
+          const updatedLocation = document.getElementById("location").value.trim();
+          const updatedAge = parseInt(document.getElementById("age").value);
+
+          if(!updatedName || !updatedGender || !updatedLocation || !updatedAge){
+            alert("⚠️ Please fill all fields");
+            return;
+          }
+
+          // Function to update DB after optional pic upload
+          const updateProfileDB = (picURL=null) => {
+            const updateObj = {
+              name: updatedName,
+              gender: updatedGender,
+              location: updatedLocation,
+              age: updatedAge
+            };
+            if(picURL) updateObj.pic = picURL;
+
+            userRef.update(updateObj)
+              .then(()=>alert("✅ Profile updated successfully!"))
+              .catch(err=>alert("❌ Error updating profile: " + err.message));
+          };
+
+          // If a new pic was selected, upload first
+          if(selectedFile){
+            const storageRef = storage.ref("profile_pics/" + user.uid + ".jpg");
+            storageRef.put(selectedFile)
+              .then(snapshot=>snapshot.ref.getDownloadURL())
+              .then(url=>{
+                updateProfileDB(url);
+                selectedFile = null; // reset
+              })
+              .catch(err=>{
+                alert("❌ Upload failed: " + err.message);
+              });
+          } else {
+            updateProfileDB(); // no new pic, just update fields
+          }
+
+        });
+
+      } else {
+        profileContainer.innerHTML = "<p>Profile not found.</p>";
       }
     });
-  });
+
+  } else {
+    nav.innerHTML = `
+      <a href="index.html">Home</a>
+      <a href="login.html">Login</a>
+      <a href="signup.html">Sign Up</a>
+    `;
+    document.getElementById("profileContainer").innerHTML = "<p>Please login to view profile.</p>";
+  }
 });
 </script>
+
 </body>
 </html>
