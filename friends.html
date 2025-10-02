@@ -91,13 +91,9 @@ auth.onAuthStateChanged(user => {
           const users = uSnap.val() || {};
           friendsContainer.innerHTML = "";  // clear loading message
 
-          let otherUsersExist = false;
-
           for(let key in users){
-            if(key === uid) continue; // skip self
-            otherUsersExist = true;
             const u = users[key];
-            const isFriend = friends[key] ? true : false;
+            const isFriend = (friends[key] ? true : false) || (key === uid); // self treated as friend
 
             const friendCard = document.createElement("div");
             friendCard.className = "friend-card";
@@ -109,7 +105,10 @@ auth.onAuthStateChanged(user => {
             img.src = u.pic || "images/profile1.png";
 
             const name = document.createElement("span");
-            name.textContent = u.name || "Unknown";
+            name.textContent = `${u.name || "Unknown"}, ${u.age || "N/A"}`;
+
+            const location = document.createElement("span");
+            location.textContent = u.location || "";
 
             const status = document.createElement("span");
             status.className = "status-dot";
@@ -117,27 +116,34 @@ auth.onAuthStateChanged(user => {
 
             info.appendChild(img);
             info.appendChild(name);
+            info.appendChild(location);
             info.appendChild(status);
 
             const btn = document.createElement("button");
-            btn.textContent = isFriend ? "Remove" : "Add";
-            btn.className = isFriend ? "removeBtn" : "addBtn";
-
-            btn.addEventListener("click", ()=>{
-              if(isFriend){
-                friendsRef.child(key).remove();
-              } else {
-                friendsRef.update({[key]: true});
-              }
-            });
+            if(key !== uid){ // self should not have add/remove
+              btn.textContent = isFriend ? "Remove" : "Add";
+              btn.className = isFriend ? "removeBtn" : "addBtn";
+              btn.addEventListener("click", ()=>{
+                if(isFriend){
+                  friendsRef.child(key).remove();
+                } else {
+                  friendsRef.update({[key]: true});
+                }
+              });
+            } else {
+              btn.textContent = "You";
+              btn.disabled = true;
+              btn.style.background = "#ccc";
+              btn.style.cursor = "default";
+            }
 
             friendCard.appendChild(info);
             friendCard.appendChild(btn);
             friendsContainer.appendChild(friendCard);
           }
 
-          if(!otherUsersExist){
-            friendsContainer.innerHTML = "<p>No other users found.</p>";
+          if(Object.keys(users).length === 0){
+            friendsContainer.innerHTML = "<p>No users found.</p>";
           }
         });
       });
