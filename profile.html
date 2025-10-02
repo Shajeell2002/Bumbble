@@ -17,6 +17,7 @@ nav a{margin:0 10px;text-decoration:none;color:#333;font-weight:bold;}
 .friends-container ul{list-style:none;padding:0;}
 .friends-container li{padding:10px;border-bottom:1px solid #ddd;display:flex;justify-content:space-between;align-items:center;}
 .status-dot{width:12px;height:12px;border-radius:50%;display:inline-block;margin-left:10px;border:2px solid #fff;}
+.profile-container img{width:100px;height:100px;border-radius:50%;margin-bottom:10px;object-fit:cover;}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -95,6 +96,9 @@ auth.onAuthStateChanged(user => {
     userRef.on("value", snapshot => {
       const u = snapshot.val() || {};
       profileContainer.innerHTML = `
+        <img id="profilePic" src="${u.pic || 'images/profile1.png'}" alt="Profile">
+        <input type="file" id="picUpload" accept="image/*">
+
         <label>Name</label>
         <input type="text" id="name" value="${u.name || ''}">
         <label>Email (readonly)</label>
@@ -113,6 +117,30 @@ auth.onAuthStateChanged(user => {
         <button id="saveBtn">Save Profile</button>
       `;
 
+      const profileImg = document.getElementById("profilePic");
+      const picInput = document.getElementById("picUpload");
+      let selectedPicBase64 = u.pic || "";
+
+      // Show preview immediately and store as Base64
+      picInput.addEventListener("change", e => {
+        const file = e.target.files[0];
+        if(file){
+          const MAX_SIZE = 2*1024*1024; // 2 MB
+          if(file.size > MAX_SIZE){
+            alert("⚠️ File exceeds 2MB.");
+            e.target.value = "";
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = function(event){
+            selectedPicBase64 = event.target.result; // Base64 string
+            profileImg.src = selectedPicBase64;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      // Save profile updates
       document.getElementById("saveBtn").addEventListener("click", ()=>{
         const name = document.getElementById("name").value.trim();
         const gender = document.getElementById("gender").value;
@@ -124,7 +152,7 @@ auth.onAuthStateChanged(user => {
           return;
         }
 
-        userRef.update({name, gender, location, age})
+        userRef.update({name, gender, location, age, pic: selectedPicBase64})
           .then(()=>alert("✅ Profile saved!"))
           .catch(err=>alert("❌ "+err.message));
       });
