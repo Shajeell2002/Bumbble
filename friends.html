@@ -83,17 +83,22 @@ auth.onAuthStateChanged(user => {
     const usersRef = db.ref("users");
     const friendsRef = db.ref("friends/" + uid);
 
-    function loadFriends(){
-      friendsRef.on("value", fSnap => {
-        const friends = fSnap.val() || {};
+    // Set online status
+    const onlineRef = db.ref("users/" + uid + "/online");
+    onlineRef.set(true);
+    onlineRef.onDisconnect().set(false);
 
-        usersRef.once("value").then(uSnap => {
-          const users = uSnap.val() || {};
-          friendsContainer.innerHTML = "";  // clear loading message
+    function loadFriends(){
+      // Listen for changes in users data (to update online/offline real-time)
+      usersRef.on("value", snapshot => {
+        const users = snapshot.val() || {};
+        friendsRef.once("value").then(fSnap => {
+          const friends = fSnap.val() || {};
+          friendsContainer.innerHTML = ""; // clear previous
 
           for(let key in users){
             const u = users[key];
-            const isFriend = (friends[key] ? true : false) || (key === uid); // self treated as friend
+            const isFriend = (friends[key] ? true : false) || (key === uid); // include self
 
             const friendCard = document.createElement("div");
             friendCard.className = "friend-card";
@@ -120,7 +125,7 @@ auth.onAuthStateChanged(user => {
             info.appendChild(status);
 
             const btn = document.createElement("button");
-            if(key !== uid){ // self should not have add/remove
+            if(key !== uid){ // only other users can be added/removed
               btn.textContent = isFriend ? "Remove" : "Add";
               btn.className = isFriend ? "removeBtn" : "addBtn";
               btn.addEventListener("click", ()=>{
@@ -130,7 +135,7 @@ auth.onAuthStateChanged(user => {
                   friendsRef.update({[key]: true});
                 }
               });
-            } else {
+            } else { // self
               btn.textContent = "You";
               btn.disabled = true;
               btn.style.background = "#ccc";
