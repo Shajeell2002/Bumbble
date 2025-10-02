@@ -10,7 +10,7 @@ h1{margin-top:40px;color:#ffcb2b;}
 form{display:flex;flex-direction:column;width:300px;margin-top:20px;}
 input,button{margin:8px 0;padding:10px;border-radius:6px;border:1px solid #ccc;font-size:14px;}
 button{background:#ffcb2b;color:#333;font-weight:bold;border:none;cursor:pointer;}
-#otpContainer{display:none;}
+#otpContainer, #emailContainer{display:none;}
 #message{color:red;font-size:14px;margin-top:5px;}
 </style>
 
@@ -22,19 +22,26 @@ button{background:#ffcb2b;color:#333;font-weight:bold;border:none;cursor:pointer
 
 <h1>Bumbble - Sign Up</h1>
 
-<form id="signupForm">
+<!-- Step 1: Mobile -->
+<div id="mobileContainer">
   <input type="text" id="name" placeholder="Full Name" required>
   <input type="number" id="age" placeholder="Age" required>
-  <input type="email" id="email" placeholder="Email" required>
-  <input type="password" id="password" placeholder="Password" required>
   <input type="text" id="phone" placeholder="Mobile Number (+CountryCode)" required>
-  <button type="submit">Sign Up</button>
-</form>
+  <button id="sendOtpBtn">Send OTP</button>
+</div>
 
+<!-- Step 2: Enter OTP -->
 <div id="otpContainer">
   <h3>Enter OTP sent to your mobile</h3>
   <input type="text" id="otpInput" placeholder="OTP">
   <button id="verifyOtpBtn">Verify OTP</button>
+</div>
+
+<!-- Step 3: Email signup -->
+<div id="emailContainer">
+  <input type="email" id="email" placeholder="Email" required>
+  <input type="password" id="password" placeholder="Password" required>
+  <button id="signupBtn">Sign Up</button>
 </div>
 
 <div id="message"></div>
@@ -54,74 +61,98 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-// Invisible reCAPTCHA
 const recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
   'size': 'invisible'
 });
 
-document.getElementById("signupForm").addEventListener("submit", e=>{
-  e.preventDefault();
-  const name=document.getElementById("name").value.trim();
-  const age=document.getElementById("age").value.trim();
-  const email=document.getElementById("email").value.trim();
-  const password=document.getElementById("password").value.trim();
-  const phone=document.getElementById("phone").value.trim();
-  const messageDiv=document.getElementById("message");
+let confirmationResultGlobal=null;
+let mobileVerified=false;
+let userMobile, userName, userAge;
+
+const messageDiv=document.getElementById("message");
+
+document.getElementById("sendOtpBtn").addEventListener("click", ()=>{
+  userName=document.getElementById("name").value.trim();
+  userAge=document.getElementById("age").value.trim();
+  userMobile=document.getElementById("phone").value.trim();
+
+  if(!userName || !userAge || !userMobile){
+    messageDiv.textContent="Please fill all fields.";
+    return;
+  }
   messageDiv.textContent="";
 
-  // Create user with email/password
-  auth.createUserWithEmailAndPassword(email,password).then(userCredential=>{
+  auth.signInWithPhoneNumber(userMobile, recaptchaVerifier)
+  .then(confirmationResult=>{
+    confirmationResultGlobal=confirmationResult;
+    document.getElementById("mobileContainer").style.display="none";
+    document.getElementById("otpContainer").style.display="block";
+    messageDiv.textContent="OTP sent to mobile.";
+  })
+  .catch(err=>{
+    console.error(err);
+    messageDiv.textContent="Error sending OTP: "+err.message;
+  });
+});
+
+// Verify OTP
+document.getElementById("verifyOtpBtn").addEventListener("click", ()=>{
+  const code=document.getElementById("otpInput").value.trim();
+  if(!code){ messageDiv.textContent="Enter OTP"; return; }
+  confirmationResultGlobal.confirm(code)
+  .then(result=>{
+    mobileVerified=true;
+    document.getElementById("otpContainer").style.display="none";
+    document.getElementById("emailContainer").style.display="block";
+    messageDiv.textContent="Mobile verified. Now enter email & password.";
+  })
+  .catch(err=>{
+    console.error(err);
+    messageDiv.textContent="Invalid OTP: "+err.message;
+  });
+});
+
+// Email signup
+document.getElementById("signupBtn").addEventListener("click", ()=>{
+  if(!mobileVerified){ messageDiv.textContent="Please verify mobile first"; return; }
+
+  const email=document.getElementById("email").value.trim();
+  const password=document.getElementById("password").value.trim();
+  if(!email || !password){ messageDiv.textContent="Enter email & password"; return; }
+  messageDiv.textContent="";
+
+  auth.createUserWithEmailAndPassword(email,password)
+  .then(userCredential=>{
     const user=userCredential.user;
 
     // Send email verification
     user.sendEmailVerification().then(()=>{
       alert("Email verification sent. Check your inbox.");
 
-      // Save minimal public info (visible to friends)
+      // Save public info
       db.ref("users/"+user.uid+"/userPublic").set({
-        name, age, pic:"default.png", online:false
+        name:userName,
+        age:userAge,
+        pic:"default.png",
+        online:false
       });
 
-      // Save private info (only owner can read)
+      // Save private info
       db.ref("users/"+user.uid+"/private").set({
-        email, phone
+        email:email,
+        phone:userMobile
       });
 
-      // Phone verification
-      const appVerifier = recaptchaVerifier;
-      auth.signInWithPhoneNumber(phone, appVerifier).then(confirmationResult=>{
-        window.confirmationResult = confirmationResult;
-        document.getElementById("otpContainer").style.display="block";
-      }).catch(err=>{
-        console.error(err);
-        messageDiv.textContent="Error sending OTP: "+err.message;
-      });
+      window.location.href="login.html";
 
     }).catch(err=>{
       console.error(err);
       messageDiv.textContent="Email verification failed: "+err.message;
     });
-
-  }).catch(err=>{
+  })
+  .catch(err=>{
     console.error(err);
     messageDiv.textContent="Signup failed: "+err.message;
-  });
-});
-
-// OTP verification
-document.getElementById("verifyOtpBtn").addEventListener("click", ()=>{
-  const code=document.getElementById("otpInput").value.trim();
-  const messageDiv=document.getElementById("message");
-  messageDiv.textContent="";
-
-  if(!code){ messageDiv.textContent="Please enter OTP."; return; }
-
-  window.confirmationResult.confirm(code).then(result=>{
-    alert("Mobile verified successfully! You can now login.");
-    window.location.href="login.html";
-  }).catch(err=>{
-    console.error(err);
-    messageDiv.textContent="Invalid OTP: "+err.message;
   });
 });
 </script>
