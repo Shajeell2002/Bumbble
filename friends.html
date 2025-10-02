@@ -5,145 +5,34 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Friends</title>
 <style>
-body {
-  font-family: Arial,sans-serif;
-  background:#fff;
-  color:#333;
-  display:flex;
-  flex-direction:column;
-  min-height:100vh;
-  margin:0;
-}
-header {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:20px;
-  background:#ffcb2b;
-}
-header h1 { font-size:24px; }
-nav a { margin:0 10px; text-decoration:none; color:#333; font-weight:bold; }
-.friends-container {
-  flex:1;
-  padding:20px;
-  max-width:600px;
-  margin:auto;
-  background:#f9f9f9;
-  border-radius:15px;
-  box-shadow:0 2px 6px rgba(0,0,0,0.1);
-}
-.friend-card {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:10px;
-  margin-bottom:10px;
-  border:1px solid #ddd;
-  border-radius:8px;
-  background:#fff;
-}
-.friend-info {
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-.friend-info img {
-  width:50px;
-  height:50px;
-  border-radius:50%;
-  object-fit:cover;
-}
-.status-dot {
-  width:15px;
-  height:15px;
-  border-radius:50%;
-  display:inline-block;
-  border:2px solid #fff;
-}
-.addBtn, .removeBtn, .chatBtn {
-  padding:6px 12px;
-  border:none;
-  border-radius:6px;
-  font-weight:bold;
-  cursor:pointer;
-  margin-left:5px;
-}
-.addBtn { background:#4caf50; color:#fff; }
-.removeBtn { background:#f44336; color:#fff; }
-.chatBtn { background:#2196f3; color:#fff; position:relative; }
-footer {
-  text-align:center;
-  padding:20px;
-  background:#f1f1f1;
-  margin-top:auto;
-}
-
-/* Chat modal */
-#chatModal {
-  display:none;
-  position:fixed;
-  bottom:0;
-  right:20px;
-  width:320px;
-  height:400px;
-  background:#fff;
-  border:1px solid #ddd;
-  border-radius:10px;
-  box-shadow:0 2px 6px rgba(0,0,0,0.2);
-  flex-direction:column;
-  overflow:hidden;
-  display:flex;
-}
-#chatHeader {
-  padding:10px;
-  background:#ffcb2b;
-  border-top-left-radius:10px;
-  border-top-right-radius:10px;
-  position:relative;
-}
-#chatHeader button {
-  position:absolute;
-  right:10px;
-  top:5px;
-  background:#f44336;
-  color:#fff;
-  border:none;
-  border-radius:5px;
-  cursor:pointer;
-}
-#chatMessages {
-  flex:1;
-  padding:10px;
-  overflow-y:auto;
-  background:#f5f5f5;
-}
-#chatMessages div {
-  margin-bottom:8px;
-  padding:6px 10px;
-  border-radius:10px;
-  max-width:80%;
-}
-#chatMessages .sent { background:#4caf50; color:#fff; margin-left:auto; text-align:right; }
-#chatMessages .received { background:#e0e0e0; color:#333; text-align:left; }
-#typingIndicator { font-size:12px; color:#666; margin-bottom:5px; }
-#chatInputContainer { display:flex; padding:10px; border-top:1px solid #ddd; }
-#chatInput { flex:1; padding:6px; border-radius:5px; border:1px solid #ccc; }
-#chatSendBtn { margin-left:5px; padding:6px 10px; background:#2196f3; color:#fff; border:none; border-radius:5px; cursor:pointer; }
-.badge {
-  background:red;
-  color:white;
-  border-radius:50%;
-  padding:2px 6px;
-  font-size:12px;
-  margin-left:5px;
-  display:none;
-  position:absolute;
-  top:-5px;
-  right:-10px;
-}
+body {font-family:Arial,sans-serif;background:#fff;color:#333;display:flex;flex-direction:column;min-height:100vh;margin:0;}
+header{display:flex;justify-content:space-between;align-items:center;padding:20px;background:#ffcb2b;}
+header h1{font-size:24px;}
+nav a{margin:0 10px;text-decoration:none;color:#333;font-weight:bold;}
+.friends-container{flex:1;padding:20px;max-width:600px;margin:auto;background:#f9f9f9;border-radius:15px;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+.friend-card{display:flex;align-items:center;justify-content:space-between;padding:10px;margin-bottom:10px;border:1px solid #ddd;border-radius:8px;background:#fff;}
+.friend-info{display:flex;align-items:center;gap:10px;}
+.friend-info img{width:50px;height:50px;border-radius:50%;object-fit:cover;}
+.status-dot{width:15px;height:15px;border-radius:50%;display:inline-block;border:2px solid #fff;}
+.addBtn,.removeBtn,.chatBtn{padding:6px 12px;border:none;border-radius:6px;font-weight:bold;cursor:pointer;margin-left:5px;}
+.addBtn{background:#4caf50;color:#fff;}
+.removeBtn{background:#f44336;color:#fff;}
+.chatBtn{background:#2196f3;color:#fff;position:relative;}
+footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:auto;}
+#chatModal{display:none;position:fixed;bottom:0;right:20px;width:320px;height:400px;background:#fff;border:1px solid #ddd;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.2);flex-direction:column;overflow:hidden;display:flex;}
+#chatHeader{padding:10px;background:#ffcb2b;border-top-left-radius:10px;border-top-right-radius:10px;position:relative;}
+#chatHeader button{position:absolute;right:10px;top:5px;background:#f44336;color:#fff;border:none;border-radius:5px;cursor:pointer;}
+#chatMessages{flex:1;padding:10px;overflow-y:auto;background:#f5f5f5;}
+#chatMessages div{margin-bottom:8px;padding:6px 10px;border-radius:10px;max-width:80%;}
+#chatMessages .sent{background:#4caf50;color:#fff;margin-left:auto;text-align:right;}
+#chatMessages .received{background:#e0e0e0;color:#333;text-align:left;}
+#typingIndicator{font-size:12px;color:#666;margin-bottom:5px;}
+#chatInputContainer{display:flex;padding:10px;border-top:1px solid #ddd;}
+#chatInput{flex:1;padding:6px;border-radius:5px;border:1px solid #ccc;}
+#chatSendBtn{margin-left:5px;padding:6px 10px;background:#2196f3;color:#fff;border:none;border-radius:5px;cursor:pointer;}
+.badge{background:red;color:white;border-radius:50%;padding:2px 6px;font-size:12px;margin-left:5px;display:none;position:absolute;top:-5px;right:-10px;}
 </style>
 
-<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -170,43 +59,28 @@ const db = firebase.database();
 <nav id="navLinks"></nav>
 </header>
 
-<div class="friends-container" id="friendsContainer">
-<p>Loading users...</p>
-</div>
+<div class="friends-container" id="friendsContainer"><p>Loading users...</p></div>
 
-<!-- Chat Modal -->
 <div id="chatModal">
-  <div id="chatHeader">
-    <span id="chatWith"></span>
-    <button onclick="closeChat()">X</button>
-  </div>
-  <div id="chatMessages">
-    <div id="typingIndicator"></div>
-  </div>
+  <div id="chatHeader"><span id="chatWith"></span><button onclick="closeChat()">X</button></div>
+  <div id="chatMessages"><div id="typingIndicator"></div></div>
   <div id="chatInputContainer">
     <input type="text" id="chatInput" placeholder="Type a message...">
     <button id="chatSendBtn" onclick="sendMessage()">Send</button>
   </div>
 </div>
 
-<footer>
-<p>&copy; 2025 Bumbble. All rights reserved.</p>
-</footer>
+<footer><p>&copy; 2025 Bumbble. All rights reserved.</p></footer>
 
 <script>
 const nav = document.getElementById("navLinks");
 const friendsContainer = document.getElementById("friendsContainer");
+let currentChatId="", chatFriendUid="", chatFriendName="";
 
-let currentChatId = "";
-let chatFriendUid = "";
-let chatFriendName = "";
-
-auth.onAuthStateChanged(user => {
+auth.onAuthStateChanged(user=>{
   if(user && user.emailVerified){
     const uid = user.uid;
-    localStorage.setItem("current_user", uid);
-
-    nav.innerHTML = `
+    nav.innerHTML=`
       <a href="index.html">Home</a>
       <a href="friends.html">Friends</a>
       <a href="stories.html">Stories</a>
@@ -215,196 +89,124 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
-
     document.getElementById("logoutBtn").addEventListener("click", ()=>{
-      auth.signOut().then(()=>{
-        localStorage.removeItem("current_user");
-        window.location.href="login.html";
-      });
+      auth.signOut().then(()=>window.location.href="login.html");
     });
 
     const usersRef = db.ref("users");
-    const friendsRef = db.ref("friends/" + uid);
+    const friendsRef = db.ref("friends/"+uid);
 
-    // Set online status
-    const onlineRef = db.ref("users/" + uid + "/online");
-    onlineRef.set(true);
-    onlineRef.onDisconnect().set(false);
+    // online status
+    const onlineRef = db.ref("users/"+uid+"/online");
+    onlineRef.set(true); onlineRef.onDisconnect().set(false);
 
     function loadFriends(){
-      usersRef.on("value", snapshot => {
-        const users = snapshot.val() || {};
-        friendsRef.once("value").then(fSnap => {
-          const friends = fSnap.val() || {};
-          friendsContainer.innerHTML = "";
-
+      usersRef.on("value", snapshot=>{
+        const users = snapshot.val()||{};
+        friendsRef.once("value").then(fSnap=>{
+          const friends = fSnap.val()||{};
+          friendsContainer.innerHTML="";
           for(let key in users){
-            const u = users[key];
-            const isFriend = (friends[key] ? true : false) || (key === uid);
+            const u=users[key];
+            const isFriend=(friends[key]||false)||(key===uid);
+            const friendCard=document.createElement("div"); friendCard.className="friend-card";
+            const info=document.createElement("div"); info.className="friend-info";
+            const img=document.createElement("img"); img.src=u.pic||"images/profile1.png";
+            const name=document.createElement("span"); name.textContent=`${u.name||"Unknown"}, ${u.age||"N/A"}`;
+            const location=document.createElement("span"); location.textContent=u.location||"";
+            const status=document.createElement("span"); status.className="status-dot";
+            status.style.backgroundColor=u.online?"green":"red";
+            info.appendChild(img); info.appendChild(name); info.appendChild(location); info.appendChild(status);
 
-            const friendCard = document.createElement("div");
-            friendCard.className = "friend-card";
-
-            const info = document.createElement("div");
-            info.className = "friend-info";
-
-            const img = document.createElement("img");
-            img.src = u.pic || "images/profile1.png";
-
-            const name = document.createElement("span");
-            name.textContent = `${u.name || "Unknown"}, ${u.age || "N/A"}`;
-
-            const location = document.createElement("span");
-            location.textContent = u.location || "";
-
-            const status = document.createElement("span");
-            status.className = "status-dot";
-            status.style.backgroundColor = u.online ? "green" : "red";
-
-            info.appendChild(img);
-            info.appendChild(name);
-            info.appendChild(location);
-            info.appendChild(status);
-
-            const btnContainer = document.createElement("div");
-
-            if(key !== uid){
-              // Add/Remove Friend Button
-              const friendBtn = document.createElement("button");
-              friendBtn.textContent = isFriend ? "Remove" : "Add";
-              friendBtn.className = isFriend ? "removeBtn" : "addBtn";
-              friendBtn.addEventListener("click", ()=>{
-                if(isFriend){
-                  friendsRef.child(key).remove();
-                } else {
-                  friendsRef.update({[key]: true});
-                }
-              });
+            const btnContainer=document.createElement("div");
+            if(key!==uid){
+              const friendBtn=document.createElement("button");
+              friendBtn.textContent=isFriend?"Remove":"Add";
+              friendBtn.className=isFriend?"removeBtn":"addBtn";
+              friendBtn.addEventListener("click",()=>{ isFriend?friendsRef.child(key).remove():friendsRef.update({[key]:true}); });
               btnContainer.appendChild(friendBtn);
 
-              // Chat Button with Unread Badge
-              const chatBtn = document.createElement("button");
-              chatBtn.textContent = "Chat";
-              chatBtn.className = "chatBtn";
-
-              const badge = document.createElement("span");
-              badge.className = "badge";
-              chatBtn.appendChild(badge);
-
-              const chatId = [uid,key].sort().join("_");
-              const chatRef = db.ref("chats/" + chatId + "/messages");
-              const lastReadRef = db.ref("chats/" + chatId + "/lastRead/" + uid);
-
-              chatRef.on("child_added", snapshot => {
-                const msg = snapshot.val();
-                lastReadRef.once("value").then(lastSnap => {
-                  const lastRead = lastSnap.val() || 0;
-                  if(msg.timestamp > lastRead && msg.sender !== uid){
-                    badge.style.display = "inline-block";
-                    badge.textContent = parseInt(badge.textContent || "0") + 1;
-                  }
+              // chat button
+              const chatBtn=document.createElement("button");
+              chatBtn.textContent="Chat"; chatBtn.className="chatBtn";
+              const badge=document.createElement("span"); badge.className="badge"; chatBtn.appendChild(badge);
+              const chatId=[uid,key].sort().join("_");
+              const chatRef=db.ref("chats/"+chatId+"/messages");
+              const lastReadRef=db.ref("chats/"+chatId+"/lastRead/"+uid);
+              chatRef.on("child_added", snap=>{
+                const msg=snap.val();
+                lastReadRef.once("value").then(lSnap=>{
+                  const lastRead=lSnap.val()||0;
+                  if(msg.timestamp>lastRead && msg.sender!==uid){ badge.style.display="inline-block"; badge.textContent=parseInt(badge.textContent||"0")+1; }
                 });
               });
-
               chatBtn.addEventListener("click", ()=>{
-                badge.style.display = "none";
-                lastReadRef.set(Date.now());
-                openChat(uid,key,u.name || "Unknown");
+                badge.style.display="none"; lastReadRef.set(Date.now());
+                openChat(uid,key,u.name||"Unknown");
               });
-
               btnContainer.appendChild(chatBtn);
             } else {
-              const selfBtn = document.createElement("button");
-              selfBtn.textContent = "You";
-              selfBtn.disabled = true;
-              selfBtn.style.background = "#ccc";
-              selfBtn.style.cursor = "default";
-              btnContainer.appendChild(selfBtn);
+              const selfBtn=document.createElement("button"); selfBtn.textContent="You"; selfBtn.disabled=true; selfBtn.style.background="#ccc"; selfBtn.style.cursor="default"; btnContainer.appendChild(selfBtn);
             }
 
-            friendCard.appendChild(info);
-            friendCard.appendChild(btnContainer);
-            friendsContainer.appendChild(friendCard);
-          }
-
-          if(Object.keys(users).length === 0){
-            friendsContainer.innerHTML = "<p>No users found.</p>";
+            friendCard.appendChild(info); friendCard.appendChild(btnContainer); friendsContainer.appendChild(friendCard);
           }
         });
       });
     }
 
     loadFriends();
-
   } else {
-    nav.innerHTML = `
-      <a href="index.html">Home</a>
-      <a href="login.html">Login</a>
-      <a href="signup.html">Sign Up</a>
-    `;
-    friendsContainer.innerHTML = "<p>Please login to view users.</p>";
+    nav.innerHTML=`<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
+    friendsContainer.innerHTML="<p>Please login to view users.</p>";
   }
 });
 
-// Chat Functions
-const chatInput = document.getElementById("chatInput");
-chatInput.addEventListener("input", () => {
+// Chat
+const chatInput=document.getElementById("chatInput");
+chatInput.addEventListener("input", ()=>{
   if(!currentChatId) return;
-  const typingRef = db.ref("chats/" + currentChatId + "/typing/" + auth.currentUser.uid);
-  typingRef.set(chatInput.value.length > 0);
-  typingRef.onDisconnect().set(false);
+  const typingRef=db.ref("chats/"+currentChatId+"/typing/"+auth.currentUser.uid);
+  typingRef.set(chatInput.value.length>0); typingRef.onDisconnect().set(false);
 });
 
 function openChat(myUid, friendUid, friendName){
-  chatFriendUid = friendUid;
-  chatFriendName = friendName;
-  document.getElementById("chatWith").textContent = "Chat with " + friendName;
-  document.getElementById("chatModal").style.display = "flex";
-
-  currentChatId = [myUid, friendUid].sort().join("_");
-  const chatRef = db.ref("chats/" + currentChatId + "/messages");
-  const typingRef = db.ref("chats/" + currentChatId + "/typing");
-  const lastReadRef = db.ref("chats/" + currentChatId + "/lastRead/" + myUid);
-
-  chatRef.off();
-  document.getElementById("chatMessages").innerHTML = '<div id="typingIndicator"></div>';
-
-  chatRef.on("child_added", snapshot => {
-    const msg = snapshot.val();
-    const msgDiv = document.createElement("div");
-    msgDiv.textContent = msg.text;
-    msgDiv.className = msg.sender === myUid ? "sent" : "received";
+  chatFriendUid=friendUid; chatFriendName=friendName;
+  document.getElementById("chatWith").textContent="Chat with "+friendName;
+  document.getElementById("chatModal").style.display="flex";
+  currentChatId=[myUid,friendUid].sort().join("_");
+  const chatRef=db.ref("chats/"+currentChatId+"/messages");
+  const typingRef=db.ref("chats/"+currentChatId+"/typing");
+  const lastReadRef=db.ref("chats/"+currentChatId+"/lastRead/"+myUid);
+  chatRef.off(); document.getElementById("chatMessages").innerHTML='<div id="typingIndicator"></div>';
+  chatRef.on("child_added", snap=>{
+    const msg=snap.val();
+    const msgDiv=document.createElement("div");
+    msgDiv.textContent=msg.text;
+    msgDiv.className=msg.sender===myUid?"sent":"received";
     document.getElementById("chatMessages").appendChild(msgDiv);
-    document.getElementById("chatMessages").scrollTop = document.getElementById("chatMessages").scrollHeight;
+    document.getElementById("chatMessages").scrollTop=document.getElementById("chatMessages").scrollHeight;
   });
-
-  // Typing Indicator
-  typingRef.on("value", snap => {
-    const typingData = snap.val() || {};
-    const friendTyping = typingData[friendUid];
-    const typingEl = document.getElementById("typingIndicator");
-    typingEl.textContent = friendTyping ? friendName + " is typing..." : "";
+  typingRef.on("value", snap=>{
+    const typingData=snap.val()||{};
+    const friendTyping=typingData[friendUid];
+    const typingEl=document.getElementById("typingIndicator");
+    typingEl.textContent=friendTyping?friendName+" is typing...":"";
   });
-
-  // Mark messages as read
   lastReadRef.set(Date.now());
 }
 
 function closeChat(){
-  document.getElementById("chatModal").style.display = "none";
-  document.getElementById("chatMessages").innerHTML = '<div id="typingIndicator"></div>';
+  document.getElementById("chatModal").style.display="none";
+  document.getElementById("chatMessages").innerHTML='<div id="typingIndicator"></div>';
 }
 
 function sendMessage(){
-  const text = chatInput.value.trim();
+  if(!currentChatId) return alert("Open a chat first!");
+  const text=chatInput.value.trim();
   if(!text) return;
-  const msgRef = db.ref("chats/" + currentChatId + "/messages").push();
-  msgRef.set({
-    sender: auth.currentUser.uid,
-    text: text,
-    timestamp: Date.now()
-  });
-  chatInput.value = "";
+  const msgRef=db.ref("chats/"+currentChatId+"/messages").push();
+  msgRef.set({sender:auth.currentUser.uid,text:text,timestamp:Date.now()}).then(()=>chatInput.value="").catch(err=>console.error("Message not sent:",err));
 }
 </script>
 </body>
