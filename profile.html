@@ -18,7 +18,6 @@ nav a{margin:0 10px;text-decoration:none;color:#333;font-weight:bold;}
 footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:auto;}
 </style>
 
-<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -71,6 +70,7 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
+
     document.getElementById("logoutBtn").addEventListener("click", ()=>{
       auth.signOut().then(()=>{
         localStorage.removeItem("current_user");
@@ -81,21 +81,22 @@ auth.onAuthStateChanged(user => {
     const profileContainer = document.getElementById("profileContainer");
     const userRef = db.ref("users/" + user.uid);
 
-    // Set online status
-    userRef.child("online").set(true);
-    userRef.child("online").onDisconnect().set(false);
+    // Set online status in real-time
+    const onlineRef = userRef.child("online");
+    onlineRef.set(true);
+    onlineRef.onDisconnect().set(false);
 
-    let selectedFile = null;
-
-    // Load profile
-    userRef.once("value").then(snapshot => {
+    // Load profile data
+    userRef.on("value", snapshot => {
       const u = snapshot.val();
       if(u){
-        const online = u.online || false;
+        const online = u.online ? true : false;
+        const picUrl = u.githubPic || u.pic || 'images/profile1.png';
 
         profileContainer.innerHTML = `
-          <img id="profilePic" src="${u.pic || 'images/profile1.png'}" alt="Profile">
+          <img id="profilePic" src="${picUrl}" alt="Profile">
           <input type="file" id="picUpload" accept="image/*">
+          <input type="text" id="githubPicUrl" placeholder="Or paste GitHub raw URL" value="${u.githubPic || ''}">
 
           <label>Name</label>
           <input type="text" id="name" value="${u.name || ''}">
@@ -122,62 +123,69 @@ auth.onAuthStateChanged(user => {
           <button id="saveBtn">Save Profile</button>
         `;
 
-        const profileImg = document.getElementById("profilePic");
-        const picInput = document.getElementById("picUpload");
-        const saveBtn = document.getElementById("saveBtn");
-
-        // Preview selected pic
-        picInput.addEventListener("change", e => {
+        // Profile pic upload preview & Firebase Storage
+        const profilePicElem = document.getElementById("profilePic");
+        document.getElementById("picUpload").addEventListener("change", e=>{
           const file = e.target.files[0];
-          if(!file) return;
-          if(file.size > 2*1024*1024){
-            alert("⚠️ Max 2MB"); e.target.value = ''; return;
+          if(file){
+            const MAX_SIZE = 2*1024*1024; // 2 MB
+            if(file.size > MAX_SIZE){
+              alert("⚠️ File size exceeds 2 MB.");
+              e.target.value = "";
+              return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(ev){
+              profilePicElem.src = ev.target.result; // preview before saving
+            }
+            reader.readAsDataURL(file);
           }
-          selectedFile = file;
-          const reader = new FileReader();
-          reader.onload = ev => profileImg.src = ev.target.result;
-          reader.readAsDataURL(file);
         });
 
-        // Save profile + pic
-        saveBtn.addEventListener("click", ()=>{
+        // Save profile updates
+        document.getElementById("saveBtn").addEventListener("click", ()=>{
           const updatedName = document.getElementById("name").value.trim();
           const updatedGender = document.getElementById("gender").value;
           const updatedLocation = document.getElementById("location").value.trim();
           const updatedAge = parseInt(document.getElementById("age").value);
+          const githubUrl = document.getElementById("githubPicUrl").value.trim();
 
           if(!updatedName || !updatedGender || !updatedLocation || !updatedAge){
-            alert("⚠️ Please fill all fields"); return;
+            alert("⚠️ Please fill all fields");
+            return;
           }
 
-          const updateProfileData = () => {
-            userRef.update({
-              name: updatedName,
-              gender: updatedGender,
-              location: updatedLocation,
-              age: updatedAge
-            }).then(()=>alert("✅ Profile updated successfully!"))
-              .catch(err=>alert("❌ Error updating profile: "+err.message));
-          }
+          const updatedData = {
+            name: updatedName,
+            gender: updatedGender,
+            location: updatedLocation,
+            age: updatedAge,
+            githubPic: githubUrl || null
+          };
 
-          if(selectedFile){
-            // Upload pic first
-            const storageRef = storage.ref("profile_pics/"+user.uid+".jpg");
-            storageRef.put(selectedFile)
-              .then(()=>storageRef.getDownloadURL())
-              .then(url=>{
-                userRef.update({pic:url})
-                  .then(()=>{ profileImg.src = url; updateProfileData(); })
-                  .catch(err=>alert("❌ Error saving pic URL: "+err.message));
-              })
-              .catch(err=>alert("❌ Upload failed: "+err.message));
+          // If user uploaded new file, save to Firebase Storage first
+          const file = document.getElementById("picUpload").files[0];
+          if(file){
+            const storageRef = storage.ref("profile_pics/" + user.uid + ".jpg");
+            storageRef.put(file).then(()=>{
+              storageRef.getDownloadURL().then(url=>{
+                updatedData.pic = url;
+                userRef.update(updatedData).then(()=>{
+                  profilePicElem.src = githubUrl || updatedData.pic; // final update
+                  alert("✅ Profile updated successfully!");
+                });
+              });
+            });
           } else {
-            updateProfileData();
+            userRef.update(updatedData).then(()=>{
+              profilePicElem.src = githubUrl || u.pic || 'images/profile1.png';
+              alert("✅ Profile updated successfully!");
+            });
           }
-
         });
+
       } else {
-        profileContainer.innerHTML="<p>Profile not found.</p>";
+        profileContainer.innerHTML = "<p>Profile not found.</p>";
       }
     });
 
@@ -187,7 +195,7 @@ auth.onAuthStateChanged(user => {
       <a href="login.html">Login</a>
       <a href="signup.html">Sign Up</a>
     `;
-    document.getElementById("profileContainer").innerHTML="<p>Please login to view profile.</p>";
+    document.getElementById("profileContainer").innerHTML = "<p>Please login to view profile.</p>";
   }
 });
 </script>
