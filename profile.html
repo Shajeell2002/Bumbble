@@ -37,12 +37,10 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 const storage = firebase.storage();
-
-let selectedFile = null;
 </script>
 </head>
-
 <body>
+
 <header>
 <h1>Bumbble</h1>
 <nav id="navLinks"></nav>
@@ -72,8 +70,8 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
-    document.getElementById("logoutBtn").addEventListener("click", ()=> {
-      auth.signOut().then(()=> {
+    document.getElementById("logoutBtn").addEventListener("click", ()=>{
+      auth.signOut().then(()=>{
         localStorage.removeItem("current_user");
         window.location.href="login.html";
       });
@@ -92,7 +90,6 @@ auth.onAuthStateChanged(user => {
       const u = snapshot.val();
       if(u){
         const online = u.online ? true : false;
-
         profileContainer.innerHTML = `
           <img id="profilePic" src="${u.pic || 'images/profile1.png'}" alt="Profile">
           <input type="file" id="picUpload" accept="image/*">
@@ -125,28 +122,40 @@ auth.onAuthStateChanged(user => {
         const profileImg = document.getElementById("profilePic");
         const picInput = document.getElementById("picUpload");
 
+        // Show preview immediately
         picInput.addEventListener("change", e => {
           const file = e.target.files[0];
           if(file){
-            selectedFile = file; // store selected file for save
-
+            // Preview
             const reader = new FileReader();
             reader.onload = function(event){
-              profileImg.src = event.target.result; // preview immediately
+              profileImg.src = event.target.result;
             };
             reader.readAsDataURL(file);
 
-            const MAX_SIZE = 2*1024*1024;
+            // Check size
+            const MAX_SIZE = 2*1024*1024; // 2 MB
             if(file.size > MAX_SIZE){
               alert("⚠️ File exceeds 2MB.");
               e.target.value = "";
               profileImg.src = u.pic || 'images/profile1.png';
-              selectedFile = null;
+              return;
             }
+
+            // Upload to Firebase Storage
+            const storageRef = storage.ref("profile_pics/" + user.uid + ".jpg");
+            storageRef.put(file).then(snapshot=>{
+              snapshot.ref.getDownloadURL().then(url=>{
+                userRef.update({ pic: url });
+              });
+            }).catch(err=>{
+              alert("Upload failed: " + err.message);
+            });
           }
         });
 
-        document.getElementById("saveBtn").addEventListener("click", async () => {
+        // Save profile updates
+        document.getElementById("saveBtn").addEventListener("click", ()=>{
           const updatedName = document.getElementById("name").value.trim();
           const updatedGender = document.getElementById("gender").value;
           const updatedLocation = document.getElementById("location").value.trim();
@@ -157,28 +166,13 @@ auth.onAuthStateChanged(user => {
             return;
           }
 
-          try {
-            let picURL = null;
-            if(selectedFile){
-              const storageRef = storage.ref("profile_pics/" + user.uid + ".jpg");
-              const snapshot = await storageRef.put(selectedFile);
-              picURL = await snapshot.ref.getDownloadURL();
-              selectedFile = null; // reset
-            }
-
-            const updateObj = {
-              name: updatedName,
-              gender: updatedGender,
-              location: updatedLocation,
-              age: updatedAge
-            };
-            if(picURL) updateObj.pic = picURL;
-
-            await userRef.update(updateObj);
-            alert("✅ Profile updated successfully!");
-          } catch(err) {
-            alert("❌ Error updating profile: " + err.message);
-          }
+          userRef.update({
+            name: updatedName,
+            gender: updatedGender,
+            location: updatedLocation,
+            age: updatedAge
+          }).then(()=>alert("✅ Profile updated successfully!"))
+            .catch(err=>alert("❌ Error updating profile: " + err.message));
         });
 
       } else {
@@ -192,7 +186,7 @@ auth.onAuthStateChanged(user => {
       <a href="login.html">Login</a>
       <a href="signup.html">Sign Up</a>
     `;
-    profileContainer.innerHTML = "<p>Please login to view profile.</p>";
+    document.getElementById("profileContainer").innerHTML = "<p>Please login to view profile.</p>";
   }
 });
 </script>
