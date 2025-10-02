@@ -85,21 +85,20 @@ document.getElementById("signupForm").addEventListener("submit", function(e){
   }
 
   auth.createUserWithEmailAndPassword(email, password)
-  .then((userCredential)=>{
-    const user = userCredential.user;
+.then((userCredential)=>{
+  const user = userCredential.user;
 
-    // Send verification email
-    user.sendEmailVerification()
-    .then(()=>{
-      alert("✅ Signup successful! Check your email for verification.");
+  // Send verification email
+  user.sendEmailVerification();
 
-      // Save user to Realtime Database
-      db.ref('users/' + user.uid).set({
-        name: name,
-        email: email,
-        lastLogin: 0,
-        pic: "images/profile1.png"
-      });
+  // Save user in Realtime Database
+  db.ref('users/' + user.uid).set({
+    name: name,
+    email: email,
+    lastLogin: 0,
+    pic: "images/profile1.png"
+  });
+});
 
       document.getElementById("signupForm").reset();
     });
@@ -112,3 +111,4 @@ document.getElementById("signupForm").addEventListener("submit", function(e){
 
 </body>
 </html>
+
