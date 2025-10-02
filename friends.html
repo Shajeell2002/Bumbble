@@ -32,7 +32,7 @@
 </header>
 
 <section class="section">
-  <h2>Friends</h2>
+  <h2>All Members</h2>
   <div class="friend-container" id="friendContainer"></div>
   <div id="noFriendsMsg" style="text-align:center; margin-top:30px; font-size:18px; color:#777; display:none;">No members found.</div>
 </section>
@@ -47,21 +47,24 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
-const firebaseConfig = {
+  // Firebase config
+  const firebaseConfig = {
     apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
-  authDomain: "bumbble-c061f.firebaseapp.com",
-  projectId: "bumbble-c061f",
-  storageBucket: "bumbble-c061f.firebasestorage.app",
-  messagingSenderId: "213165886981",
-  appId: "1:213165886981:web:c18652003444869b1bd66c",
-};
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+    authDomain: "bumbble-c061f.firebaseapp.com",
+    projectId: "bumbble-c061f",
+    storageBucket: "bumbble-c061f.firebasestorage.app",
+    messagingSenderId: "213165886981",
+    appId: "1:213165886981:web:c18652003444869b1bd66c"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+</script>
 
+<script>
 // NAVIGATION MENU
 const nav = document.getElementById("navLinks");
-const currentUserEmail = localStorage.getItem("current_user"); // logged-in user email
+const currentUserEmail = localStorage.getItem("current_user");
 
 if(currentUserEmail){
     nav.innerHTML = `
@@ -75,10 +78,11 @@ if(currentUserEmail){
     `;
     document.getElementById("logoutBtn").addEventListener("click", function(){
         localStorage.removeItem("current_user");
+        auth.signOut();
         alert("✅ Logged out successfully.");
         window.location.href = "login.html";
     });
-}else{
+} else {
     nav.innerHTML = `
         <a href="index.html">Home</a>
         <a href="friends.html">Friends</a>
@@ -89,24 +93,28 @@ if(currentUserEmail){
         <a href="signup.html">Sign Up</a>
     `;
 }
+</script>
 
-// FRIEND LIST LOGIC (Firebase)
+<script>
+// FRIEND LIST (Firebase)
 const friendContainer = document.getElementById("friendContainer");
 const noFriendsMsg = document.getElementById("noFriendsMsg");
-const ONLINE_THRESHOLD = 15*60*1000; // 15 minutes
 
 db.collection("users").get().then((querySnapshot) => {
     let friendsFound = false;
-    const now = Date.now();
+    const now = new Date().getTime();
+    const ONLINE_THRESHOLD = 15*60*1000; // 15 minutes
 
-    querySnapshot.forEach(doc => {
+    querySnapshot.forEach((doc) => {
         const user = doc.data();
+        if(!user.email) return;
 
-        // Show all verified users
-        if(!user.emailVerified) return;
+        // Only show verified users
+        if(user.emailVerified === false) return;
 
         const lastLogin = user.lastLogin || 0;
         const online = (now - lastLogin) <= ONLINE_THRESHOLD;
+
         const imgSrc = user.pic || "images/profile1.png";
         const isSelf = (user.email === currentUserEmail);
 
@@ -115,15 +123,15 @@ db.collection("users").get().then((querySnapshot) => {
         card.innerHTML = `
             <img src="${imgSrc}" alt="Profile Picture">
             <h3>${user.name || "Unnamed"} ${isSelf ? "(You)" : ""}</h3>
+            <p><strong>Email:</strong> ${user.email}</p>
             <p><strong>Gender:</strong> ${user.gender || "Unknown"}</p>
             <p><strong>Location:</strong> ${user.location || "Unknown"}</p>
             <span class="status-dot" style="background-color:${online?'green':'red'}"></span>
         `;
 
-        // Self user on top
         if(isSelf){
-            friendContainer.prepend(card);
-        }else{
+            friendContainer.prepend(card); // Logged-in user on top
+        } else {
             friendContainer.appendChild(card);
         }
 
@@ -133,11 +141,11 @@ db.collection("users").get().then((querySnapshot) => {
     if(!friendsFound){
         noFriendsMsg.style.display = "block";
     }
-}).catch(error => {
+}).catch((error) => {
     console.error("Error fetching users:", error);
     noFriendsMsg.style.display = "block";
 });
 </script>
+
 </body>
 </html>
-
