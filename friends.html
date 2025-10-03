@@ -20,6 +20,7 @@ nav a:hover{ text-decoration:underline; }
 .user-card{ flex:0 0 auto; width:150px; background:#fff; border-radius:15px; padding:12px; display:flex; flex-direction:column; align-items:center; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,0.1); transition:transform 0.3s, box-shadow 0.3s; position:relative; cursor:pointer; }
 .user-card:hover{ transform:translateY(-5px); box-shadow:0 8px 20px rgba(0,0,0,0.2); }
 
+.user-info span{ display:block; margin:4px 0; }
 .status-dot{ width:12px; height:12px; border-radius:50%; display:inline-block; margin-right:5px; vertical-align:middle; }
 .online{ background:green; }
 .offline{ background:red; }
@@ -40,6 +41,17 @@ nav a:hover{ text-decoration:underline; }
 #chatInput{ flex:1; padding:8px; border:none; outline:none; border-radius:0 0 0 10px; }
 #sendBtn{ padding:8px 12px; border:none; background:#ffcb2b; border-radius:0 0 10px 0; cursor:pointer; }
 #sendBtn:hover{ background:#f1b800; }
+
+/* NEW MESSAGE POP ANIMATION */
+@keyframes popMessage {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.message.new {
+  animation: popMessage 0.3s ease forwards;
+}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -165,6 +177,12 @@ function loadUsersRealtime(){
   });
 }
 
+// HELPER TO ANIMATE NEW MESSAGES
+function animateNewMessage(div){
+  div.classList.add('new');
+  setTimeout(()=> div.classList.remove('new'), 500);
+}
+
 // CHAT FUNCTIONS
 function openChat(friendUid, friendName){
   currentChatFriendUid = friendUid;
@@ -175,27 +193,13 @@ function openChat(friendUid, friendName){
   updateFriendListBadges();
 
   const chatId = getChatId(currentUserUid, friendUid);
-
-  // Load entire chat history
-  db.ref('chats/'+chatId).once('value', snapshot=>{
-    const messages = snapshot.val() || {};
-    Object.values(messages).forEach(msg=>{
-      const isSelf = msg.sender === currentUserUid;
-      addMessageToChat(msg,isSelf);
-    });
-    chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior:'smooth'});
-  });
-
-  // Listen for new messages
   db.ref('chats/'+chatId).off();
   db.ref('chats/'+chatId).on('child_added', snap=>{
     const msg = snap.val();
     const isSelf = msg.sender === currentUserUid;
-
-    if(chatMessages.innerHTML.includes(msg.text)) return;
-
     addMessageToChat(msg,isSelf);
 
+    // Show notification only for received messages
     if(!isSelf && Notification.permission === "granted"){
       new Notification(`New message from ${friendName}`, { body: msg.text });
     }
@@ -223,9 +227,11 @@ function addMessageToChat(msg,isSelf){
   div.innerHTML = `${msg.text}<div class="timestamp">${ts}</div>`;
   chatMessages.appendChild(div);
   chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior:'smooth'});
+
+  if(!isSelf) animateNewMessage(div);
 }
 
-// UNREAD COUNTERS & NOTIFICATIONS
+// UNREAD COUNTERS & NOTIFICATIONS FOR RECEIVER
 db.ref('chats').on('child_added', snap=>{
   const msgsRef = snap.ref;
   msgsRef.on('child_added', msgSnap=>{
