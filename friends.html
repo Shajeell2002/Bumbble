@@ -242,7 +242,12 @@ function loadUsersRealtime(){
         <button class="chatBtn">Chat</button>
       `;
 
-      row.querySelector(".chatBtn").addEventListener('click', e => {
+      // make entire row clickable
+      row.addEventListener('click', e=>{
+        if(e.target.classList.contains('chatBtn')) return;
+        openChat(uid, name);
+      });
+      row.querySelector(".chatBtn").addEventListener('click', e=>{
         e.stopPropagation();
         openChat(uid, name);
       });
@@ -256,7 +261,7 @@ function loadUsersRealtime(){
   });
 }
 
-// --- Chat functions same as before ---
+// Chat functions (same as previous code)
 function openChat(friendUid, friendName){
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
