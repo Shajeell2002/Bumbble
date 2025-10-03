@@ -5,62 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Profile</title>
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #fff;
-  color: #333;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  background: #ffcb2b;
-}
-header h1 { font-size: 24px; }
-nav a { margin: 0 10px; text-decoration: none; color: #333; font-weight: bold; }
-.profile-container {
-  flex: 1;
-  max-width: 400px;
-  margin: 30px auto;
-  padding: 20px;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-.profile-container h2 { text-align: center; margin-bottom: 20px; }
-.profile-container input[type=text],
-.profile-container input[type=number],
-.profile-container input[type=email] {
-  width: 100%;
-  padding: 8px;
-  margin: 8px 0;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-}
-.profile-container input[type=file] { margin: 8px 0; }
-.profile-container button {
-  width: 100%;
-  padding: 10px;
-  margin-top: 10px;
-  background: #ffcb2b;
-  border: none;
-  border-radius: 5px;
-  font-weight: bold;
-  cursor: pointer;
-}
-.profile-container button:hover { background: #f1b800; }
-.error-msg { color: red; font-size: 14px; margin-top: 5px; }
-#profilePreview { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin: 10px 0; }
+body { font-family: Arial,sans-serif; background:#fff; color:#333; margin:0; display:flex; flex-direction:column; min-height:100vh; }
+header { display:flex; justify-content:space-between; align-items:center; padding:20px; background:#ffcb2b; }
+header h1 { font-size:24px; }
+nav a { margin:0 10px; text-decoration:none; color:#333; font-weight:bold; }
+.profile-container { flex:1; max-width:400px; margin:30px auto; padding:20px; border-radius:10px; border:1px solid #ddd; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+.profile-container h2 { text-align:center; margin-bottom:20px; }
+.profile-container input[type=text], .profile-container input[type=number], .profile-container input[type=email] { width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:5px; }
+.profile-container input[type=file] { margin:8px 0; }
+.profile-container button { width:100%; padding:10px; margin-top:10px; background:#ffcb2b; border:none; border-radius:5px; font-weight:bold; cursor:pointer; }
+.profile-container button:hover { background:#f1b800; }
+.error-msg { color:red; font-size:14px; margin-top:5px; }
+#profilePreview { width:100px; height:100px; border-radius:50%; object-fit:cover; margin:10px 0; }
 </style>
 
+<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 </head>
 <body>
 
@@ -94,13 +57,15 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
+const storage = firebase.storage();
 
 const nav = document.getElementById("navLinks");
 const errorMsg = document.getElementById("errorMsg");
 const profilePreview = document.getElementById("profilePreview");
-let profileBase64 = "";
+let profileThumbnailBase64 = "";
+let originalFile = null;
 
-// Navigation & auth
+// Auth & navigation
 auth.onAuthStateChanged(user => {
   if (user && user.emailVerified) {
     nav.innerHTML = `
@@ -112,40 +77,34 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
-    document.getElementById("logoutBtn").addEventListener("click", ()=> {
-      auth.signOut().then(()=>window.location.href="login.html");
-    });
+    document.getElementById("logoutBtn").addEventListener("click", ()=> auth.signOut().then(()=>window.location.href="login.html"));
     loadProfile(user.uid);
+    listenRealtime(user.uid);
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
     document.querySelector(".profile-container").innerHTML = "<p>Please login to view your profile.</p>";
   }
 });
 
-// Compress image to ~64KB using canvas
+// Compress image to <=64KB
 function compressImage(file, maxSizeKB = 64, callback) {
   const reader = new FileReader();
   reader.onload = function(evt) {
     const img = new Image();
     img.onload = function() {
       const canvas = document.createElement('canvas');
-      let width = img.width;
-      let height = img.height;
-      const maxDim = 200; // optional resizing dimension
-      if (width > height && width > maxDim) {
-        height *= maxDim / width; width = maxDim;
-      } else if (height > width && height > maxDim) {
-        width *= maxDim / height; height = maxDim;
-      } else if (width > maxDim) { width = height = maxDim; }
-
-      canvas.width = width;
-      canvas.height = height;
+      let width = img.width, height = img.height;
+      const maxDim = 200;
+      if(width > height && width > maxDim){ height = Math.round(height*maxDim/width); width = maxDim; }
+      else if(height > width && height > maxDim){ width = Math.round(width*maxDim/height); height = maxDim; }
+      else if(width > maxDim){ width = height = maxDim; }
+      canvas.width = width; canvas.height = height;
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
+      ctx.drawImage(img,0,0,width,height);
 
       let quality = 0.9;
       let dataUrl = canvas.toDataURL('image/jpeg', quality);
-      while ((dataUrl.length / 1024) > maxSizeKB && quality > 0.1) {
+      while((dataUrl.length/1024) > maxSizeKB && quality > 0.05){
         quality -= 0.05;
         dataUrl = canvas.toDataURL('image/jpeg', quality);
       }
@@ -156,68 +115,86 @@ function compressImage(file, maxSizeKB = 64, callback) {
   reader.readAsDataURL(file);
 }
 
-// Handle profile picture upload & compression
+// Handle file upload & preview
 document.getElementById("profilePic").addEventListener("change", e => {
   const file = e.target.files[0];
-  if (!file) return;
+  if(!file) return;
 
-  if (file.size > 2*1024*1024) { // 2MB limit
+  if(file.size > 2*1024*1024){ // 2MB limit
     errorMsg.textContent = "File too large! Max 2MB.";
     return;
   }
 
+  originalFile = file;
   compressImage(file, 64, (compressedDataUrl) => {
-    profileBase64 = compressedDataUrl;
-    profilePreview.src = profileBase64;
+    profileThumbnailBase64 = compressedDataUrl;
+    profilePreview.src = profileThumbnailBase64;
     errorMsg.textContent = "";
   });
 });
 
-// Load profile data
-async function loadProfile(uid) {
+// Load profile data once
+async function loadProfile(uid){
   try {
     const publicSnap = await db.ref(`users/${uid}/public`).once('value');
     const privateSnap = await db.ref(`users/${uid}/private`).once('value');
-
     const publicData = publicSnap.val() || {};
     const privateData = privateSnap.val() || {};
-
     document.getElementById("name").value = publicData.name || "";
     document.getElementById("age").value = publicData.age || "";
     document.getElementById("location").value = publicData.location || "";
     document.getElementById("email").value = privateData.email || "";
     profilePreview.src = publicData.pic || "images/profile1.png";
-    profileBase64 = publicData.pic || "";
-  } catch(err) {
-    console.error("Error loading profile:", err);
-    errorMsg.textContent = "Failed to load profile.";
-  }
+    profileThumbnailBase64 = publicData.pic || "";
+  } catch(err){ console.error(err); errorMsg.textContent="Failed to load profile."; }
 }
 
-// Update profile data
-async function updateProfile() {
+// Realtime updates from Firebase
+function listenRealtime(uid){
+  db.ref(`users/${uid}/public`).on('value', snap => {
+    const data = snap.val() || {};
+    document.getElementById("name").value = data.name || "";
+    document.getElementById("age").value = data.age || "";
+    document.getElementById("location").value = data.location || "";
+    profilePreview.src = data.pic || "images/profile1.png";
+    profileThumbnailBase64 = data.pic || "";
+  });
+}
+
+// Update profile
+async function updateProfile(){
   const user = auth.currentUser;
-  if (!user) return;
+  if(!user) return;
 
   const uid = user.uid;
   const name = document.getElementById("name").value.trim();
   const age = document.getElementById("age").value.trim();
   const location = document.getElementById("location").value.trim();
-
   errorMsg.textContent = "";
-  if (!name) return errorMsg.textContent = "Name cannot be empty!";
+  if(!name) return errorMsg.textContent = "Name cannot be empty!";
 
-  try {
+  try{
+    let picToSave = profileThumbnailBase64;
+
+    // Upload original full-size image to Firebase Storage if user selected a new file
+    if(originalFile){
+      const storageRef = storage.ref(`users/${uid}/profile_original.jpg`);
+      await storageRef.put(originalFile);
+      const downloadURL = await storageRef.getDownloadURL();
+      console.log("Original image stored at:", downloadURL);
+    }
+
+    // Update public node in Realtime DB with thumbnail
     await db.ref(`users/${uid}/public`).update({
       name,
       age: age || "N/A",
       location: location || "",
-      pic: profileBase64 || "images/profile1.png"
+      pic: picToSave || "images/profile1.png"
     });
     alert("Profile updated successfully!");
-  } catch(err) {
+  } catch(err){
     console.error("Profile update error:", err);
-    errorMsg.textContent = "Failed to update profile.";
+    errorMsg.textContent="Failed to update profile.";
   }
 }
 </script>
