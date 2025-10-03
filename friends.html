@@ -119,13 +119,30 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
-    document.getElementById("logoutBtn").addEventListener("click", ()=> auth.signOut().then(()=> window.location.href="login.html"));
+    document.getElementById("logoutBtn").addEventListener("click", ()=>{
+      db.ref('users/' + currentUserUid + '/public/online').set(false);
+      auth.signOut().then(()=> window.location.href="login.html");
+    });
+
+    setupOnlineStatus();
     loadUsersRealtime();
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
     document.querySelector(".friends-container").innerHTML = "<p>Please login to view users.</p>";
   }
 });
+
+// ===================== ONLINE STATUS =====================
+function setupOnlineStatus(){
+  const userStatusRef = db.ref('users/' + currentUserUid + '/public/online');
+
+  db.ref('.info/connected').on('value', snap => {
+    if(snap.val() === true){
+      userStatusRef.set(true);
+      userStatusRef.onDisconnect().set(false);
+    }
+  });
+}
 
 // ===================== LOAD USERS =====================
 function loadUsersRealtime(){
@@ -170,21 +187,19 @@ function loadUsersRealtime(){
 
       userList.appendChild(div);
 
-      // Select the first friend automatically
       if(!firstFriendUid){
         firstFriendUid = uid;
         firstFriendName = name;
       }
     });
 
-    // Open chat automatically for first friend
     if(firstFriendUid){
       openChat(firstFriendUid, firstFriendName);
     }
   });
 }
 
-// ===================== CHAT =====================
+// ===================== CHAT & HISTORY =====================
 function openChat(friendUid, friendName){
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
@@ -244,7 +259,9 @@ chatInput.addEventListener("input", () => {
 function listenTyping(friendUid){
   const typingRef = db.ref('typing/' + currentUserUid + '/' + friendUid);
   typingRef.on('value', snapshot => {
-    typingIndicator.textContent = snapshot.exists() ? `${friendUid} is typing...` : '';
+    const friendCard = document.querySelector(`.user-card[data-uid="${friendUid}"] span`);
+    const friendName = friendCard ? friendCard.innerText.replace(/^\s*\u25CF\s*/,'') : 'Friend';
+    typingIndicator.textContent = snapshot.exists() ? `${friendName} is typing...` : '';
   });
 }
 
