@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Friends</title>
 <style>
+/* --- same styles as before --- */
 body{font-family:Arial,sans-serif;background:#fff;color:#333;display:flex;flex-direction:column;min-height:100vh;margin:0;}
 header{display:flex;justify-content:space-between;align-items:center;padding:20px;background:#ffcb2b;}
 header h1{font-size:24px;}
@@ -40,8 +41,8 @@ footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:auto;}
 <body>
 
 <header>
-<h1>Bumbble</h1>
-<nav id="navLinks"></nav>
+  <h1>Bumbble</h1>
+  <nav id="navLinks"></nav>
 </header>
 
 <div class="friends-container" id="friendsContainer"><p>Loading users...</p></div>
@@ -78,7 +79,7 @@ let currentChatId="", chatFriendUid="", chatFriendName="";
 
 auth.onAuthStateChanged(user=>{
   if(user && user.emailVerified){
-    const uid = user.uid;
+    const uid=user.uid;
     nav.innerHTML=`
       <a href="index.html">Home</a>
       <a href="friends.html">Friends</a>
@@ -88,23 +89,26 @@ auth.onAuthStateChanged(user=>{
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
-    document.getElementById("logoutBtn").addEventListener("click", ()=>{ auth.signOut().then(()=>window.location.href="login.html"); });
+    document.getElementById("logoutBtn").addEventListener("click", ()=>{auth.signOut().then(()=>window.location.href="login.html");});
 
-    const usersRef = db.ref("users");
-    const friendsRef = db.ref("friends/"+uid);
+    const usersRef=db.ref("users");
+    const friendsRef=db.ref("friends/"+uid);
 
-    const onlineRef = db.ref("users/"+uid+"/online"); 
-    onlineRef.set(true); onlineRef.onDisconnect().set(false);
+    // online presence
+    db.ref("users/"+uid+"/public/online").set(true);
+    db.ref("users/"+uid+"/public/online").onDisconnect().set(false);
 
     function loadFriends(){
       usersRef.on("value", snapshot=>{
-        const users = snapshot.val()||{};
+        const users=snapshot.val()||{};
         friendsRef.once("value").then(fSnap=>{
-          const friends = fSnap.val()||{};
+          const friends=fSnap.val()||{};
           friendsContainer.innerHTML="";
           for(let key in users){
-            const u=users[key];
+            if(!users[key].public) continue; // only use public subnode
+            const u=users[key].public;
             const isFriend=(friends[key]||false)||(key===uid);
+
             const friendCard=document.createElement("div"); friendCard.className="friend-card";
             const info=document.createElement("div"); info.className="friend-info";
             const img=document.createElement("img"); img.src=u.pic||"images/profile1.png";
@@ -119,7 +123,7 @@ auth.onAuthStateChanged(user=>{
               const friendBtn=document.createElement("button");
               friendBtn.textContent=isFriend?"Remove":"Add";
               friendBtn.className=isFriend?"removeBtn":"addBtn";
-              friendBtn.addEventListener("click",()=>{ isFriend?friendsRef.child(key).remove():friendsRef.update({[key]:true}); });
+              friendBtn.addEventListener("click",()=>{isFriend?friendsRef.child(key).remove():friendsRef.update({[key]:true});});
               btnContainer.appendChild(friendBtn);
 
               // Chat button
@@ -176,10 +180,10 @@ chatInput.addEventListener("input", ()=>{
 
 // Enter = send, Shift+Enter = newline
 chatInput.addEventListener("keydown", (e)=>{
-  if(e.key === "Enter"){
+  if(e.key==="Enter"){
     if(e.shiftKey){
-      // insert newline
-      chatInput.value += "\n";
+      // allow newline
+      return;
     } else {
       e.preventDefault();
       sendMessage();
@@ -200,7 +204,6 @@ function openChat(myUid, friendUid, friendName){
   chatRef.off(); typingRef.off();
   document.getElementById("chatMessages").innerHTML='<div id="typingIndicator"></div>';
 
-  // load messages
   chatRef.on("child_added", snap=>{
     const msg=snap.val();
     const msgDiv=document.createElement("div");
@@ -210,12 +213,10 @@ function openChat(myUid, friendUid, friendName){
     document.getElementById("chatMessages").scrollTop=document.getElementById("chatMessages").scrollHeight;
   });
 
-  // typing indicator
   typingRef.on("value", snap=>{
     const typingData=snap.val()||{};
     const friendTyping=typingData[friendUid];
-    const typingEl=document.getElementById("typingIndicator");
-    typingEl.textContent=friendTyping?friendName+" is typing...":"";
+    document.getElementById("typingIndicator").textContent=friendTyping?friendName+" is typing...":"";
   });
 
   lastReadRef.set(Date.now());
