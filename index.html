@@ -1,130 +1,80 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bumbble - Home</title>
-
-<!-- SEO Optimization -->
-<meta name="description" content="Join Bumbble.in – the safest online dating and friendship app in India. Meet new people, make friends, and find love with verified profiles and privacy protection.">
-<meta name="keywords" content="Bumbble.in, online dating India, friendship app India, safe dating app, meet new friends, dating app India, verified profiles, privacy protection">
-<meta name="robots" content="index, follow">
-<meta name="author" content="Bumbble.in">
-
-<!-- Open Graph / Social Sharing -->
-<meta property="og:title" content="Bumbble.in | Safe Online Dating & Friendship App in India">
-<meta property="og:description" content="Meet new friends, find love, and connect safely on Bumbble.in – India's trusted dating and friendship app.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://www.bumbble.in/">
-<meta property="og:image" content="https://www.bumbble.in/images/hero.png">
-<meta property="og:site_name" content="Bumbble.in">
-
-<!-- Twitter Card -->
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Bumbble.in | Safe Online Dating & Friendship App in India">
-<meta name="twitter:description" content="Join Bumbble.in – the safest online dating and friendship app in India. Meet new people and make meaningful connections.">
-<meta name="twitter:image" content="https://www.bumbble.in/images/hero.png">
-<meta name="twitter:site" content="@BumbbleIn">
-
-<!-- Structured Data for Google -->
+<!-- Structured Data for Homepage Hero, Features, and Call-to-Action -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": "Bumbble.in",
-  "url": "https://www.bumbble.in/",
-  "potentialAction": {
-    "@type": "SearchAction",
-    "target": "https://www.bumbble.in/search?q={search_term_string}",
-    "query-input": "required name=search_term_string"
-  }
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "@id": "https://www.bumbble.in/#homepage",
+      "url": "https://www.bumbble.in/",
+      "name": "Bumbble.in Home",
+      "description": "Join Bumbble.in – the safest online dating and friendship app in India. Meet new people, make friends, and find love with verified profiles and privacy protection.",
+      "inLanguage": "en",
+      "isPartOf": {
+        "@id": "https://www.bumbble.in/"
+      }
+    },
+    {
+      "@type": "Organization",
+      "name": "Bumbble.in",
+      "url": "https://www.bumbble.in/",
+      "logo": "https://www.bumbble.in/images/hero.png",
+      "sameAs": [
+        "https://www.instagram.com/BumbbleIn",
+        "https://www.facebook.com/BumbbleIn",
+        "https://twitter.com/BumbbleIn"
+      ]
+    },
+    {
+      "@type": "WebApplication",
+      "name": "Bumbble.in App",
+      "url": "https://www.bumbble.in/",
+      "applicationCategory": "SocialNetworking",
+      "operatingSystem": "iOS, Android, Web",
+      "offers": {
+        "@type": "Offer",
+        "url": "https://www.bumbble.in/signup.html",
+        "price": "0",
+        "priceCurrency": "INR",
+        "availability": "https://schema.org/InStock"
+      },
+      "description": "Sign up now to meet new friends, connect safely, and enjoy verified profiles. Join Bumbble.in today!"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://www.bumbble.in/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Friends",
+          "item": "https://www.bumbble.in/friends.html"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Stories",
+          "item": "https://www.bumbble.in/stories.html"
+        },
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "name": "Events",
+          "item": "https://www.bumbble.in/events.html"
+        },
+        {
+          "@type": "ListItem",
+          "position": 5,
+          "name": "Safety",
+          "item": "https://www.bumbble.in/safety.html"
+        }
+      ]
+    }
+  ]
 }
 </script>
-
-<style>
-  /* Reset & global */
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family: Arial, sans-serif; background:#fff; color:#333; display:flex; flex-direction:column; min-height:100vh; }
-
-  /* Header & Navigation */
-  header { display:flex; justify-content:space-between; align-items:center; padding:20px; background:#ffcb2b; }
-  header h1 { font-size:24px; }
-  nav a { margin:0 10px; text-decoration:none; color:#333; font-weight:bold; }
-  nav a:hover { text-decoration: underline; }
-
-  /* Hero Section */
-  .hero { display:flex; flex-direction:column; align-items:center; text-align:center; padding:60px 20px; background:#fefefe; }
-  .hero img { max-width:300px; height:auto; margin-bottom:20px; }
-  .hero h2 { font-size:36px; margin:20px 0 10px; }
-  .hero p { font-size:18px; margin-bottom:20px; }
-  .hero button { background:#ffcb2b; border:none; padding:15px 30px; font-size:18px; font-weight:bold; cursor:pointer; border-radius:30px; }
-
-  /* Footer */
-  footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:auto; }
-
-  /* Responsive */
-  @media(max-width:768px) { .hero img { max-width:90%; } }
-</style>
-</head>
-
-<body>
-<header>
-  <h1>Bumbble</h1>
-  <nav id="navLinks">
-    <!-- Links inserted dynamically -->
-  </nav>
-</header>
-
-<section class="hero">
-  <img src="images/hero.png" alt="Two people using phones illustration">
-  <h2>Meet. Match. Connect.</h2>
-  <p>Your journey to meaningful connections starts here.</p>
-  <button onclick="window.location.href='signup.html'">Join Bumbble Now</button>
-</section>
-
-<footer>
-  <p>&copy; 2025 Bumbble. All rights reserved.</p>
-</footer>
-
-<script>
-// Dynamic navigation
-const nav = document.getElementById("navLinks");
-const currentUser = localStorage.getItem("current_user");
-
-if(currentUser){
-    // Member is logged in: hide Login & Sign Up
-    nav.innerHTML = `
-        <a href="index.html">Home</a>
-        <a href="friends.html">Friends</a>
-        <a href="stories.html">Stories</a>
-        <a href="events.html">Events</a>
-        <a href="safety.html">Safety</a>
-        <a href="profile.html">Profile</a>
-        <a href="#" id="logoutBtn">Logout</a>
-    `;
-
-    document.getElementById("logoutBtn").addEventListener("click", function(){
-        localStorage.removeItem("current_user");
-        alert("✅ Logged out successfully.");
-        window.location.href = "login.html";
-    });
-
-    // Hide "Join Now" button for logged-in users
-    const joinBtn = document.querySelector(".hero button");
-    if(joinBtn) joinBtn.style.display = "none";
-
-} else {
-    // Not logged in: show default menu
-    nav.innerHTML = `
-        <a href="index.html">Home</a>
-        <a href="friends.html">Friends</a>
-        <a href="stories.html">Stories</a>
-        <a href="events.html">Events</a>
-        <a href="safety.html">Safety</a>
-        <a href="login.html">Login</a>
-        <a href="signup.html">Sign Up</a>
-    `;
-}
-</script>
-</body>
-</html>
