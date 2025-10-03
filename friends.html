@@ -30,13 +30,6 @@ nav a:hover { text-decoration: underline; }
   margin: 20px auto;
   padding: 10px 20px;
 }
-#searchInput {
-  width: 100%;
-  padding: 8px;
-  margin-bottom: 15px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-}
 .user-list {
   list-style: none;
   padding: 0;
@@ -71,7 +64,6 @@ nav a:hover { text-decoration: underline; }
 </header>
 
 <div class="friends-container">
-  <input type="text" id="searchInput" placeholder="Search users by name...">
   <ul id="userList" class="user-list"></ul>
 </div>
 
@@ -91,9 +83,8 @@ const db = firebase.database();
 
 const nav = document.getElementById("navLinks");
 const userList = document.getElementById("userList");
-const searchInput = document.getElementById("searchInput");
 
-// Handle auth state & navigation
+// Navigation & auth
 auth.onAuthStateChanged(user => {
   if (user && user.emailVerified) {
     nav.innerHTML = `
@@ -106,55 +97,38 @@ auth.onAuthStateChanged(user => {
       <a href="#" id="logoutBtn">Logout</a>
     `;
     document.getElementById("logoutBtn").addEventListener("click", () => {
-      auth.signOut().then(()=> window.location.href = "login.html");
+      auth.signOut().then(()=> window.location.href="login.html");
     });
-    loadUsers();
+    loadUsersRealtime();
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
     document.querySelector(".friends-container").innerHTML = "<p>Please login to view users.</p>";
   }
 });
 
-// Load all users from public node
-function loadUsers() {
+// Realtime load users
+function loadUsersRealtime() {
+  const currentUid = auth.currentUser.uid;
   db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
-    displayUsers(usersData);
+    userList.innerHTML = ''; // clear list
+
+    Object.keys(usersData).forEach(uid => {
+      if(uid === currentUid) return; // skip self
+      const user = usersData[uid].public || {};
+      const name = user.name || "Unknown";
+      const location = user.location || "";
+      const online = user.online ? true : false;
+
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <span><span class="status-dot ${online ? 'online' : 'offline'}"></span>${name}</span>
+        <span>${location}</span>
+      `;
+      userList.appendChild(li);
+    });
   });
 }
-
-// Display users with online/offline status
-function displayUsers(usersData) {
-  const currentUid = auth.currentUser.uid;
-  const searchTerm = searchInput.value.toLowerCase();
-
-  userList.innerHTML = ''; // clear list
-
-  Object.keys(usersData).forEach(uid => {
-    if(uid === currentUid) return; // skip current user
-    const user = usersData[uid].public || {};
-    const name = user.name || "Unknown";
-    const location = user.location || "";
-    const online = user.online ? true : false;
-
-    if(searchTerm && !name.toLowerCase().includes(searchTerm)) return; // filter search
-
-    const li = document.createElement('li');
-    li.innerHTML = `
-      <span><span class="status-dot ${online ? 'online' : 'offline'}"></span>${name}</span>
-      <span>${location}</span>
-    `;
-    userList.appendChild(li);
-  });
-}
-
-// Search functionality
-searchInput.addEventListener('input', () => {
-  db.ref('users').once('value').then(snapshot => {
-    const usersData = snapshot.val() || {};
-    displayUsers(usersData);
-  });
-});
 </script>
 
 </body>
