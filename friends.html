@@ -72,7 +72,7 @@ nav a:hover{ text-decoration:underline; }
 </div>
 
 <script>
-// ========== FIREBASE INIT ==========
+// ===================== FIREBASE INIT =====================
 const firebaseConfig = { 
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs", 
   authDomain:"bumbble-c061f.firebaseapp.com", 
@@ -101,9 +101,9 @@ const typingIndicator = document.getElementById("typingIndicator");
 let typingTimeout;
 const unreadCounters = {};
 
-// ========== NAVIGATION & AUTH ==========
+// ===================== NAVIGATION =====================
 auth.onAuthStateChanged(user => {
-  if(user){
+  if(user && user.emailVerified){
     currentUserUid = user.uid;
     nav.innerHTML = `
       <a href="index.html">Home</a>
@@ -127,9 +127,10 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-// ========== ONLINE STATUS ==========
+// ===================== ONLINE STATUS =====================
 function setupOnlineStatus(){
   const userStatusRef = db.ref('users/' + currentUserUid + '/public/online');
+
   db.ref('.info/connected').on('value', snap => {
     if(snap.val() === true){
       userStatusRef.set(true);
@@ -138,7 +139,7 @@ function setupOnlineStatus(){
   });
 }
 
-// ========== LOAD USERS ==========
+// ===================== LOAD USERS =====================
 function loadUsersRealtime(){
   db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
@@ -173,7 +174,7 @@ function loadUsersRealtime(){
   });
 }
 
-// ========== CHAT ==========
+// ===================== CHAT & HISTORY =====================
 function openChat(friendUid, friendName){
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
@@ -186,31 +187,33 @@ function openChat(friendUid, friendName){
   listenTyping(friendUid);
 
   const chatId = getChatId(currentUserUid, friendUid);
-  const chatRef = db.ref('chats/'+chatId);
+  const chatRef = db.ref('chats/' + chatId);
 
-  // Ensure members exist
-  chatRef.child('members').update({ [currentUserUid]:true, [friendUid]:true });
+  // ensure members exist
+  chatRef.child('members').update({
+    [currentUserUid]: true,
+    [friendUid]: true
+  });
 
-  // Load chat history (skip members)
-  chatRef.once('value', snap=>{
-    const data = snap.val()||{};
-    Object.keys(data).forEach(key=>{
-      if(key==='members') return;
-      const msg = data[key];
-      addMessageToChat(msg,msg.sender===currentUserUid);
+  // remove old listener
+  if(currentChatListener) currentChatListener.off();
+  currentChatListener = chatRef.child("messages");
+
+  // load history
+  currentChatListener.once('value', snapshot => {
+    snapshot.forEach(snap => {
+      const msg = snap.val();
+      addMessageToChat(msg, msg.sender === currentUserUid);
     });
     chatMessages.scrollTop = chatMessages.scrollHeight;
   });
 
-  // Listen real-time
-  if(currentChatListener) currentChatListener.off();
-  currentChatListener = chatRef;
-  currentChatListener.on('child_added', snap=>{
-    if(snap.key==='members') return;
+  // listen for new messages
+  currentChatListener.on('child_added', snap => {
     const msg = snap.val();
-    const isSelf = msg.sender===currentUserUid;
-    if(chatMessages.querySelector(`.message[data-ts="${msg.timestamp}"]`)) return;
-    addMessageToChat(msg,isSelf);
+    if(!msg.sender) return;
+    const isSelf = msg.sender === currentUserUid;
+    addMessageToChat(msg, isSelf);
   });
 }
 
@@ -224,46 +227,68 @@ function addMessageToChat(msg,isSelf){
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// ========== TYPING ==========
-chatInput.addEventListener("input", ()=>{
+// ===================== TYPING =====================
+chatInput.addEventListener("input", () => {
   if(!currentChatFriendUid) return;
   db.ref('typing/' + currentChatFriendUid + '/' + currentUserUid).set(true);
   clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(()=>{
+  typingTimeout = setTimeout(() => {
     db.ref('typing/' + currentChatFriendUid + '/' + currentUserUid).remove();
-  },1000);
+  }, 1000);
 });
 
 function listenTyping(friendUid){
   const typingRef = db.ref('typing/' + currentUserUid + '/' + friendUid);
-  typingRef.on('value', snap=>{
-    const friendCard = document.querySelector(`.user-card[data-uid="${friendUid}"] span`);
-    const friendName = friendCard ? friendCard.innerText.replace(/^\s*\u25CF\s*/,'') : 'Friend';
-    typingIndicator.textContent = snap.exists()?`${friendName} is typing...`:'';
+  typingRef.on('value', snapshot => {
+    typingIndicator.textContent = snapshot.exists() ? `Typing...` : '';
   });
 }
 
-// ========== SEND MESSAGE ==========
+// ===================== SEND MESSAGE =====================
 function sendMessage(){
   const text = chatInput.value.trim();
   if(!text || !currentChatFriendUid) return;
-  const msgObj = { sender: currentUserUid, receiver: currentChatFriendUid, text, timestamp: Date.now() };
-  db.ref('chats/'+getChatId(currentUserUid,currentChatFriendUid)).push(msgObj);
-  addMessageToChat(msgObj,true);
+
+  const chatId = getChatId(currentUserUid, currentChatFriendUid);
+  const msgObj = {
+    sender: currentUserUid,
+    receiver: currentChatFriendUid,
+    text,
+    timestamp: Date.now()
+  };
+
+  db.ref('chats/' + chatId + '/messages').push(msgObj);
+  addMessageToChat(msgObj, true);
+
   chatInput.value = '';
 }
 
-chatInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); }});
-sendBtn.addEventListener('click',sendMessage);
+chatInput.addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); sendMessage(); } });
+sendBtn.addEventListener('click', sendMessage);
 
 function closeChat(){
-  if(currentChatFriendUid) db.ref('typing/' + currentChatFriendUid + '/' + currentUserUid).remove();
+  if(currentChatFriendUid){
+    db.ref('typing/' + currentChatFriendUid + '/' + currentUserUid).remove();
+  }
   chatModal.style.display='none';
   currentChatFriendUid='';
-  typingIndicator.textContent='';
+  typingIndicator.textContent = "";
 }
 
 function getChatId(uid1,uid2){ return uid1<uid2? uid1+'_'+uid2 : uid2+'_'+uid1; }
+
+// ===================== UNREAD COUNTERS =====================
+db.ref('chats').on('child_added', snap=>{
+  const chatId = snap.key;
+  snap.ref.child("messages").on('child_added', msgSnap=>{
+    const msg = msgSnap.val();
+    if(!msg.sender) return;
+    if(msg.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
+      unreadCounters[msg.sender] = (unreadCounters[msg.sender]||0)+1;
+      updateFriendListBadges();
+    }
+  });
+});
 
 function updateFriendListBadges(){
   document.querySelectorAll('.user-card').forEach(card=>{
@@ -271,7 +296,7 @@ function updateFriendListBadges(){
     const badge = card.querySelector('.badge');
     if(unreadCounters[uid]){
       if(badge) badge.textContent = unreadCounters[uid];
-      else{
+      else {
         const span = document.createElement('span');
         span.className='badge';
         span.textContent = unreadCounters[uid];
@@ -281,7 +306,7 @@ function updateFriendListBadges(){
   });
 }
 
-// ========== DRAG CHAT ==========
+// ===================== DRAG CHAT =====================
 dragElement(chatModal);
 function dragElement(elmnt){
   let pos1=0,pos2=0,pos3=0,pos4=0; const header=document.getElementById("chatHeader");
@@ -291,5 +316,6 @@ function dragElement(elmnt){
   function closeDragElement(){ document.onmouseup=null; document.onmousemove=null; }
 }
 </script>
+
 </body>
 </html>
