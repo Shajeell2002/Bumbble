@@ -20,7 +20,6 @@ nav a:hover{ text-decoration:underline; }
 .user-card{ flex:0 0 auto; width:150px; background:#fff; border-radius:15px; padding:12px; display:flex; flex-direction:column; align-items:center; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,0.1); transition:transform 0.3s, box-shadow 0.3s; position:relative; cursor:pointer; }
 .user-card:hover{ transform:translateY(-5px); box-shadow:0 8px 20px rgba(0,0,0,0.2); }
 
-.user-info span{ display:block; margin:4px 0; }
 .status-dot{ width:12px; height:12px; border-radius:50%; display:inline-block; margin-right:5px; vertical-align:middle; }
 .online{ background:green; }
 .offline{ background:red; }
@@ -176,13 +175,27 @@ function openChat(friendUid, friendName){
   updateFriendListBadges();
 
   const chatId = getChatId(currentUserUid, friendUid);
+
+  // Load entire chat history
+  db.ref('chats/'+chatId).once('value', snapshot=>{
+    const messages = snapshot.val() || {};
+    Object.values(messages).forEach(msg=>{
+      const isSelf = msg.sender === currentUserUid;
+      addMessageToChat(msg,isSelf);
+    });
+    chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior:'smooth'});
+  });
+
+  // Listen for new messages
   db.ref('chats/'+chatId).off();
   db.ref('chats/'+chatId).on('child_added', snap=>{
     const msg = snap.val();
     const isSelf = msg.sender === currentUserUid;
+
+    if(chatMessages.innerHTML.includes(msg.text)) return;
+
     addMessageToChat(msg,isSelf);
 
-    // Show notification only for received messages
     if(!isSelf && Notification.permission === "granted"){
       new Notification(`New message from ${friendName}`, { body: msg.text });
     }
@@ -212,29 +225,18 @@ function addMessageToChat(msg,isSelf){
   chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior:'smooth'});
 }
 
-// UNREAD COUNTERS & REALTIME NOTIFICATIONS
+// UNREAD COUNTERS & NOTIFICATIONS
 db.ref('chats').on('child_added', snap=>{
   const msgsRef = snap.ref;
   msgsRef.on('child_added', msgSnap=>{
     const msg = msgSnap.val();
-
-    // New message for current user
-    if(msg.receiver===currentUserUid){
+    if(msg.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
       unreadCounters[msg.sender] = (unreadCounters[msg.sender]||0)+1;
       updateFriendListBadges();
-
       const senderCard = document.querySelector(`.user-card[data-uid="${msg.sender}"] span`);
       const senderName = senderCard ? senderCard.innerText : "Friend";
-
       if(Notification.permission==="granted"){
         new Notification(`New message from ${senderName}`, { body: msg.text });
-      }
-
-      // Auto-open chat if not already open
-      if(currentChatFriendUid!==msg.sender){
-        openChat(msg.sender, senderName);
-      } else {
-        addMessageToChat(msg,false);
       }
     }
   });
