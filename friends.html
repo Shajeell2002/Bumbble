@@ -42,10 +42,6 @@ nav a:hover{ text-decoration:underline; }
 #sendBtn{ padding:8px 12px; border:none; background:#ffcb2b; border-radius:0 0 10px 0; cursor:pointer; }
 #sendBtn:hover{ background:#f1b800; }
 </style>
-
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -71,8 +67,15 @@ nav a:hover{ text-decoration:underline; }
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
 <script>
-// ===================== FIREBASE INIT =====================
+window.onload = function(){
+
+console.log("Script loaded");
+
 const firebaseConfig = { 
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs", 
   authDomain:"bumbble-c061f.firebaseapp.com", 
@@ -83,6 +86,7 @@ const firebaseConfig = {
   appId:"1:213165886981:web:c18652003444869b1bd66c" 
 };
 firebase.initializeApp(firebaseConfig);
+
 const auth = firebase.auth();
 const db = firebase.database();
 
@@ -135,9 +139,9 @@ auth.onAuthStateChanged(user => {
 // ===================== ONLINE STATUS =====================
 function setupOnlineStatus(){
   const userStatusRef = db.ref('users/' + currentUserUid + '/public/online');
-
   db.ref('.info/connected').on('value', snap => {
     if(snap.val() === true){
+      console.log("User connected, setting online=true");
       userStatusRef.set(true);
       userStatusRef.onDisconnect().set(false);
     }
@@ -149,22 +153,10 @@ function loadUsersRealtime(){
   db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
     userList.innerHTML = '';
-    if(Object.keys(usersData).length===0){
-      const div = document.createElement('div'); 
-      div.classList.add("user-card"); 
-      div.innerHTML = "No users online";
-      userList.appendChild(div); 
-      return;
-    }
-
-    let firstFriendUid = null;
-    let firstFriendName = null;
 
     Object.keys(usersData).forEach(uid => {
       const user = usersData[uid].public || {};
       if(uid === currentUserUid) return;
-      const name = user.name || "Unknown";
-      const gender = user.gender || "N/A";
 
       const div = document.createElement('div'); 
       div.classList.add("user-card"); 
@@ -174,28 +166,19 @@ function loadUsersRealtime(){
       if(unreadCounters[uid]) badgeHtml = `<span class="badge">${unreadCounters[uid]}</span>`;
 
       div.innerHTML = `
-        <span><span class="status-dot ${user.online?'online':'offline'}"></span>${name}</span>
-        <span>Gender: ${gender}</span>
+        <span><span class="status-dot ${user.online?'online':'offline'}"></span>${user.name||'Unknown'}</span>
+        <span>Gender: ${user.gender||'N/A'}</span>
         <button class="chatBtn">Chat</button>
         ${badgeHtml}
       `;
 
       div.querySelector(".chatBtn").addEventListener('click', e => {
         e.stopPropagation();
-        openChat(uid, name);
+        openChat(uid, user.name||'Friend');
       });
 
       userList.appendChild(div);
-
-      if(!firstFriendUid){
-        firstFriendUid = uid;
-        firstFriendName = name;
-      }
     });
-
-    if(firstFriendUid){
-      openChat(firstFriendUid, firstFriendName);
-    }
   });
 }
 
@@ -328,6 +311,8 @@ function dragElement(elmnt){
   function elementDrag(e){ e=e||window.event; e.preventDefault(); pos1=pos3-e.clientX; pos2=pos4-e.clientY; pos3=e.clientX; pos4=e.clientY; elmnt.style.top=(elmnt.offsetTop-pos2)+'px'; elmnt.style.left=(elmnt.offsetLeft-pos1)+'px'; }
   function closeDragElement(){ document.onmouseup=null; document.onmousemove=null; }
 }
+
+} // window.onload
 </script>
 
 </body>
