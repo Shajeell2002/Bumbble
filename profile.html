@@ -13,7 +13,8 @@ nav a { margin:0 10px; text-decoration:none; color:#333; font-weight:bold; }
 .profile-container h2 { text-align:center; margin-bottom:20px; }
 .profile-container input[type=text],
 .profile-container input[type=number],
-.profile-container input[type=email] { width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:5px; }
+.profile-container input[type=email],
+.profile-container select { width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:5px; }
 .profile-container input[type=file] { margin:8px 0; }
 .profile-container button { width:100%; padding:10px; margin-top:10px; background:#ffcb2b; border:none; border-radius:5px; font-weight:bold; cursor:pointer; }
 .profile-container button:hover { background:#f1b800; }
@@ -39,6 +40,12 @@ nav a { margin:0 10px; text-decoration:none; color:#333; font-weight:bold; }
   <input type="text" id="name" placeholder="Full Name">
   <input type="number" id="age" placeholder="Age">
   <input type="text" id="location" placeholder="Location">
+  <select id="gender">
+    <option value="">Select Gender</option>
+    <option value="Male">Male</option>
+    <option value="Female">Female</option>
+    <option value="Other">Other</option>
+  </select>
   <input type="email" id="email" placeholder="Email" disabled>
   <button onclick="updateProfile()">Update Profile</button>
   <p class="error-msg" id="errorMsg"></p>
@@ -75,9 +82,7 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
-    document.getElementById("logoutBtn").addEventListener("click", ()=>{
-      auth.signOut().then(()=>window.location.href="login.html");
-    });
+    document.getElementById("logoutBtn").addEventListener("click", ()=>{ auth.signOut().then(()=>window.location.href="login.html"); });
     setupRealtimeProfile(user.uid);
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
@@ -135,6 +140,7 @@ function setupRealtimeProfile(uid){
     document.getElementById("name").value = data.name || "";
     document.getElementById("age").value = data.age || "";
     document.getElementById("location").value = data.location || "";
+    document.getElementById("gender").value = data.gender || "";
     profilePreview.src = data.pic || "images/profile1.png";
     profileBase64 = data.pic || "";
   });
@@ -153,6 +159,7 @@ async function updateProfile(){
   const name = document.getElementById("name").value.trim();
   const age = document.getElementById("age").value.trim();
   const location = document.getElementById("location").value.trim();
+  const gender = document.getElementById("gender").value;
   errorMsg.textContent="";
   if(!name) return errorMsg.textContent="Name cannot be empty!";
   try{
@@ -160,6 +167,7 @@ async function updateProfile(){
       name,
       age: age || "N/A",
       location: location || "",
+      gender: gender || "",
       pic: profileBase64 || "images/profile1.png"
     });
     alert("Profile saved successfully!");
