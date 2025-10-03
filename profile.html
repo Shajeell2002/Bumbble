@@ -5,57 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Profile</title>
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #fff;
-  color: #333;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  background: #ffcb2b;
-}
-header h1 { font-size: 24px; }
-nav a { margin: 0 10px; text-decoration: none; color: #333; font-weight: bold; }
-.profile-container {
-  flex: 1;
-  max-width: 400px;
-  margin: 30px auto;
-  padding: 20px;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-.profile-container h2 { text-align: center; margin-bottom: 20px; }
+body { font-family: Arial,sans-serif; background:#fff; color:#333; margin:0; display:flex; flex-direction:column; min-height:100vh; }
+header { display:flex; justify-content:space-between; align-items:center; padding:20px; background:#ffcb2b; }
+header h1 { font-size:24px; }
+nav a { margin:0 10px; text-decoration:none; color:#333; font-weight:bold; }
+.profile-container { flex:1; max-width:400px; margin:30px auto; padding:20px; border-radius:10px; border:1px solid #ddd; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+.profile-container h2 { text-align:center; margin-bottom:20px; }
 .profile-container input[type=text],
 .profile-container input[type=number],
-.profile-container input[type=email] {
-  width: 100%;
-  padding: 8px;
-  margin: 8px 0;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-}
-.profile-container input[type=file] { margin: 8px 0; }
-.profile-container button {
-  width: 100%;
-  padding: 10px;
-  margin-top: 10px;
-  background: #ffcb2b;
-  border: none;
-  border-radius: 5px;
-  font-weight: bold;
-  cursor: pointer;
-}
-.profile-container button:hover { background: #f1b800; }
-.error-msg { color: red; font-size: 14px; margin-top: 5px; }
-#profilePreview { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin: 10px 0; }
+.profile-container input[type=email] { width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:5px; }
+.profile-container input[type=file] { margin:8px 0; }
+.profile-container button { width:100%; padding:10px; margin-top:10px; background:#ffcb2b; border:none; border-radius:5px; font-weight:bold; cursor:pointer; }
+.profile-container button:hover { background:#f1b800; }
+.error-msg { color:red; font-size:14px; margin-top:5px; }
+#profilePreview { width:100px; height:100px; border-radius:50%; object-fit:cover; margin:10px 0; }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -115,14 +78,14 @@ auth.onAuthStateChanged(user => {
     document.getElementById("logoutBtn").addEventListener("click", ()=>{
       auth.signOut().then(()=>window.location.href="login.html");
     });
-    loadProfile(user.uid);
+    setupRealtimeProfile(user.uid);
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
     document.querySelector(".profile-container").innerHTML = "<p>Please login to view your profile.</p>";
   }
 });
 
-// Compress image to ~64KB
+// Compress image ~64KB
 function compressImage(file, maxDim=150, maxSizeKB=64, callback){
   const reader = new FileReader();
   reader.onload = function(evt){
@@ -132,35 +95,29 @@ function compressImage(file, maxDim=150, maxSizeKB=64, callback){
       if(width>height && width>maxDim){ height=Math.round(height*maxDim/width); width=maxDim; }
       else if(height>width && height>maxDim){ width=Math.round(width*maxDim/height); height=maxDim; }
       else if(width>maxDim){ width=height=maxDim; }
-
       const canvas=document.createElement('canvas');
-      canvas.width=width;
-      canvas.height=height;
+      canvas.width=width; canvas.height=height;
       const ctx=canvas.getContext('2d');
       ctx.drawImage(img,0,0,width,height);
-
       let quality=0.9;
       let dataUrl=canvas.toDataURL('image/jpeg', quality);
       while((dataUrl.length/1024)>maxSizeKB && quality>0.05){
-        quality -= 0.05;
+        quality-=0.05;
         dataUrl=canvas.toDataURL('image/jpeg', quality);
       }
-
-      if((dataUrl.length/1024)>maxSizeKB){
-        alert("Image still too large after compression. Choose a smaller image.");
-        callback("");
-      } else callback(dataUrl);
+      if((dataUrl.length/1024)>maxSizeKB){ alert("Image too large after compression"); callback(""); }
+      else callback(dataUrl);
     }
     img.src=evt.target.result;
   }
   reader.readAsDataURL(file);
 }
 
-// Handle profile pic upload
+// Profile pic upload
 document.getElementById("profilePic").addEventListener("change", e=>{
   const file = e.target.files[0];
   if(!file) return;
-  if(file.size>2*1024*1024){ errorMsg.textContent="File too large! Max 2MB."; return; }
+  if(file.size>2*1024*1024){ errorMsg.textContent="Max file size 2MB"; return; }
   compressImage(file,150,64,(dataUrl)=>{
     profileBase64=dataUrl;
     profilePreview.src=dataUrl || "images/profile1.png";
@@ -168,23 +125,24 @@ document.getElementById("profilePic").addEventListener("change", e=>{
   });
 });
 
-// Load profile data
-async function loadProfile(uid){
-  try{
-    const publicSnap = await db.ref(`users/${uid}/public`).once('value');
-    const privateSnap = await db.ref(`users/${uid}/private`).once('value');
-    const publicData = publicSnap.val() || {};
-    const privateData = privateSnap.val() || {};
-    document.getElementById("name").value = publicData.name || "";
-    document.getElementById("age").value = publicData.age || "";
-    document.getElementById("location").value = publicData.location || "";
-    document.getElementById("email").value = privateData.email || "";
-    profilePreview.src = publicData.pic || "images/profile1.png";
-    profileBase64 = publicData.pic || "";
-  } catch(err){
-    console.error("Load error:",err);
-    errorMsg.textContent="Failed to load profile.";
-  }
+// Realtime profile listener
+function setupRealtimeProfile(uid){
+  const publicRef = db.ref(`users/${uid}/public`);
+  const privateRef = db.ref(`users/${uid}/private`);
+  
+  publicRef.on('value', snap=>{
+    const data = snap.val() || {};
+    document.getElementById("name").value = data.name || "";
+    document.getElementById("age").value = data.age || "";
+    document.getElementById("location").value = data.location || "";
+    profilePreview.src = data.pic || "images/profile1.png";
+    profileBase64 = data.pic || "";
+  });
+  
+  privateRef.on('value', snap=>{
+    const data = snap.val() || {};
+    document.getElementById("email").value = data.email || "";
+  });
 }
 
 // Update profile
@@ -206,7 +164,7 @@ async function updateProfile(){
     });
     alert("Profile saved successfully!");
   } catch(err){
-    console.error("Update error:",err);
+    console.error(err);
     errorMsg.textContent="Failed to save profile.";
   }
 }
