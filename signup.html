@@ -5,13 +5,43 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Sign Up</title>
 <style>
-body{font-family:Arial,sans-serif;background:#fff;color:#333;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;}
-.signup-container{width:350px;padding:20px;border:1px solid #ddd;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.1);}
-.signup-container h2{text-align:center;margin-bottom:20px;}
-.signup-container input{width:100%;padding:8px;margin:8px 0;border:1px solid #ccc;border-radius:5px;}
-.signup-container button{width:100%;padding:10px;margin-top:10px;background:#ffcb2b;border:none;border-radius:5px;font-weight:bold;cursor:pointer;}
-.signup-container button:hover{background:#f1b800;}
-.error-msg{color:red;font-size:14px;margin-top:5px;}
+body {
+  font-family: Arial, sans-serif;
+  background: #fff;
+  color: #333;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+.signup-container {
+  width: 350px;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.signup-container h2 { text-align: center; margin-bottom: 20px; }
+.signup-container input {
+  width: 100%;
+  padding: 8px;
+  margin: 8px 0;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+.signup-container button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  background: #ffcb2b;
+  border: none;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.signup-container button:hover { background: #f1b800; }
+.error-msg { color: red; font-size: 14px; margin-top: 5px; }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -46,13 +76,12 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-function signupUser() {
+async function signupUser() {
   const name = document.getElementById("name").value.trim();
   const age = document.getElementById("age").value.trim();
   const location = document.getElementById("location").value.trim();
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
-
   const errorMsg = document.getElementById("errorMsg");
   errorMsg.textContent = "";
 
@@ -60,42 +89,39 @@ function signupUser() {
     return errorMsg.textContent = "Please fill all required fields!";
   }
 
-  auth.createUserWithEmailAndPassword(email, password)
-    .then(cred => {
-      const user = cred.user;
-      const uid = user.uid;
+  try {
+    // 1️⃣ Create user
+    const cred = await auth.createUserWithEmailAndPassword(email, password);
+    const user = cred.user;
+    const uid = user.uid;
 
-      // Send email verification
-      user.sendEmailVerification()
-        .then(() => console.log("Verification email sent"))
-        .catch(err => console.error("Email verification error:", err));
-
-      // Save public profile
-      db.ref("users/" + uid + "/public").set({
-        name: name,
-        age: age || "N/A",
-        location: location || "",
-        pic: "images/profile1.png",
-        online: false
-      })
-      .then(() => console.log("Public profile saved"))
-      .catch(err => console.error("Public profile error:", err));
-
-      // Save private profile
-      db.ref("users/" + uid + "/private").set({
-        email: email,
-        createdAt: Date.now()
-      })
-      .then(() => console.log("Private profile saved"))
-      .catch(err => console.error("Private profile error:", err));
-
-      alert("Signup successful! Please verify your email before logging in.");
-      window.location.href = "login.html";
-    })
-    .catch(err => {
-      console.error("Signup error:", err);
-      errorMsg.textContent = err.message;
+    // 2️⃣ Send email verification
+    await user.sendEmailVerification({
+      url: 'https://bumbble.in/login.html' // redirect after verification
     });
+
+    // 3️⃣ Save public profile
+    await db.ref(`users/${uid}/public`).set({
+      name: name,
+      age: age || "N/A",
+      location: location || "",
+      pic: "images/profile1.png",
+      online: false
+    });
+
+    // 4️⃣ Save private profile
+    await db.ref(`users/${uid}/private`).set({
+      email: email,
+      createdAt: Date.now()
+    });
+
+    alert("Signup successful! A verification email has been sent. Please verify your email before logging in.");
+    window.location.href = "login.html";
+
+  } catch (err) {
+    console.error("Signup error:", err);
+    errorMsg.textContent = err.message;
+  }
 }
 </script>
 
