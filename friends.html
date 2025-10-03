@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Friends & Chat</title>
 <style>
+/* ... your existing CSS ... (unchanged) */
 body { font-family: Arial, sans-serif; margin:0; background:#fefefe; color:#333; display:flex; flex-direction:column; min-height:100vh; }
 header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#ffcb2b; box-shadow:0 3px 6px rgba(0,0,0,0.1);}
 header h1{ font-size:24px; margin:0; }
@@ -58,7 +59,6 @@ nav a:hover{ text-decoration:underline; }
   <div class="user-list" id="userList"></div>
 </div>
 
-<!-- Chat Modal -->
 <div id="chatModal">
   <div id="chatHeader">
     <span id="chatWith">Friend</span>
@@ -72,7 +72,6 @@ nav a:hover{ text-decoration:underline; }
 </div>
 
 <script>
-// Firebase configuration
 const firebaseConfig = { 
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs", 
   authDomain:"bumbble-c061f.firebaseapp.com", 
@@ -97,6 +96,11 @@ const chatWith = document.getElementById("chatWith");
 const chatInput = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
 const unreadCounters = {};
+
+// REQUEST BROWSER NOTIFICATIONS
+if("Notification" in window && Notification.permission !== "granted"){
+  Notification.requestPermission();
+}
 
 // NAVIGATION
 auth.onAuthStateChanged(user => {
@@ -176,10 +180,12 @@ function openChat(friendUid, friendName){
   db.ref('chats/'+chatId).off();
   db.ref('chats/'+chatId).on('child_added', snap=>{
     const msg = snap.val();
-    if(msg.sender !== currentUserUid){
-      showTypingEffect(msg.text);
-    } else {
-      addMessageToChat(msg,true);
+    const isSelf = msg.sender === currentUserUid;
+    addMessageToChat(msg,isSelf);
+
+    // Show notification only for received messages
+    if(!isSelf && Notification.permission === "granted"){
+      new Notification(`New message from ${friendName}`, { body: msg.text });
     }
   });
 }
@@ -207,29 +213,19 @@ function addMessageToChat(msg,isSelf){
   chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior:'smooth'});
 }
 
-function showTypingEffect(text){
-  const div = document.createElement('div');
-  div.classList.add('message','friend');
-  chatMessages.appendChild(div);
-  chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior:'smooth'});
-  let i=0;
-  function type(){
-    if(i<text.length){
-      div.innerHTML = text.slice(0,i+1) + '<div class="timestamp">' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + '</div>';
-      i++;
-      setTimeout(type,30);
-    }
-  }
-  type();
-}
-
+// UNREAD COUNTERS & NOTIFICATIONS FOR RECEIVER
 db.ref('chats').on('child_added', snap=>{
   const msgsRef = snap.ref;
   msgsRef.on('child_added', msgSnap=>{
     const msg = msgSnap.val();
     if(msg.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
-      unreadCounters[msg.sender]=(unreadCounters[msg.sender]||0)+1;
+      unreadCounters[msg.sender] = (unreadCounters[msg.sender]||0)+1;
       updateFriendListBadges();
+      const senderCard = document.querySelector(`.user-card[data-uid="${msg.sender}"] span`);
+      const senderName = senderCard ? senderCard.innerText : "Friend";
+      if(Notification.permission==="granted"){
+        new Notification(`New message from ${senderName}`, { body: msg.text });
+      }
     }
   });
 });
