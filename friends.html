@@ -124,25 +124,27 @@ function loadUsersRealtime(){
     }
     Object.keys(usersData).forEach(uid=>{
       const user = usersData[uid].public || {};
-      const name = uid===currentUserUid?"You":user.name||"Unknown";
+      const name = uid===currentUserUid ? "You" : user.name || "Unknown";
       const location = user.location||"";
       const gender = user.gender||"N/A";
-      const online = user.online?true:false;
+      
+      // Make current user always online
+      const online = uid===currentUserUid ? true : user.online ? true : false;
 
       const li = document.createElement('li'); 
       li.classList.add("user-card"); 
-      li.dataset.uid=uid;
+      li.dataset.uid = uid;
 
       let badgeHtml = "";
       if(unreadCounters[uid] && uid!==currentUserUid){ badgeHtml=`<span class="badge">${unreadCounters[uid]}</span>`; }
 
-      li.innerHTML=`
+      li.innerHTML = `
         <div class="user-info">
           <span><span class="status-dot ${online?'online':'offline'}"></span>${name}</span>
           <span>Gender: ${gender}</span>
           <span>Location: ${location}</span>
         </div>
-        <button class="chatBtn">Chat</button>
+        ${uid!==currentUserUid ? '<button class="chatBtn">Chat</button>' : ''}
         ${badgeHtml}
       `;
 
