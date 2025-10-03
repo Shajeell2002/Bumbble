@@ -127,8 +127,6 @@ function loadUsersRealtime(){
       const name = uid===currentUserUid ? "You" : user.name || "Unknown";
       const location = user.location||"";
       const gender = user.gender||"N/A";
-      
-      // Make current user always online
       const online = uid===currentUserUid ? true : user.online ? true : false;
 
       const li = document.createElement('li'); 
@@ -177,17 +175,25 @@ function openChat(friendUid, friendName){
   });
 }
 
-// SEND MESSAGE
+// SEND MESSAGE (shows instantly)
 function sendMessage(){
   const text = chatInput.value.trim();
   if(!text || !currentChatFriendUid) return;
-  const chatId = getChatId(currentUserUid, currentChatFriendUid);
-  db.ref('chats/'+chatId).push({
+
+  const msgObj = {
     sender: currentUserUid,
     receiver: currentChatFriendUid,
     text,
     timestamp: Date.now()
-  });
+  };
+
+  // Add immediately to chat window
+  addMessageToChat(msgObj,true);
+
+  // Push to Firebase
+  const chatId = getChatId(currentUserUid, currentChatFriendUid);
+  db.ref('chats/'+chatId).push(msgObj);
+
   chatInput.value='';
 }
 chatInput.addEventListener('keydown', e=>{ if(e.key==='Enter') sendMessage(); });
