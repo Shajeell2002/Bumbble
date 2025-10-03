@@ -71,6 +71,7 @@ nav a:hover{ text-decoration:underline; }
 </div>
 
 <script>
+// ===================== FIREBASE INIT =====================
 const firebaseConfig = { 
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs", 
   authDomain:"bumbble-c061f.firebaseapp.com", 
@@ -101,7 +102,7 @@ if("Notification" in window && Notification.permission !== "granted"){
   Notification.requestPermission();
 }
 
-// NAVIGATION
+// ===================== NAVIGATION =====================
 auth.onAuthStateChanged(user => {
   if(user && user.emailVerified){
     currentUserUid = user.uid;
@@ -122,30 +123,32 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-// LOAD USERS
+// ===================== LOAD USERS =====================
 function loadUsersRealtime(){
-  db.ref('users').on('value', snapshot=>{
+  db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
-    userList.innerHTML='';
-    if(Object.keys(usersData).length===0){
+    userList.innerHTML = '';
+    const otherUsers = Object.keys(usersData).filter(uid => uid !== currentUserUid);
+    if(otherUsers.length === 0){
       const div = document.createElement('div'); 
       div.classList.add("user-card"); 
       div.innerHTML = "No users online";
       userList.appendChild(div); 
       return;
     }
-    Object.keys(usersData).forEach(uid=>{
+
+    Object.keys(usersData).forEach(uid => {
       const user = usersData[uid].public || {};
       const name = uid===currentUserUid ? "You" : user.name || "Unknown";
       const gender = user.gender || "N/A";
-      const online = uid===currentUserUid ? true : user.online ? true : false;
+      const online = uid === currentUserUid || !!user.online;
 
       const div = document.createElement('div'); 
       div.classList.add("user-card"); 
       div.dataset.uid = uid;
 
       let badgeHtml = "";
-      if(unreadCounters[uid] && uid!==currentUserUid){ badgeHtml=`<span class="badge">${unreadCounters[uid]}</span>`; }
+      if(unreadCounters[uid] && uid !== currentUserUid) badgeHtml = `<span class="badge">${unreadCounters[uid]}</span>`;
 
       div.innerHTML = `
         <span><span class="status-dot ${online?'online':'offline'}"></span>${name}</span>
@@ -154,10 +157,10 @@ function loadUsersRealtime(){
         ${badgeHtml}
       `;
 
-      if(uid!==currentUserUid){
-        div.querySelector(".chatBtn").addEventListener('click', e=>{
+      if(uid !== currentUserUid){
+        div.querySelector(".chatBtn").addEventListener('click', e => {
           e.stopPropagation();
-          openChat(uid,name);
+          openChat(uid, name);
         });
       }
 
@@ -166,7 +169,7 @@ function loadUsersRealtime(){
   });
 }
 
-// CHAT FUNCTIONS WITH HISTORY
+// ===================== CHAT FUNCTIONS =====================
 function openChat(friendUid, friendName){
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
@@ -177,23 +180,18 @@ function openChat(friendUid, friendName){
 
   const chatId = getChatId(currentUserUid, friendUid);
 
-  // Load full chat history
-  db.ref('chats/'+chatId).off();
   db.ref('chats/'+chatId).once('value', snapshot => {
     const msgs = snapshot.val() || {};
-    Object.values(msgs).forEach(msg => {
-      const isSelf = msg.sender === currentUserUid;
-      addMessageToChat(msg, isSelf);
-    });
+    Object.values(msgs).forEach(msg => addMessageToChat(msg, msg.sender===currentUserUid));
     chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior:'smooth'});
   });
 
-  // Listen for new messages
+  db.ref('chats/'+chatId).off();
   db.ref('chats/'+chatId).on('child_added', snap => {
     const msg = snap.val();
     const isSelf = msg.sender === currentUserUid;
     addMessageToChat(msg, isSelf);
-    if(!isSelf && Notification.permission === "granted"){
+    if(!isSelf && Notification.permission === "granted" && chatModal.style.display !== "flex"){
       new Notification(`New message from ${friendName}`, { body: msg.text });
     }
   });
@@ -205,34 +203,37 @@ function sendMessage(){
   const msgObj = { sender: currentUserUid, receiver: currentChatFriendUid, text, timestamp: Date.now() };
   addMessageToChat(msgObj,true);
   db.ref('chats/'+getChatId(currentUserUid,currentChatFriendUid)).push(msgObj);
-  chatInput.value='';
+  chatInput.value = '';
 }
-chatInput.addEventListener('keydown', e=>{ if(e.key==='Enter') sendMessage(); });
+
+chatInput.addEventListener('keydown', e => {
+  if(e.key === 'Enter'){ e.preventDefault(); sendMessage(); }
+});
 sendBtn.addEventListener('click', sendMessage);
 
 function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=''; }
 function getChatId(uid1,uid2){ return uid1<uid2? uid1+'_'+uid2 : uid2+'_'+uid1; }
 
 function addMessageToChat(msg,isSelf){
-  const div=document.createElement('div'); 
-  div.classList.add('message',isSelf?'self':'friend');
+  const div = document.createElement('div'); 
+  div.classList.add('message', isSelf?'self':'friend');
+  div.style.overflowWrap = "break-word";
   const ts = new Date(msg.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
   div.innerHTML = `${msg.text}<div class="timestamp">${ts}</div>`;
   chatMessages.appendChild(div);
   chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior:'smooth'});
 }
 
-// UNREAD COUNTERS & NOTIFICATIONS
+// ===================== UNREAD COUNTERS & NOTIFICATIONS =====================
 db.ref('chats').on('child_added', snap=>{
-  const msgsRef = snap.ref;
-  msgsRef.on('child_added', msgSnap=>{
+  snap.ref.on('child_added', msgSnap=>{
     const msg = msgSnap.val();
     if(msg.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
       unreadCounters[msg.sender] = (unreadCounters[msg.sender]||0)+1;
       updateFriendListBadges();
-      const senderCard = document.querySelector(`.user-card[data-uid="${msg.sender}"] span`);
-      const senderName = senderCard ? senderCard.innerText : "Friend";
-      if(Notification.permission==="granted"){
+      const senderCard = document.querySelector(`.user-card[data-uid="${msg.sender}"] span:first-child`);
+      const senderName = senderCard ? senderCard.innerText.replace(/^●/,'').trim() : "Friend";
+      if(Notification.permission==="granted" && chatModal.style.display !== "flex"){
         new Notification(`New message from ${senderName}`, { body: msg.text });
       }
     }
@@ -250,15 +251,17 @@ function updateFriendListBadges(){
   });
 }
 
-// DRAG CHAT
+// ===================== DRAG CHAT =====================
 dragElement(chatModal);
 function dragElement(elmnt){
-  let pos1=0,pos2=0,pos3=0,pos4=0; const header=document.getElementById("chatHeader");
+  let pos1=0,pos2=0,pos3=0,pos4=0; 
+  const header=document.getElementById("chatHeader");
   if(header) header.onmousedown=dragMouseDown; else elmnt.onmousedown=dragMouseDown;
   function dragMouseDown(e){ e=e||window.event; e.preventDefault(); pos3=e.clientX; pos4=e.clientY; document.onmouseup=closeDragElement; document.onmousemove=elementDrag; }
   function elementDrag(e){ e=e||window.event; e.preventDefault(); pos1=pos3-e.clientX; pos2=pos4-e.clientY; pos3=e.clientX; pos4=e.clientY; elmnt.style.top=(elmnt.offsetTop-pos2)+'px'; elmnt.style.left=(elmnt.offsetLeft-pos1)+'px'; }
   function closeDragElement(){ document.onmouseup=null; document.onmousemove=null; }
 }
 </script>
+
 </body>
 </html>
