@@ -169,13 +169,20 @@ function openChat(friendUid, friendName){
 
   const chatId = getChatId(currentUserUid, friendUid);
   db.ref('chats/'+chatId).off();
+
+  // Listen for messages
   db.ref('chats/'+chatId).on('child_added', snap=>{
     const msg = snap.val();
-    addMessageToChat(msg,msg.sender===currentUserUid);
+    if(msg.sender !== currentUserUid){
+      // Simulate typing effect
+      showTypingEffect(msg.text);
+    } else {
+      addMessageToChat(msg,true);
+    }
   });
 }
 
-// SEND MESSAGE (shows instantly)
+// SEND MESSAGE (instant)
 function sendMessage(){
   const text = chatInput.value.trim();
   if(!text || !currentChatFriendUid) return;
@@ -187,10 +194,8 @@ function sendMessage(){
     timestamp: Date.now()
   };
 
-  // Add immediately to chat window
   addMessageToChat(msgObj,true);
 
-  // Push to Firebase
   const chatId = getChatId(currentUserUid, currentChatFriendUid);
   db.ref('chats/'+chatId).push(msgObj);
 
@@ -199,9 +204,10 @@ function sendMessage(){
 chatInput.addEventListener('keydown', e=>{ if(e.key==='Enter') sendMessage(); });
 sendBtn.addEventListener('click', sendMessage);
 
-// CLOSE CHAT
 function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=''; }
 function getChatId(uid1,uid2){ return uid1<uid2? uid1+'_'+uid2 : uid2+'_'+uid1; }
+
+// Add message to chat
 function addMessageToChat(msg,isSelf){
   const div=document.createElement('div'); 
   div.classList.add('message',isSelf?'self':'friend');
@@ -209,6 +215,23 @@ function addMessageToChat(msg,isSelf){
   div.innerHTML = `${msg.text}<div class="timestamp">${ts}</div>`;
   chatMessages.appendChild(div);
   chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior:'smooth'});
+}
+
+// Typing effect for received messages
+function showTypingEffect(text){
+  const div = document.createElement('div');
+  div.classList.add('message','friend');
+  chatMessages.appendChild(div);
+  chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior:'smooth'});
+  let i=0;
+  function type(){
+    if(i<text.length){
+      div.innerHTML = text.slice(0,i+1) + '<div class="timestamp">' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + '</div>';
+      i++;
+      setTimeout(type,30); // typing speed
+    }
+  }
+  type();
 }
 
 // UNREAD MESSAGES
