@@ -13,17 +13,18 @@ nav a:hover{ text-decoration:underline; }
 
 .friends-container {
   flex:1;
-  max-width:500px;
+  max-width:600px;
   margin:20px auto;
   padding:0 10px;
 }
 .user-list {
   display:flex;
   flex-direction:column;
-  gap:4px;
+  gap:2px;
   overflow-y:auto;
   max-height:80vh;
   padding:0;
+  font-size:14px;
 }
 .user-list::-webkit-scrollbar {
   width:6px;
@@ -36,49 +37,34 @@ nav a:hover{ text-decoration:underline; }
   background:#f1f1f1;
 }
 
-.user-card {
-  background:#fff;
-  border-radius:6px;
+.user-row {
   display:flex;
-  align-items:center;
   justify-content:space-between;
-  padding:6px 10px;
-  font-size:13px;
-  box-shadow:0 1px 4px rgba(0,0,0,0.1);
-  cursor:pointer;
-  position:relative;
-  transition:0.2s;
-  min-height:32px;
-}
-.user-card:hover { background:#fffbcc; }
-
-.user-info {
-  display:flex;
   align-items:center;
-  gap:6px;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  padding:4px 8px;
+  border-bottom:1px solid #eee;
+  cursor:pointer;
+  transition:0.2s;
 }
+.user-row:hover { background:#fffbcc; }
 
 .status-dot {
   width:10px;
   height:10px;
   border-radius:50%;
   display:inline-block;
-  flex-shrink:0;
+  margin-right:6px;
 }
 .online { background:green; }
 .offline { background:red; }
 
 .chatBtn {
-  padding:3px 7px;
+  padding:2px 6px;
   font-size:12px;
   background:#ffcb2b;
   border:none;
   border-radius:4px;
   cursor:pointer;
-  flex-shrink:0;
 }
 .chatBtn:hover { background:#f1b800; }
 
@@ -89,9 +75,7 @@ nav a:hover{ text-decoration:underline; }
   font-weight:bold;
   padding:1px 5px;
   border-radius:10px;
-  position:absolute;
-  right:5px;
-  top:5px;
+  margin-left:6px;
 }
 
 #chatModal {
@@ -242,37 +226,37 @@ function loadUsersRealtime(){
         firstFriendName = name;
       }
 
-      const div = document.createElement('div'); 
-      div.classList.add("user-card"); 
-      div.dataset.uid = uid;
+      const row = document.createElement('div'); 
+      row.classList.add("user-row"); 
+      row.dataset.uid = uid;
 
       let badgeHtml = "";
       if(unreadCounters[uid]) badgeHtml = `<span class="badge">${unreadCounters[uid]}</span>`;
 
-      div.innerHTML = `
-        <div class="user-info">
+      row.innerHTML = `
+        <div>
           <span class="status-dot ${user.online?'online':'offline'}"></span>
-          <span>${name} (${gender})</span>
+          ${name} (${gender})
+          ${badgeHtml}
         </div>
         <button class="chatBtn">Chat</button>
-        ${badgeHtml}
       `;
 
-      div.querySelector(".chatBtn").addEventListener('click', e => {
+      row.querySelector(".chatBtn").addEventListener('click', e => {
         e.stopPropagation();
         openChat(uid, name);
       });
 
-      userList.appendChild(div);
+      userList.appendChild(row);
     });
 
-    // Auto open chat with first friend
     if(firstFriendUid){
       openChat(firstFriendUid, firstFriendName);
     }
   });
 }
 
+// --- Chat functions same as before ---
 function openChat(friendUid, friendName){
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
@@ -367,16 +351,16 @@ db.ref('chats').on('child_added', snap=>{
 });
 
 function updateFriendListBadges(){
-  document.querySelectorAll('.user-card').forEach(card=>{
-    const uid = card.dataset.uid;
-    const badge = card.querySelector('.badge');
+  document.querySelectorAll('.user-row').forEach(row=>{
+    const uid = row.dataset.uid;
+    const badge = row.querySelector('.badge');
     if(unreadCounters[uid]){
       if(badge) badge.textContent = unreadCounters[uid];
       else {
         const span = document.createElement('span');
         span.className='badge';
         span.textContent = unreadCounters[uid];
-        card.appendChild(span);
+        row.querySelector('div').appendChild(span);
       }
     } else if(badge) badge.remove();
   });
