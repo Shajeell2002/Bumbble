@@ -5,20 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Friends</title>
 <style>
-body { font-family: Arial,sans-serif; background:#fff; color:#333; margin:0; display:flex; flex-direction:column; min-height:100vh; }
-header { display:flex; justify-content:space-between; align-items:center; padding:20px; background:#ffcb2b; }
-header h1 { font-size:24px; }
-nav a { margin:0 10px; text-decoration:none; color:#333; font-weight:bold; }
-.friends-container { flex:1; max-width:600px; margin:30px auto; padding:20px; border-radius:10px; border:1px solid #ddd; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
-.friends-container h2 { text-align:center; margin-bottom:20px; }
-.friend-item { display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #ccc; }
-.friend-item:last-child { border-bottom:none; }
-.friend-status { width:12px; height:12px; border-radius:50%; display:inline-block; margin-right:8px; }
-button { padding:5px 10px; background:#ffcb2b; border:none; border-radius:5px; cursor:pointer; font-weight:bold; }
-button:hover { background:#f1b800; }
-input[type=text] { width:calc(100% - 100px); padding:8px; margin-bottom:10px; border:1px solid #ccc; border-radius:5px; }
-.search-container { display:flex; align-items:center; margin-bottom:10px; }
-.error-msg { color:red; font-size:14px; margin-top:5px; text-align:center; }
+body {
+  font-family: Arial, sans-serif;
+  background: #fff;
+  color: #333;
+  margin: 0;
+  min-height: 100vh;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: #ffcb2b;
+}
+header h1 { font-size: 24px; margin: 0; }
+nav a { margin: 0 10px; text-decoration: none; color: #333; font-weight: bold; }
+.container { max-width: 600px; margin: 20px auto; padding: 0 15px; }
+h2, h3 { text-align: center; }
+input[type=text] { width: 100%; padding: 8px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; }
+.user-list, .friends-list { margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; padding: 10px; }
+.user-item, .friend-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.friend-status { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+button { padding: 5px 10px; border-radius: 5px; border: none; background: #ffcb2b; cursor: pointer; font-weight: bold; }
+button:hover { background: #f1b800; }
+button:disabled { background: #ccc; cursor: default; }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -32,19 +43,23 @@ input[type=text] { width:calc(100% - 100px); padding:8px; margin-bottom:10px; bo
   <nav id="navLinks"></nav>
 </header>
 
-<div class="friends-container">
-  <h2>Your Friends</h2>
-
-  <div class="search-container">
+<div class="container">
+  <h2>Friends</h2>
+  <div>
+    <h3>Search Users</h3>
     <input type="text" id="searchUser" placeholder="Search by name">
-    <button onclick="searchUser()">Search</button>
+    <div id="searchResults" class="user-list"></div>
   </div>
-  <div id="searchResults"></div>
 
-  <h3>Friends List</h3>
-  <div id="friendsList"></div>
+  <div>
+    <h3>All Users</h3>
+    <div id="allUsersList" class="user-list"></div>
+  </div>
 
-  <p class="error-msg" id="errorMsg"></p>
+  <div>
+    <h3>Your Friends</h3>
+    <div id="friendsList" class="friends-list"></div>
+  </div>
 </div>
 
 <script>
@@ -62,11 +77,6 @@ const auth = firebase.auth();
 const db = firebase.database();
 
 const nav = document.getElementById("navLinks");
-const friendsList = document.getElementById("friendsList");
-const errorMsg = document.getElementById("errorMsg");
-const searchResults = document.getElementById("searchResults");
-const searchInput = document.getElementById("searchUser");
-
 let currentUid = null;
 
 // Navigation & auth
@@ -82,82 +92,94 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
-    document.getElementById("logoutBtn").addEventListener("click", ()=>{
-      auth.signOut().then(()=>window.location.href="login.html");
-    });
-    loadFriends(currentUid);
+    document.getElementById("logoutBtn").addEventListener("click", ()=>auth.signOut().then(()=>window.location.href="login.html"));
+
+    loadFriends();
+    loadAllUsers();
+    setupSearch();
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
-    document.querySelector(".friends-container").innerHTML = "<p>Please login to view your friends.</p>";
+    document.querySelector(".container").innerHTML = "<p>Please login to view friends.</p>";
   }
 });
 
-// Realtime friends list
-function loadFriends(uid){
-  db.ref(`friends/${uid}`).on('value', snapshot => {
-    const friends = snapshot.val() || {};
-    friendsList.innerHTML = '';
-    if(Object.keys(friends).length === 0){
-      friendsList.innerHTML = '<p>No friends added yet.</p>';
-      return;
-    }
-    for(const fUid in friends){
-      db.ref(`users/${fUid}/public`).on('value', snap=>{
-        const f = snap.val() || {};
+// Load all friends of current user
+function loadFriends(){
+  const friendsDiv = document.getElementById("friendsList");
+  db.ref(`friends/${currentUid}`).on('value', snapshot => {
+    const friendsData = snapshot.val() || {};
+    friendsDiv.innerHTML = '';
+    for(const fid in friendsData){
+      db.ref(`users/${fid}/public`).once('value').then(snap => {
+        const data = snap.val() || {};
         const div = document.createElement('div');
         div.className = 'friend-item';
-        const onlineStatus = f.online ? 'green' : 'red';
-        div.innerHTML = `
-          <span><span class="friend-status" style="background:${onlineStatus}"></span>${f.name || "Unnamed"} (${f.age||"N/A"})</span>
-          <button onclick="removeFriend('${fUid}')">Remove</button>
-        `;
-        friendsList.appendChild(div);
+        div.innerHTML = `<span><span class="friend-status" style="background:${data.online?'green':'red'}"></span>${data.name||"Unnamed"}</span>`;
+        friendsDiv.appendChild(div);
       });
     }
   });
 }
 
-// Remove friend
-function removeFriend(friendUid){
-  db.ref(`friends/${currentUid}/${friendUid}`).remove()
-    .then(()=>alert("Friend removed"))
-    .catch(err=>{ console.error(err); errorMsg.textContent="Failed to remove friend."; });
-}
+// Load all users
+function loadAllUsers(){
+  const container = document.getElementById('allUsersList');
+  db.ref('users').on('value', snapshot => {
+    const allUsers = snapshot.val() || {};
+    container.innerHTML = '';
+    for(const uid in allUsers){
+      if(uid === currentUid) continue;
 
-// Search users
-function searchUser(){
-  const query = searchInput.value.trim().toLowerCase();
-  if(!query) return;
+      const publicData = allUsers[uid].public || {};
+      const onlineStatus = publicData.online?'green':'red';
+      const isFriend = allUsers[currentUid]?.friends?.[uid] !== undefined;
 
-  db.ref('users').once('value').then(snapshot=>{
-    const users = snapshot.val() || {};
-    searchResults.innerHTML = '';
-    let found = false;
-    for(const uid in users){
-      if(uid === currentUid) continue; // skip self
-      const name = users[uid].public?.name?.toLowerCase() || '';
-      if(name.includes(query)){
-        found = true;
-        const userDiv = document.createElement('div');
-        const onlineStatus = users[uid].public?.online ? 'green' : 'red';
-        const isFriend = users[currentUid]?.friends?.[uid] !== undefined;
-        userDiv.className = 'friend-item';
-        userDiv.innerHTML = `
-          <span><span class="friend-status" style="background:${onlineStatus}"></span>${users[uid].public?.name || "Unnamed"}</span>
-          <button ${isFriend ? 'disabled' : ''} onclick="addFriend('${uid}')">${isFriend ? 'Added' : 'Add'}</button>
-        `;
-        searchResults.appendChild(userDiv);
-      }
+      const userDiv = document.createElement('div');
+      userDiv.className = 'user-item';
+      userDiv.innerHTML = `
+        <span><span class="friend-status" style="background:${onlineStatus}"></span>${publicData.name || "Unnamed"}</span>
+        <button ${isFriend?'disabled':''} onclick="addFriend('${uid}')">${isFriend?'Added':'Add'}</button>
+      `;
+      container.appendChild(userDiv);
     }
-    if(!found) searchResults.innerHTML = '<p>No users found.</p>';
   });
 }
 
 // Add friend
 function addFriend(friendUid){
-  db.ref(`friends/${currentUid}/${friendUid}`).set(true)
-    .then(()=>{ alert("Friend added!"); searchUser(); })
-    .catch(err=>{ console.error(err); errorMsg.textContent="Failed to add friend."; });
+  if(!currentUid) return;
+  db.ref(`friends/${currentUid}/${friendUid}`).set(true).then(()=> {
+    alert("Friend added!");
+  });
+}
+
+// Search users by name
+function setupSearch(){
+  const searchInput = document.getElementById("searchUser");
+  const resultsDiv = document.getElementById("searchResults");
+
+  searchInput.addEventListener('input', async e => {
+    const searchText = e.target.value.toLowerCase();
+    const allUsersSnap = await db.ref('users').once('value');
+    const allUsers = allUsersSnap.val() || {};
+    resultsDiv.innerHTML = '';
+
+    for(const uid in allUsers){
+      if(uid === currentUid) continue;
+      const data = allUsers[uid].public || {};
+      if(data.name && data.name.toLowerCase().includes(searchText)){
+        const onlineStatus = data.online?'green':'red';
+        const isFriend = allUsers[currentUid]?.friends?.[uid] !== undefined;
+        const div = document.createElement('div');
+        div.className = 'user-item';
+        div.innerHTML = `
+          <span><span class="friend-status" style="background:${onlineStatus}"></span>${data.name}</span>
+          <button ${isFriend?'disabled':''} onclick="addFriend('${uid}')">${isFriend?'Added':'Add'}</button>
+        `;
+        resultsDiv.appendChild(div);
+      }
+    }
+  });
 }
 </script>
 </body>
