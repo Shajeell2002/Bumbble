@@ -36,7 +36,7 @@ nav a:hover { text-decoration: underline; }
 }
 .user-list li {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   padding: 10px;
   border-bottom: 1px solid #ddd;
@@ -103,12 +103,26 @@ auth.onAuthStateChanged(user => {
     document.getElementById("logoutBtn").addEventListener("click", () => {
       auth.signOut().then(()=> window.location.href="login.html");
     });
+    setUserOnlineStatus(true);
     loadUsersRealtime();
+
+    // Set offline on window close / refresh
+    window.addEventListener("beforeunload", () => {
+      setUserOnlineStatus(false);
+    });
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
     document.querySelector(".friends-container").innerHTML = "<p>Please login to view users.</p>";
   }
 });
+
+// Set current user's online status
+function setUserOnlineStatus(status) {
+  const currentUser = auth.currentUser;
+  if (currentUser) {
+    db.ref(`users/${currentUser.uid}/public`).update({ online: status });
+  }
+}
 
 // Realtime load users including self
 function loadUsersRealtime() {
@@ -120,7 +134,7 @@ function loadUsersRealtime() {
       const user = usersData[uid].public || {};
       const name = user.name || "Unknown";
       const location = user.location || "";
-      const gender = user.gender || "N/A"; 
+      const gender = user.gender || "N/A";
       const online = user.online ? true : false;
 
       const li = document.createElement('li');
