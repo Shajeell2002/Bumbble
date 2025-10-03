@@ -3,16 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bumbble - Friends</title>
+<title>Bumbble - Chat</title>
 <style>
 body {
   font-family: Arial, sans-serif;
   margin: 0;
-  background: #fff;
-  color: #333;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  background: #fff;
 }
 header {
   display: flex;
@@ -21,38 +20,56 @@ header {
   padding: 15px 20px;
   background: #ffcb2b;
 }
-header h1 { font-size: 24px; margin: 0; }
-nav a { margin-left: 10px; font-weight: bold; color: #333; text-decoration: none; }
-nav a:hover { text-decoration: underline; }
-.friends-container {
-  flex: 1;
-  max-width: 600px;
-  margin: 20px auto;
-  padding: 10px 20px;
+header h1 { margin:0; font-size:20px; }
+nav a { margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
+.chat-container {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  max-width:600px;
+  margin:0 auto;
+  border:1px solid #ddd;
+  border-radius:10px;
+  overflow:hidden;
 }
-.user-list {
-  list-style: none;
-  padding: 0;
-}
-.user-list li {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  padding: 10px;
-  border-bottom: 1px solid #ddd;
+.chat-header {
+  padding:10px;
+  background:#f5f5f5;
+  border-bottom:1px solid #ddd;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
 }
 .status-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  display: inline-block;
-  margin-right: 8px;
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  display:inline-block;
+  margin-left:8px;
 }
 .online { background: green; }
 .offline { background: red; }
-.user-info {
-  display: flex;
-  flex-direction: column;
+.messages {
+  flex:1;
+  padding:10px;
+  overflow-y:auto;
+  background:#fff;
+}
+.message {
+  margin-bottom:10px;
+}
+.message.self { text-align:right; }
+.message span { display:block; font-size:12px; color:#555; }
+input#msgInput {
+  width:100%;
+  padding:10px;
+  border:none;
+  border-top:1px solid #ddd;
+  box-sizing:border-box;
+  font-size:14px;
+}
+button#sendBtn {
+  display:none;
 }
 </style>
 
@@ -63,12 +80,14 @@ nav a:hover { text-decoration: underline; }
 <body>
 
 <header>
-  <h1>Bumbble</h1>
+  <h1>Chat <span id="friendName"></span> <span id="friendStatus" class="status-dot offline"></span></h1>
   <nav id="navLinks"></nav>
 </header>
 
-<div class="friends-container">
-  <ul id="userList" class="user-list"></ul>
+<div class="chat-container">
+  <div class="messages" id="messages"></div>
+  <input type="text" id="msgInput" placeholder="Type a message and hit Enter">
+  <button id="sendBtn">Send</button>
 </div>
 
 <script>
@@ -86,11 +105,17 @@ const auth = firebase.auth();
 const db = firebase.database();
 
 const nav = document.getElementById("navLinks");
-const userList = document.getElementById("userList");
+const messagesDiv = document.getElementById("messages");
+const msgInput = document.getElementById("msgInput");
+const friendNameEl = document.getElementById("friendName");
+const friendStatusEl = document.getElementById("friendStatus");
 
-// Navigation & auth
+function getQueryParam(param) {
+  return new URLSearchParams(window.location.search).get(param);
+}
+
 auth.onAuthStateChanged(user => {
-  if (user && user.emailVerified) {
+  if(user && user.emailVerified){
     nav.innerHTML = `
       <a href="index.html">Home</a>
       <a href="friends.html">Friends</a>
@@ -100,56 +125,68 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
-    document.getElementById("logoutBtn").addEventListener("click", () => {
+    document.getElementById("logoutBtn").addEventListener("click", ()=>{
       auth.signOut().then(()=> window.location.href="login.html");
     });
-    setUserOnlineStatus(true);
-    loadUsersRealtime();
 
-    // Set offline on window close / refresh
-    window.addEventListener("beforeunload", () => {
-      setUserOnlineStatus(false);
-    });
+    const friendUid = getQueryParam("uid");
+    if(!friendUid){
+      alert("No friend selected.");
+      window.location.href="friends.html";
+      return;
+    }
+
+    setupChat(user.uid, friendUid);
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
-    document.querySelector(".friends-container").innerHTML = "<p>Please login to view users.</p>";
+    document.querySelector(".chat-container").innerHTML="<p>Please login to chat.</p>";
   }
 });
 
-// Set current user's online status
-function setUserOnlineStatus(status) {
-  const currentUser = auth.currentUser;
-  if (currentUser) {
-    db.ref(`users/${currentUser.uid}/public`).update({ online: status });
-  }
-}
+// Setup chat between current user and friend
+function setupChat(uid, friendUid){
+  // Load friend info
+  db.ref(`users/${friendUid}/public`).on('value', snap=>{
+    const data = snap.val() || {};
+    friendNameEl.textContent = data.name || "Unknown";
+    if(data.online) friendStatusEl.className="status-dot online";
+    else friendStatusEl.className="status-dot offline";
+  });
 
-// Realtime load users including self
-function loadUsersRealtime() {
-  db.ref('users').on('value', snapshot => {
-    const usersData = snapshot.val() || {};
-    userList.innerHTML = ''; // clear list
+  // Determine chatId (alphabetical order to avoid duplicates)
+  const chatId = uid < friendUid ? uid+"_"+friendUid : friendUid+"_"+uid;
+  const chatRef = db.ref(`chats/${chatId}/messages`);
 
-    Object.keys(usersData).forEach(uid => {
-      const user = usersData[uid].public || {};
-      const name = user.name || "Unknown";
-      const location = user.location || "";
-      const gender = user.gender || "N/A";
-      const online = user.online ? true : false;
+  // Listen to messages realtime
+  chatRef.on('child_added', snap=>{
+    const msg = snap.val();
+    displayMessage(msg, uid);
+  });
 
-      const li = document.createElement('li');
-      li.innerHTML = `
-        <div class="user-info">
-          <span><span class="status-dot ${online ? 'online' : 'offline'}"></span>${name}</span>
-          <span>Gender: ${gender}</span>
-          <span>Location: ${location}</span>
-        </div>
-      `;
-      userList.appendChild(li);
-    });
+  // Send message on Enter
+  msgInput.addEventListener('keypress', e=>{
+    if(e.key === 'Enter' && msgInput.value.trim()!==""){
+      const newMsg = {
+        sender: uid,
+        text: msgInput.value.trim(),
+        timestamp: Date.now()
+      };
+      chatRef.push(newMsg);
+      msgInput.value="";
+    }
   });
 }
-</script>
 
+// Display a single message
+function displayMessage(msg, myUid){
+  const div = document.createElement('div');
+  div.classList.add('message');
+  if(msg.sender === myUid) div.classList.add('self');
+  const time = new Date(msg.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  div.innerHTML = `<span>${msg.text}</span><span>${msg.sender===myUid?'You':friendNameEl.textContent} • ${time}</span>`;
+  messagesDiv.appendChild(div);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+</script>
 </body>
 </html>
