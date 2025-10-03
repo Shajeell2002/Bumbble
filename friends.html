@@ -41,17 +41,6 @@ nav a:hover{ text-decoration:underline; }
 #chatInput{ flex:1; padding:8px; border:none; outline:none; border-radius:0 0 0 10px; }
 #sendBtn{ padding:8px 12px; border:none; background:#ffcb2b; border-radius:0 0 10px 0; cursor:pointer; }
 #sendBtn:hover{ background:#f1b800; }
-
-/* NEW MESSAGE POP ANIMATION */
-@keyframes popMessage {
-  0% { transform: scale(0.8); opacity: 0; }
-  50% { transform: scale(1.1); opacity: 1; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-.message.new {
-  animation: popMessage 0.3s ease forwards;
-}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -177,13 +166,7 @@ function loadUsersRealtime(){
   });
 }
 
-// HELPER TO ANIMATE NEW MESSAGES
-function animateNewMessage(div){
-  div.classList.add('new');
-  setTimeout(()=> div.classList.remove('new'), 500);
-}
-
-// CHAT FUNCTIONS
+// CHAT FUNCTIONS WITH HISTORY
 function openChat(friendUid, friendName){
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
@@ -193,13 +176,23 @@ function openChat(friendUid, friendName){
   updateFriendListBadges();
 
   const chatId = getChatId(currentUserUid, friendUid);
+
+  // Load full chat history
   db.ref('chats/'+chatId).off();
-  db.ref('chats/'+chatId).on('child_added', snap=>{
+  db.ref('chats/'+chatId).once('value', snapshot => {
+    const msgs = snapshot.val() || {};
+    Object.values(msgs).forEach(msg => {
+      const isSelf = msg.sender === currentUserUid;
+      addMessageToChat(msg, isSelf);
+    });
+    chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior:'smooth'});
+  });
+
+  // Listen for new messages
+  db.ref('chats/'+chatId).on('child_added', snap => {
     const msg = snap.val();
     const isSelf = msg.sender === currentUserUid;
-    addMessageToChat(msg,isSelf);
-
-    // Show notification only for received messages
+    addMessageToChat(msg, isSelf);
     if(!isSelf && Notification.permission === "granted"){
       new Notification(`New message from ${friendName}`, { body: msg.text });
     }
@@ -227,11 +220,9 @@ function addMessageToChat(msg,isSelf){
   div.innerHTML = `${msg.text}<div class="timestamp">${ts}</div>`;
   chatMessages.appendChild(div);
   chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior:'smooth'});
-
-  if(!isSelf) animateNewMessage(div);
 }
 
-// UNREAD COUNTERS & NOTIFICATIONS FOR RECEIVER
+// UNREAD COUNTERS & NOTIFICATIONS
 db.ref('chats').on('child_added', snap=>{
   const msgsRef = snap.ref;
   msgsRef.on('child_added', msgSnap=>{
