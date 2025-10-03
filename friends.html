@@ -86,26 +86,20 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-// ===================== DOM ELEMENTS =====================
 const nav = document.getElementById("navLinks");
 const userList = document.getElementById("userList");
+
+let currentUserUid = "";
+let currentChatFriendUid = "";
+let currentChatListener = null;
 const chatModal = document.getElementById("chatModal");
 const chatMessages = document.getElementById("chatMessages");
 const chatWith = document.getElementById("chatWith");
 const chatInput = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
 const typingIndicator = document.getElementById("typingIndicator");
-
-let currentUserUid = "";
-let currentChatFriendUid = "";
-let currentChatListener = null;
 let typingTimeout;
 const unreadCounters = {};
-
-// ===================== NOTIFICATIONS =====================
-if("Notification" in window && Notification.permission !== "granted"){
-  Notification.requestPermission();
-}
 
 // ===================== NAVIGATION =====================
 auth.onAuthStateChanged(user => {
@@ -136,6 +130,7 @@ auth.onAuthStateChanged(user => {
 // ===================== ONLINE STATUS =====================
 function setupOnlineStatus(){
   const userStatusRef = db.ref('users/' + currentUserUid + '/public/online');
+
   db.ref('.info/connected').on('value', snap => {
     if(snap.val() === true){
       userStatusRef.set(true);
@@ -149,14 +144,6 @@ function loadUsersRealtime(){
   db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
     userList.innerHTML = '';
-    if(Object.keys(usersData).length===0){
-      const div = document.createElement('div'); 
-      div.classList.add("user-card"); 
-      div.innerHTML = "No users online";
-      userList.appendChild(div); 
-      return;
-    }
-
     Object.keys(usersData).forEach(uid => {
       if(uid === currentUserUid) return;
       const user = usersData[uid].public || {};
@@ -187,7 +174,7 @@ function loadUsersRealtime(){
   });
 }
 
-// ===================== CHAT =====================
+// ===================== CHAT & HISTORY =====================
 function openChat(friendUid, friendName){
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
@@ -200,28 +187,33 @@ function openChat(friendUid, friendName){
   listenTyping(friendUid);
 
   const chatId = getChatId(currentUserUid, friendUid);
+
   if(currentChatListener) currentChatListener.off();
 
-  // Load history
-  db.ref('chats/'+chatId).once('value', snap => {
-    const msgs = snap.val() || {};
-    Object.values(msgs).forEach(msg => {
-      if(msg.sender) addMessageToChat(msg, msg.sender===currentUserUid);
-    });
-    chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior:'smooth'});
+  const chatRef = db.ref('chats/'+chatId);
+  chatRef.child('members').update({
+    [currentUserUid]: true,
+    [friendUid]: true
   });
 
-  // Listen new messages
-  currentChatListener = db.ref('chats/'+chatId);
+  // Load history
+  chatRef.once('value', snapshot => {
+    const msgs = snapshot.val() || {};
+    Object.values(msgs).forEach(msg => {
+      if(!msg.sender) return; // skip members object
+      addMessageToChat(msg, msg.sender===currentUserUid);
+    });
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  });
+
+  // Listen for new messages
+  currentChatListener = chatRef;
   currentChatListener.on('child_added', snap => {
     const msg = snap.val();
-    if(!msg.sender) return; // skip 'members' object
+    if(!msg.sender) return;
     const isSelf = msg.sender === currentUserUid;
     if(chatMessages.querySelector(`.message[data-ts="${msg.timestamp}"]`)) return;
     addMessageToChat(msg, isSelf);
-    if(!isSelf && Notification.permission==="granted" && chatModal.style.display !== "flex"){
-      new Notification(`New message from ${friendName}`, { body: msg.text });
-    }
   });
 }
 
@@ -232,7 +224,7 @@ function addMessageToChat(msg,isSelf){
   const ts = new Date(msg.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
   div.innerHTML = `${msg.text}<div class="timestamp">${ts}</div>`;
   chatMessages.appendChild(div);
-  chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior:'smooth'});
+  chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
 // ===================== TYPING =====================
@@ -258,25 +250,10 @@ function listenTyping(friendUid){
 function sendMessage(){
   const text = chatInput.value.trim();
   if(!text || !currentChatFriendUid) return;
-
-  const chatId = getChatId(currentUserUid,currentChatFriendUid);
-  const chatRef = db.ref('chats/'+chatId);
-
-  // ensure members exist
-  chatRef.child('members').update({
-    [currentUserUid]: true,
-    [currentChatFriendUid]: true
-  });
-
-  const msgObj = {
-    sender: currentUserUid,
-    receiver: currentChatFriendUid,
-    text,
-    timestamp: Date.now()
-  };
-  chatRef.push(msgObj);
+  const msgObj = { sender: currentUserUid, receiver: currentChatFriendUid, text, timestamp: Date.now() };
   addMessageToChat(msgObj,true);
-  chatInput.value='';
+  db.ref('chats/'+getChatId(currentUserUid,currentChatFriendUid)).push(msgObj);
+  chatInput.value = '';
 }
 
 chatInput.addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); sendMessage(); } });
@@ -297,13 +274,10 @@ function getChatId(uid1,uid2){ return uid1<uid2? uid1+'_'+uid2 : uid2+'_'+uid1; 
 db.ref('chats').on('child_added', snap=>{
   snap.ref.on('child_added', msgSnap=>{
     const msg = msgSnap.val();
-    if(!msg.sender) return; // skip 'members'
+    if(!msg.sender) return;
     if(msg.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
       unreadCounters[msg.sender] = (unreadCounters[msg.sender]||0)+1;
       updateFriendListBadges();
-      if(Notification.permission==="granted"){
-        new Notification(`New message`, { body: msg.text });
-      }
     }
   });
 });
@@ -334,5 +308,6 @@ function dragElement(elmnt){
   function closeDragElement(){ document.onmouseup=null; document.onmousemove=null; }
 }
 </script>
+
 </body>
 </html>
