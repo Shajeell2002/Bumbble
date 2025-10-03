@@ -5,20 +5,60 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Friends</title>
 <style>
-body { font-family: Arial, sans-serif; margin:0; background:#fff; color:#333; display:flex; flex-direction:column; min-height:100vh; }
-header { display:flex; justify-content:space-between; align-items:center; padding:20px; background:#ffcb2b; }
-header h1 { font-size:24px; }
-nav a { margin:0 10px; text-decoration:none; color:#333; font-weight:bold; }
-.friends-container { flex:1; max-width:500px; margin:20px auto; padding:20px; border-radius:10px; border:1px solid #ddd; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
-.friends-container h2 { text-align:center; margin-bottom:20px; }
-#searchBar { width:100%; padding:8px; margin-bottom:15px; border-radius:5px; border:1px solid #ccc; }
-.friend-item { display:flex; align-items:center; justify-content:space-between; padding:8px; border-bottom:1px solid #eee; }
-.friend-info { display:flex; align-items:center; }
-.friend-info img { width:40px; height:40px; border-radius:50%; object-fit:cover; margin-right:10px; }
-.status { width:12px; height:12px; border-radius:50%; margin-right:5px; display:inline-block; }
-.friend-actions button { padding:5px 10px; border:none; border-radius:5px; cursor:pointer; background:#ffcb2b; font-weight:bold; }
-.friend-actions button:hover { background:#f1b800; }
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #fff;
+  color: #333;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: #ffcb2b;
+}
+header h1 { font-size: 24px; margin: 0; }
+nav a { margin-left: 10px; font-weight: bold; color: #333; text-decoration: none; }
+nav a:hover { text-decoration: underline; }
+.friends-container {
+  flex: 1;
+  max-width: 600px;
+  margin: 20px auto;
+  padding: 10px 20px;
+}
+#searchInput {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 15px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+.user-list {
+  list-style: none;
+  padding: 0;
+}
+.user-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+.status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
+.online { background: green; }
+.offline { background: red; }
 </style>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -31,9 +71,8 @@ nav a { margin:0 10px; text-decoration:none; color:#333; font-weight:bold; }
 </header>
 
 <div class="friends-container">
-  <h2>All Users</h2>
-  <input type="text" id="searchBar" placeholder="Search users by name">
-  <div id="friendsList"></div>
+  <input type="text" id="searchInput" placeholder="Search users by name...">
+  <ul id="userList" class="user-list"></ul>
 </div>
 
 <script>
@@ -51,17 +90,12 @@ const auth = firebase.auth();
 const db = firebase.database();
 
 const nav = document.getElementById("navLinks");
-const friendsList = document.getElementById("friendsList");
-const searchBar = document.getElementById("searchBar");
+const userList = document.getElementById("userList");
+const searchInput = document.getElementById("searchInput");
 
-let currentUid = "";
-let allUsers = {};
-let friendsData = {};
-
-// Setup navigation & auth
+// Handle auth state & navigation
 auth.onAuthStateChanged(user => {
   if (user && user.emailVerified) {
-    currentUid = user.uid;
     nav.innerHTML = `
       <a href="index.html">Home</a>
       <a href="friends.html">Friends</a>
@@ -71,108 +105,57 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
-    document.getElementById("logoutBtn").addEventListener("click", ()=> {
-      auth.signOut().then(()=>window.location.href="login.html");
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      auth.signOut().then(()=> window.location.href = "login.html");
     });
-
-    // Load all users & friends
-    loadAllUsers();
-    loadFriends();
-    searchBar.addEventListener("input", filterUsers);
+    loadUsers();
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
     document.querySelector(".friends-container").innerHTML = "<p>Please login to view users.</p>";
   }
 });
 
-// Load all registered users in real-time
-function loadAllUsers() {
+// Load all users from public node
+function loadUsers() {
   db.ref('users').on('value', snapshot => {
-    allUsers = snapshot.val() || {};
-    renderUsers();
+    const usersData = snapshot.val() || {};
+    displayUsers(usersData);
   });
 }
 
-// Load current user's friends
-function loadFriends() {
-  db.ref(`friends/${currentUid}`).on('value', snapshot => {
-    friendsData = snapshot.val() || {};
-    renderUsers();
-  });
-}
+// Display users with online/offline status
+function displayUsers(usersData) {
+  const currentUid = auth.currentUser.uid;
+  const searchTerm = searchInput.value.toLowerCase();
 
-// Render users list
-function renderUsers() {
-  friendsList.innerHTML = '';
-  Object.keys(allUsers).forEach(uid => {
-    if(uid === currentUid) return; // skip self
+  userList.innerHTML = ''; // clear list
 
-    const user = allUsers[uid].public;
-    if(!user) return;
+  Object.keys(usersData).forEach(uid => {
+    if(uid === currentUid) return; // skip current user
+    const user = usersData[uid].public || {};
+    const name = user.name || "Unknown";
+    const location = user.location || "";
+    const online = user.online ? true : false;
 
-    const isFriend = friendsData[uid] ? true : false;
-    const statusColor = user.online ? "green" : "red";
+    if(searchTerm && !name.toLowerCase().includes(searchTerm)) return; // filter search
 
-    const div = document.createElement('div');
-    div.className = 'friend-item';
-
-    div.innerHTML = `
-      <div class="friend-info">
-        <span class="status" style="background:${statusColor}"></span>
-        <img src="${user.pic || 'images/profile1.png'}" alt="Profile">
-        <span>${user.name}</span>
-      </div>
-      <div class="friend-actions">
-        <button onclick="toggleFriend('${uid}', ${isFriend})">${isFriend ? 'Remove' : 'Add'}</button>
-      </div>
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <span><span class="status-dot ${online ? 'online' : 'offline'}"></span>${name}</span>
+      <span>${location}</span>
     `;
-    friendsList.appendChild(div);
+    userList.appendChild(li);
   });
 }
 
-// Add or remove friend
-function toggleFriend(uid, isFriend) {
-  if(isFriend) {
-    db.ref(`friends/${currentUid}/${uid}`).remove();
-  } else {
-    db.ref(`friends/${currentUid}/${uid}`).set(true);
-  }
-}
-
-// Filter users by name
-function filterUsers() {
-  const term = searchBar.value.toLowerCase();
-  const filtered = {};
-  Object.keys(allUsers).forEach(uid => {
-    if(uid === currentUid) return;
-    const user = allUsers[uid].public;
-    if(user && user.name.toLowerCase().includes(term)) {
-      filtered[uid] = allUsers[uid];
-    }
+// Search functionality
+searchInput.addEventListener('input', () => {
+  db.ref('users').once('value').then(snapshot => {
+    const usersData = snapshot.val() || {};
+    displayUsers(usersData);
   });
-
-  // Render filtered users
-  friendsList.innerHTML = '';
-  Object.keys(filtered).forEach(uid => {
-    const user = filtered[uid].public;
-    const isFriend = friendsData[uid] ? true : false;
-    const statusColor = user.online ? "green" : "red";
-
-    const div = document.createElement('div');
-    div.className = 'friend-item';
-    div.innerHTML = `
-      <div class="friend-info">
-        <span class="status" style="background:${statusColor}"></span>
-        <img src="${user.pic || 'images/profile1.png'}" alt="Profile">
-        <span>${user.name}</span>
-      </div>
-      <div class="friend-actions">
-        <button onclick="toggleFriend('${uid}', ${isFriend})">${isFriend ? 'Remove' : 'Add'}</button>
-      </div>
-    `;
-    friendsList.appendChild(div);
-  });
-}
+});
 </script>
+
 </body>
 </html>
