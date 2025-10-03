@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Friends & Chat</title>
 <style>
-/* ... your existing CSS ... (unchanged) */
 body { font-family: Arial, sans-serif; margin:0; background:#fefefe; color:#333; display:flex; flex-direction:column; min-height:100vh; }
 header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#ffcb2b; box-shadow:0 3px 6px rgba(0,0,0,0.1);}
 header h1{ font-size:24px; margin:0; }
@@ -213,18 +212,29 @@ function addMessageToChat(msg,isSelf){
   chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior:'smooth'});
 }
 
-// UNREAD COUNTERS & NOTIFICATIONS FOR RECEIVER
+// UNREAD COUNTERS & REALTIME NOTIFICATIONS
 db.ref('chats').on('child_added', snap=>{
   const msgsRef = snap.ref;
   msgsRef.on('child_added', msgSnap=>{
     const msg = msgSnap.val();
-    if(msg.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
+
+    // New message for current user
+    if(msg.receiver===currentUserUid){
       unreadCounters[msg.sender] = (unreadCounters[msg.sender]||0)+1;
       updateFriendListBadges();
+
       const senderCard = document.querySelector(`.user-card[data-uid="${msg.sender}"] span`);
       const senderName = senderCard ? senderCard.innerText : "Friend";
+
       if(Notification.permission==="granted"){
         new Notification(`New message from ${senderName}`, { body: msg.text });
+      }
+
+      // Auto-open chat if not already open
+      if(currentChatFriendUid!==msg.sender){
+        openChat(msg.sender, senderName);
+      } else {
+        addMessageToChat(msg,false);
       }
     }
   });
