@@ -122,24 +122,55 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-// Handle profile picture preview
+// Compress image to ~64KB using canvas
+function compressImage(file, maxSizeKB = 64, callback) {
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+      const maxDim = 200; // optional resizing dimension
+      if (width > height && width > maxDim) {
+        height *= maxDim / width; width = maxDim;
+      } else if (height > width && height > maxDim) {
+        width *= maxDim / height; height = maxDim;
+      } else if (width > maxDim) { width = height = maxDim; }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      let quality = 0.9;
+      let dataUrl = canvas.toDataURL('image/jpeg', quality);
+      while ((dataUrl.length / 1024) > maxSizeKB && quality > 0.1) {
+        quality -= 0.05;
+        dataUrl = canvas.toDataURL('image/jpeg', quality);
+      }
+      callback(dataUrl);
+    }
+    img.src = evt.target.result;
+  }
+  reader.readAsDataURL(file);
+}
+
+// Handle profile picture upload & compression
 document.getElementById("profilePic").addEventListener("change", e => {
   const file = e.target.files[0];
   if (!file) return;
 
-  const reader = new FileReader();
-  reader.onload = function(evt) {
-    if (evt.target.result.length > 65536) { // ~64KB limit
-      errorMsg.textContent = "Image too large. Max 64KB.";
-      profileBase64 = "";
-      profilePreview.src = "images/profile1.png";
-      return;
-    }
-    profileBase64 = evt.target.result;
+  if (file.size > 2*1024*1024) { // 2MB limit
+    errorMsg.textContent = "File too large! Max 2MB.";
+    return;
+  }
+
+  compressImage(file, 64, (compressedDataUrl) => {
+    profileBase64 = compressedDataUrl;
     profilePreview.src = profileBase64;
     errorMsg.textContent = "";
-  };
-  reader.readAsDataURL(file);
+  });
 });
 
 // Load profile data
