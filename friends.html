@@ -50,6 +50,10 @@ nav a:hover { text-decoration: underline; }
 }
 .online { background: green; }
 .offline { background: red; }
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -106,24 +110,26 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-// Realtime load users
+// Realtime load users including self
 function loadUsersRealtime() {
-  const currentUid = auth.currentUser.uid;
   db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
     userList.innerHTML = ''; // clear list
 
     Object.keys(usersData).forEach(uid => {
-      if(uid === currentUid) return; // skip self
       const user = usersData[uid].public || {};
       const name = user.name || "Unknown";
       const location = user.location || "";
+      const gender = user.gender || "N/A"; 
       const online = user.online ? true : false;
 
       const li = document.createElement('li');
       li.innerHTML = `
-        <span><span class="status-dot ${online ? 'online' : 'offline'}"></span>${name}</span>
-        <span>${location}</span>
+        <div class="user-info">
+          <span><span class="status-dot ${online ? 'online' : 'offline'}"></span>${name}</span>
+          <span>Gender: ${gender}</span>
+          <span>Location: ${location}</span>
+        </div>
       `;
       userList.appendChild(li);
     });
