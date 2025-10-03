@@ -42,6 +42,10 @@ nav a:hover{ text-decoration:underline; }
 #sendBtn{ padding:8px 12px; border:none; background:#ffcb2b; border-radius:0 0 10px 0; cursor:pointer; }
 #sendBtn:hover{ background:#f1b800; }
 </style>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -67,15 +71,8 @@ nav a:hover{ text-decoration:underline; }
   </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
 <script>
-window.onload = function(){
-
-console.log("Script loaded");
-
+// ===================== FIREBASE INIT =====================
 const firebaseConfig = { 
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs", 
   authDomain:"bumbble-c061f.firebaseapp.com", 
@@ -86,7 +83,6 @@ const firebaseConfig = {
   appId:"1:213165886981:web:c18652003444869b1bd66c" 
 };
 firebase.initializeApp(firebaseConfig);
-
 const auth = firebase.auth();
 const db = firebase.database();
 
@@ -105,15 +101,14 @@ const typingIndicator = document.getElementById("typingIndicator");
 let typingTimeout;
 const unreadCounters = {};
 
-// ===================== NOTIFICATIONS =====================
-if("Notification" in window && Notification.permission !== "granted"){
-  Notification.requestPermission();
-}
+// ===================== NAVIGATION & AUTH =====================
+console.log("Friends.html script loaded");
 
-// ===================== NAVIGATION =====================
 auth.onAuthStateChanged(user => {
-  if(user && user.emailVerified){
+  if(user){
+    console.log("User logged in:", user.uid);
     currentUserUid = user.uid;
+
     nav.innerHTML = `
       <a href="index.html">Home</a>
       <a href="friends.html">Friends</a>
@@ -123,14 +118,16 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
-    document.getElementById("logoutBtn").addEventListener("click", ()=>{
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
       db.ref('users/' + currentUserUid + '/public/online').set(false);
-      auth.signOut().then(()=> window.location.href="login.html");
+      auth.signOut().then(() => window.location.href="login.html");
     });
 
     setupOnlineStatus();
     loadUsersRealtime();
   } else {
+    console.log("No user logged in");
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
     document.querySelector(".friends-container").innerHTML = "<p>Please login to view users.</p>";
   }
@@ -139,9 +136,10 @@ auth.onAuthStateChanged(user => {
 // ===================== ONLINE STATUS =====================
 function setupOnlineStatus(){
   const userStatusRef = db.ref('users/' + currentUserUid + '/public/online');
+
   db.ref('.info/connected').on('value', snap => {
     if(snap.val() === true){
-      console.log("User connected, setting online=true");
+      console.log("Connected! Setting online=true");
       userStatusRef.set(true);
       userStatusRef.onDisconnect().set(false);
     }
@@ -155,8 +153,10 @@ function loadUsersRealtime(){
     userList.innerHTML = '';
 
     Object.keys(usersData).forEach(uid => {
-      const user = usersData[uid].public || {};
       if(uid === currentUserUid) return;
+      const user = usersData[uid].public || {};
+      const name = user.name || "Unknown";
+      const gender = user.gender || "N/A";
 
       const div = document.createElement('div'); 
       div.classList.add("user-card"); 
@@ -166,15 +166,15 @@ function loadUsersRealtime(){
       if(unreadCounters[uid]) badgeHtml = `<span class="badge">${unreadCounters[uid]}</span>`;
 
       div.innerHTML = `
-        <span><span class="status-dot ${user.online?'online':'offline'}"></span>${user.name||'Unknown'}</span>
-        <span>Gender: ${user.gender||'N/A'}</span>
+        <span><span class="status-dot ${user.online?'online':'offline'}"></span>${name}</span>
+        <span>Gender: ${gender}</span>
         <button class="chatBtn">Chat</button>
         ${badgeHtml}
       `;
 
       div.querySelector(".chatBtn").addEventListener('click', e => {
         e.stopPropagation();
-        openChat(uid, user.name||'Friend');
+        openChat(uid, name);
       });
 
       userList.appendChild(div);
@@ -208,14 +208,8 @@ function openChat(friendUid, friendName){
   currentChatListener.on('child_added', snap => {
     const msg = snap.val();
     const isSelf = msg.sender === currentUserUid;
-
     if(chatMessages.querySelector(`.message[data-ts="${msg.timestamp}"]`)) return;
-
     addMessageToChat(msg, isSelf);
-
-    if(!isSelf && Notification.permission==="granted" && chatModal.style.display !== "flex"){
-      new Notification(`New message from ${friendName}`, { body: msg.text });
-    }
   });
 }
 
@@ -229,7 +223,7 @@ function addMessageToChat(msg,isSelf){
   chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior:'smooth'});
 }
 
-// ===================== TYPING =====================
+// ===================== TYPING INDICATOR =====================
 chatInput.addEventListener("input", () => {
   if(!currentChatFriendUid) return;
   db.ref('typing/' + currentChatFriendUid + '/' + currentUserUid).set(true);
@@ -272,20 +266,6 @@ function closeChat(){
 
 function getChatId(uid1,uid2){ return uid1<uid2? uid1+'_'+uid2 : uid2+'_'+uid1; }
 
-// ===================== UNREAD COUNTERS =====================
-db.ref('chats').on('child_added', snap=>{
-  snap.ref.on('child_added', msgSnap=>{
-    const msg = msgSnap.val();
-    if(msg.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
-      unreadCounters[msg.sender] = (unreadCounters[msg.sender]||0)+1;
-      updateFriendListBadges();
-      if(Notification.permission==="granted"){
-        new Notification(`New message`, { body: msg.text });
-      }
-    }
-  });
-});
-
 function updateFriendListBadges(){
   document.querySelectorAll('.user-card').forEach(card=>{
     const uid = card.dataset.uid;
@@ -311,8 +291,6 @@ function dragElement(elmnt){
   function elementDrag(e){ e=e||window.event; e.preventDefault(); pos1=pos3-e.clientX; pos2=pos4-e.clientY; pos3=e.clientX; pos4=e.clientY; elmnt.style.top=(elmnt.offsetTop-pos2)+'px'; elmnt.style.left=(elmnt.offsetLeft-pos1)+'px'; }
   function closeDragElement(){ document.onmouseup=null; document.onmousemove=null; }
 }
-
-} // window.onload
 </script>
 
 </body>
