@@ -130,7 +130,6 @@ auth.onAuthStateChanged(user => {
 // ===================== ONLINE STATUS =====================
 function setupOnlineStatus(){
   const userStatusRef = db.ref('users/' + currentUserUid + '/public/online');
-
   db.ref('.info/connected').on('value', snap => {
     if(snap.val() === true){
       userStatusRef.set(true);
@@ -187,7 +186,9 @@ function openChat(friendUid, friendName){
   listenTyping(friendUid);
 
   const chatId = getChatId(currentUserUid, friendUid);
-  const chatRef = db.ref('chats/' + chatId);
+  if(currentChatListener) currentChatListener.off();
+
+  const chatRef = db.ref('chats/'+chatId);
 
   // ensure members exist
   chatRef.child('members').update({
@@ -195,29 +196,26 @@ function openChat(friendUid, friendName){
     [friendUid]: true
   });
 
-  // remove old listener
-  if(currentChatListener) currentChatListener.off();
-  currentChatListener = chatRef.child("messages");
-
-  // load history
-  currentChatListener.once('value', snapshot => {
-    snapshot.forEach(snap => {
-      const msg = snap.val();
-      addMessageToChat(msg, msg.sender === currentUserUid);
+  // Load history
+  chatRef.child('messages').once('value', snapshot => {
+    const msgs = snapshot.val() || {};
+    Object.values(msgs).forEach(msg => {
+      addMessageToChat(msg, msg.sender===currentUserUid);
     });
     chatMessages.scrollTop = chatMessages.scrollHeight;
   });
 
-  // listen for new messages
+  // Listen for new messages only under /messages
+  currentChatListener = chatRef.child('messages');
   currentChatListener.on('child_added', snap => {
     const msg = snap.val();
     if(!msg.sender) return;
-    const isSelf = msg.sender === currentUserUid;
-    addMessageToChat(msg, isSelf);
+    addMessageToChat(msg, msg.sender === currentUserUid);
   });
 }
 
 function addMessageToChat(msg,isSelf){
+  if(chatMessages.querySelector(`.message[data-ts="${msg.timestamp}"]`)) return;
   const div = document.createElement('div'); 
   div.classList.add('message', isSelf?'self':'friend');
   div.dataset.ts = msg.timestamp;
@@ -240,7 +238,7 @@ chatInput.addEventListener("input", () => {
 function listenTyping(friendUid){
   const typingRef = db.ref('typing/' + currentUserUid + '/' + friendUid);
   typingRef.on('value', snapshot => {
-    typingIndicator.textContent = snapshot.exists() ? `Typing...` : '';
+    typingIndicator.textContent = snapshot.exists() ? `${chatWith.textContent} is typing...` : '';
   });
 }
 
@@ -248,18 +246,13 @@ function listenTyping(friendUid){
 function sendMessage(){
   const text = chatInput.value.trim();
   if(!text || !currentChatFriendUid) return;
-
   const chatId = getChatId(currentUserUid, currentChatFriendUid);
-  const msgObj = {
-    sender: currentUserUid,
-    receiver: currentChatFriendUid,
-    text,
-    timestamp: Date.now()
-  };
-
-  db.ref('chats/' + chatId + '/messages').push(msgObj);
-  addMessageToChat(msgObj, true);
-
+  const msgObj = { sender: currentUserUid, receiver: currentChatFriendUid, text, timestamp: Date.now() };
+  db.ref('chats/'+chatId+'/members').update({
+    [currentUserUid]: true,
+    [currentChatFriendUid]: true
+  });
+  db.ref('chats/'+chatId+'/messages').push(msgObj);
   chatInput.value = '';
 }
 
@@ -279,8 +272,7 @@ function getChatId(uid1,uid2){ return uid1<uid2? uid1+'_'+uid2 : uid2+'_'+uid1; 
 
 // ===================== UNREAD COUNTERS =====================
 db.ref('chats').on('child_added', snap=>{
-  const chatId = snap.key;
-  snap.ref.child("messages").on('child_added', msgSnap=>{
+  snap.ref.child('messages').on('child_added', msgSnap=>{
     const msg = msgSnap.val();
     if(!msg.sender) return;
     if(msg.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
