@@ -1,43 +1,49 @@
 <script>
 function signupUser() {
-  const email = document.getElementById("email").value;
+  const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
-  const name = document.getElementById("name").value;
-  const age = document.getElementById("age").value;
-  const location = document.getElementById("location").value;
+  const name = document.getElementById("name").value.trim();
+  const age = document.getElementById("age").value.trim();
+  const location = document.getElementById("location").value.trim();
+
+  if (!email || !password || !name) {
+    return alert("Please fill in all required fields!");
+  }
 
   auth.createUserWithEmailAndPassword(email, password)
     .then(cred => {
-      // Wait for auth state to stabilize
-      auth.onAuthStateChanged(user => {
-        if (user) {
-          const uid = user.uid;
+      const user = cred.user;
+      const uid = user.uid;
 
-          // Send email verification
-          user.sendEmailVerification();
+      // Send email verification
+      user.sendEmailVerification()
+        .then(() => console.log("Verification email sent."))
+        .catch(err => console.error("Email verification error:", err));
 
-          // Save public profile
-          db.ref("users/" + uid + "/public").set({
-            name: name,
-            age: age,
-            location: location,
-            pic: "images/profile1.png",
-            online: false
-          });
+      // Save public profile
+      db.ref("users/" + uid + "/public").set({
+        name: name,
+        age: age || "N/A",
+        location: location || "",
+        pic: "images/profile1.png",
+        online: false
+      })
+      .then(() => console.log("Public profile saved"))
+      .catch(err => console.error("Public profile save error:", err));
 
-          // Save private profile
-          db.ref("users/" + uid + "/private").set({
-            email: email,
-            createdAt: Date.now()
-          });
+      // Save private profile
+      db.ref("users/" + uid + "/private").set({
+        email: email,
+        createdAt: Date.now()
+      })
+      .then(() => console.log("Private profile saved"))
+      .catch(err => console.error("Private profile save error:", err));
 
-          alert("Signup successful! Please verify your email before logging in.");
-          window.location.href = "login.html";
-        }
-      });
+      alert("Signup successful! Please verify your email before logging in.");
+      window.location.href = "login.html";
     })
     .catch(err => {
-      console.error(err);
+      console.error("Signup error:", err);
       alert("Error: " + err.message);
     });
 }
