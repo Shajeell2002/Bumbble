@@ -1,13 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bumbble - Sign Up</title>
+<style>
+body{font-family:Arial,sans-serif;background:#fff;color:#333;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;}
+.signup-container{width:350px;padding:20px;border:1px solid #ddd;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.1);}
+.signup-container h2{text-align:center;margin-bottom:20px;}
+.signup-container input{width:100%;padding:8px;margin:8px 0;border:1px solid #ccc;border-radius:5px;}
+.signup-container button{width:100%;padding:10px;margin-top:10px;background:#ffcb2b;border:none;border-radius:5px;font-weight:bold;cursor:pointer;}
+.signup-container button:hover{background:#f1b800;}
+.error-msg{color:red;font-size:14px;margin-top:5px;}
+</style>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<div class="signup-container">
+  <h2>Sign Up</h2>
+  <input type="text" id="name" placeholder="Full Name" required>
+  <input type="number" id="age" placeholder="Age">
+  <input type="text" id="location" placeholder="Location">
+  <input type="email" id="email" placeholder="Email" required>
+  <input type="password" id="password" placeholder="Password" required>
+  <button onclick="signupUser()">Sign Up</button>
+  <p class="error-msg" id="errorMsg"></p>
+  <p style="font-size:12px;margin-top:10px;">Already have an account? <a href="login.html">Login</a></p>
+</div>
+
 <script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+  authDomain: "bumbble-c061f.firebaseapp.com",
+  databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
+  projectId: "bumbble-c061f",
+  storageBucket: "bumbble-c061f.appspot.com",
+  messagingSenderId: "213165886981",
+  appId: "1:213165886981:web:c18652003444869b1bd66c"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+
 function signupUser() {
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
   const name = document.getElementById("name").value.trim();
   const age = document.getElementById("age").value.trim();
   const location = document.getElementById("location").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
 
-  if (!email || !password || !name) {
-    return alert("Please fill in all required fields!");
+  const errorMsg = document.getElementById("errorMsg");
+  errorMsg.textContent = "";
+
+  if (!name || !email || !password) {
+    return errorMsg.textContent = "Please fill all required fields!";
   }
 
   auth.createUserWithEmailAndPassword(email, password)
@@ -17,7 +67,7 @@ function signupUser() {
 
       // Send email verification
       user.sendEmailVerification()
-        .then(() => console.log("Verification email sent."))
+        .then(() => console.log("Verification email sent"))
         .catch(err => console.error("Email verification error:", err));
 
       // Save public profile
@@ -29,7 +79,7 @@ function signupUser() {
         online: false
       })
       .then(() => console.log("Public profile saved"))
-      .catch(err => console.error("Public profile save error:", err));
+      .catch(err => console.error("Public profile error:", err));
 
       // Save private profile
       db.ref("users/" + uid + "/private").set({
@@ -37,14 +87,17 @@ function signupUser() {
         createdAt: Date.now()
       })
       .then(() => console.log("Private profile saved"))
-      .catch(err => console.error("Private profile save error:", err));
+      .catch(err => console.error("Private profile error:", err));
 
       alert("Signup successful! Please verify your email before logging in.");
       window.location.href = "login.html";
     })
     .catch(err => {
       console.error("Signup error:", err);
-      alert("Error: " + err.message);
+      errorMsg.textContent = err.message;
     });
 }
 </script>
+
+</body>
+</html>
