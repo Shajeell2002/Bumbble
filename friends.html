@@ -139,35 +139,48 @@ function loadUsersRealtime(){
       userList.appendChild(div); 
       return;
     }
+
+    let firstFriendUid = null;
+    let firstFriendName = null;
+
     Object.keys(usersData).forEach(uid => {
       const user = usersData[uid].public || {};
-      const name = uid===currentUserUid ? "You" : user.name || "Unknown";
+      if(uid === currentUserUid) return;
+      const name = user.name || "Unknown";
       const gender = user.gender || "N/A";
-      const online = uid === currentUserUid || !!user.online;
 
       const div = document.createElement('div'); 
       div.classList.add("user-card"); 
       div.dataset.uid = uid;
 
       let badgeHtml = "";
-      if(unreadCounters[uid] && uid !== currentUserUid) badgeHtml = `<span class="badge">${unreadCounters[uid]}</span>`;
+      if(unreadCounters[uid]) badgeHtml = `<span class="badge">${unreadCounters[uid]}</span>`;
 
       div.innerHTML = `
-        <span><span class="status-dot ${online?'online':'offline'}"></span>${name}</span>
+        <span><span class="status-dot ${user.online?'online':'offline'}"></span>${name}</span>
         <span>Gender: ${gender}</span>
-        ${uid!==currentUserUid ? '<button class="chatBtn">Chat</button>' : ''}
+        <button class="chatBtn">Chat</button>
         ${badgeHtml}
       `;
 
-      if(uid !== currentUserUid){
-        div.querySelector(".chatBtn").addEventListener('click', e => {
-          e.stopPropagation();
-          openChat(uid, name);
-        });
-      }
+      div.querySelector(".chatBtn").addEventListener('click', e => {
+        e.stopPropagation();
+        openChat(uid, name);
+      });
 
       userList.appendChild(div);
+
+      // Select the first friend automatically
+      if(!firstFriendUid){
+        firstFriendUid = uid;
+        firstFriendName = name;
+      }
     });
+
+    // Open chat automatically for first friend
+    if(firstFriendUid){
+      openChat(firstFriendUid, firstFriendName);
+    }
   });
 }
 
@@ -185,23 +198,19 @@ function openChat(friendUid, friendName){
 
   const chatId = getChatId(currentUserUid, friendUid);
 
-  // Remove previous listener
   if(currentChatListener) currentChatListener.off();
 
-  // Load chat history
   db.ref('chats/'+chatId).once('value', snapshot => {
     const msgs = snapshot.val() || {};
     Object.values(msgs).forEach(msg => addMessageToChat(msg, msg.sender===currentUserUid));
     chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior:'smooth'});
   });
 
-  // Listen for new messages
   currentChatListener = db.ref('chats/'+chatId);
   currentChatListener.on('child_added', snap => {
     const msg = snap.val();
     const isSelf = msg.sender === currentUserUid;
 
-    // Prevent duplicates
     if(chatMessages.querySelector(`.message[data-ts="${msg.timestamp}"]`)) return;
 
     addMessageToChat(msg, isSelf);
@@ -270,10 +279,8 @@ db.ref('chats').on('child_added', snap=>{
     if(msg.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
       unreadCounters[msg.sender] = (unreadCounters[msg.sender]||0)+1;
       updateFriendListBadges();
-      const senderCard = document.querySelector(`.user-card[data-uid="${msg.sender}"] span:first-child`);
-      const senderName = senderCard ? senderCard.innerText.replace(/^●/,'').trim() : "Friend";
-      if(Notification.permission==="granted" && chatModal.style.display !== "flex"){
-        new Notification(`New message from ${senderName}`, { body: msg.text });
+      if(Notification.permission==="granted"){
+        new Notification(`New message`, { body: msg.text });
       }
     }
   });
@@ -283,9 +290,14 @@ function updateFriendListBadges(){
   document.querySelectorAll('.user-card').forEach(card=>{
     const uid = card.dataset.uid;
     const badge = card.querySelector('.badge');
-    if(unreadCounters[uid] && uid!==currentUserUid){
+    if(unreadCounters[uid]){
       if(badge) badge.textContent = unreadCounters[uid];
-      else { const span=document.createElement('span'); span.className='badge'; span.textContent=unreadCounters[uid]; card.appendChild(span);}
+      else {
+        const span = document.createElement('span');
+        span.className='badge';
+        span.textContent = unreadCounters[uid];
+        card.appendChild(span);
+      }
     } else if(badge) badge.remove();
   });
 }
@@ -293,13 +305,13 @@ function updateFriendListBadges(){
 // ===================== DRAG CHAT =====================
 dragElement(chatModal);
 function dragElement(elmnt){
-  let pos1=0,pos2=0,pos3=0,pos4=0; 
-  const header=document.getElementById("chatHeader");
+  let pos1=0,pos2=0,pos3=0,pos4=0; const header=document.getElementById("chatHeader");
   if(header) header.onmousedown=dragMouseDown; else elmnt.onmousedown=dragMouseDown;
   function dragMouseDown(e){ e=e||window.event; e.preventDefault(); pos3=e.clientX; pos4=e.clientY; document.onmouseup=closeDragElement; document.onmousemove=elementDrag; }
   function elementDrag(e){ e=e||window.event; e.preventDefault(); pos1=pos3-e.clientX; pos2=pos4-e.clientY; pos3=e.clientX; pos4=e.clientY; elmnt.style.top=(elmnt.offsetTop-pos2)+'px'; elmnt.style.left=(elmnt.offsetLeft-pos1)+'px'; }
   function closeDragElement(){ document.onmouseup=null; document.onmousemove=null; }
 }
 </script>
+
 </body>
 </html>
