@@ -33,13 +33,16 @@ nav a { margin: 0 10px; text-decoration: none; color: #333; font-weight: bold; }
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 .profile-container h2 { text-align: center; margin-bottom: 20px; }
-.profile-container input {
+.profile-container input[type=text],
+.profile-container input[type=number],
+.profile-container input[type=email] {
   width: 100%;
   padding: 8px;
   margin: 8px 0;
   border: 1px solid #ccc;
   border-radius: 5px;
 }
+.profile-container input[type=file] { margin: 8px 0; }
 .profile-container button {
   width: 100%;
   padding: 10px;
@@ -52,6 +55,7 @@ nav a { margin: 0 10px; text-decoration: none; color: #333; font-weight: bold; }
 }
 .profile-container button:hover { background: #f1b800; }
 .error-msg { color: red; font-size: 14px; margin-top: 5px; }
+#profilePreview { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin: 10px 0; }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -67,6 +71,8 @@ nav a { margin: 0 10px; text-decoration: none; color: #333; font-weight: bold; }
 
 <div class="profile-container">
   <h2>Your Profile</h2>
+  <img id="profilePreview" src="images/profile1.png" alt="Profile Picture">
+  <input type="file" id="profilePic" accept="image/*">
   <input type="text" id="name" placeholder="Full Name">
   <input type="number" id="age" placeholder="Age">
   <input type="text" id="location" placeholder="Location">
@@ -91,8 +97,10 @@ const db = firebase.database();
 
 const nav = document.getElementById("navLinks");
 const errorMsg = document.getElementById("errorMsg");
+const profilePreview = document.getElementById("profilePreview");
+let profileBase64 = "";
 
-// Set up navigation based on auth state
+// Navigation & auth
 auth.onAuthStateChanged(user => {
   if (user && user.emailVerified) {
     nav.innerHTML = `
@@ -107,12 +115,31 @@ auth.onAuthStateChanged(user => {
     document.getElementById("logoutBtn").addEventListener("click", ()=> {
       auth.signOut().then(()=>window.location.href="login.html");
     });
-
     loadProfile(user.uid);
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
     document.querySelector(".profile-container").innerHTML = "<p>Please login to view your profile.</p>";
   }
+});
+
+// Handle profile picture preview
+document.getElementById("profilePic").addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    if (evt.target.result.length > 65536) { // ~64KB limit
+      errorMsg.textContent = "Image too large. Max 64KB.";
+      profileBase64 = "";
+      profilePreview.src = "images/profile1.png";
+      return;
+    }
+    profileBase64 = evt.target.result;
+    profilePreview.src = profileBase64;
+    errorMsg.textContent = "";
+  };
+  reader.readAsDataURL(file);
 });
 
 // Load profile data
@@ -128,6 +155,8 @@ async function loadProfile(uid) {
     document.getElementById("age").value = publicData.age || "";
     document.getElementById("location").value = publicData.location || "";
     document.getElementById("email").value = privateData.email || "";
+    profilePreview.src = publicData.pic || "images/profile1.png";
+    profileBase64 = publicData.pic || "";
   } catch(err) {
     console.error("Error loading profile:", err);
     errorMsg.textContent = "Failed to load profile.";
@@ -145,19 +174,15 @@ async function updateProfile() {
   const location = document.getElementById("location").value.trim();
 
   errorMsg.textContent = "";
-
-  if (!name) {
-    return errorMsg.textContent = "Name cannot be empty!";
-  }
+  if (!name) return errorMsg.textContent = "Name cannot be empty!";
 
   try {
-    // Update public node
     await db.ref(`users/${uid}/public`).update({
       name,
       age: age || "N/A",
-      location: location || ""
+      location: location || "",
+      pic: profileBase64 || "images/profile1.png"
     });
-
     alert("Profile updated successfully!");
   } catch(err) {
     console.error("Profile update error:", err);
@@ -165,6 +190,5 @@ async function updateProfile() {
   }
 }
 </script>
-
 </body>
 </html>
