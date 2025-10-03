@@ -91,16 +91,17 @@ const userList = document.getElementById("userList");
 
 let currentUserUid = "";
 let currentChatFriendUid = "";
+let currentChatListener = null;
 const chatModal = document.getElementById("chatModal");
 const chatMessages = document.getElementById("chatMessages");
 const chatWith = document.getElementById("chatWith");
 const chatInput = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
 const typingIndicator = document.getElementById("typingIndicator");
-const unreadCounters = {};
 let typingTimeout;
+const unreadCounters = {};
 
-// ===================== REQUEST NOTIFICATIONS =====================
+// ===================== NOTIFICATIONS =====================
 if("Notification" in window && Notification.permission !== "granted"){
   Notification.requestPermission();
 }
@@ -131,15 +132,13 @@ function loadUsersRealtime(){
   db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
     userList.innerHTML = '';
-    const otherUsers = Object.keys(usersData).filter(uid => uid !== currentUserUid);
-    if(otherUsers.length === 0){
+    if(Object.keys(usersData).length===0){
       const div = document.createElement('div'); 
       div.classList.add("user-card"); 
       div.innerHTML = "No users online";
       userList.appendChild(div); 
       return;
     }
-
     Object.keys(usersData).forEach(uid => {
       const user = usersData[uid].public || {};
       const name = uid===currentUserUid ? "You" : user.name || "Unknown";
@@ -172,7 +171,7 @@ function loadUsersRealtime(){
   });
 }
 
-// ===================== CHAT FUNCTIONS =====================
+// ===================== CHAT =====================
 function openChat(friendUid, friendName){
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
@@ -186,24 +185,44 @@ function openChat(friendUid, friendName){
 
   const chatId = getChatId(currentUserUid, friendUid);
 
+  // Remove previous listener
+  if(currentChatListener) currentChatListener.off();
+
+  // Load chat history
   db.ref('chats/'+chatId).once('value', snapshot => {
     const msgs = snapshot.val() || {};
     Object.values(msgs).forEach(msg => addMessageToChat(msg, msg.sender===currentUserUid));
     chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior:'smooth'});
   });
 
-  db.ref('chats/'+chatId).off();
-  db.ref('chats/'+chatId).on('child_added', snap => {
+  // Listen for new messages
+  currentChatListener = db.ref('chats/'+chatId);
+  currentChatListener.on('child_added', snap => {
     const msg = snap.val();
     const isSelf = msg.sender === currentUserUid;
+
+    // Prevent duplicates
+    if(chatMessages.querySelector(`.message[data-ts="${msg.timestamp}"]`)) return;
+
     addMessageToChat(msg, isSelf);
-    if(!isSelf && Notification.permission === "granted" && chatModal.style.display !== "flex"){
+
+    if(!isSelf && Notification.permission==="granted" && chatModal.style.display !== "flex"){
       new Notification(`New message from ${friendName}`, { body: msg.text });
     }
   });
 }
 
-// ===================== TYPING INDICATOR =====================
+function addMessageToChat(msg,isSelf){
+  const div = document.createElement('div'); 
+  div.classList.add('message', isSelf?'self':'friend');
+  div.dataset.ts = msg.timestamp;
+  const ts = new Date(msg.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  div.innerHTML = `${msg.text}<div class="timestamp">${ts}</div>`;
+  chatMessages.appendChild(div);
+  chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior:'smooth'});
+}
+
+// ===================== TYPING =====================
 chatInput.addEventListener("input", () => {
   if(!currentChatFriendUid) return;
   db.ref('typing/' + currentChatFriendUid + '/' + currentUserUid).set(true);
@@ -230,7 +249,7 @@ function sendMessage(){
   chatInput.value = '';
 }
 
-chatInput.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); sendMessage(); } });
+chatInput.addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); sendMessage(); } });
 sendBtn.addEventListener('click', sendMessage);
 
 function closeChat(){
@@ -241,17 +260,8 @@ function closeChat(){
   currentChatFriendUid='';
   typingIndicator.textContent = "";
 }
-function getChatId(uid1,uid2){ return uid1<uid2? uid1+'_'+uid2 : uid2+'_'+uid1; }
 
-function addMessageToChat(msg,isSelf){
-  const div = document.createElement('div'); 
-  div.classList.add('message', isSelf?'self':'friend');
-  div.style.overflowWrap = "break-word";
-  const ts = new Date(msg.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-  div.innerHTML = `${msg.text}<div class="timestamp">${ts}</div>`;
-  chatMessages.appendChild(div);
-  chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior:'smooth'});
-}
+function getChatId(uid1,uid2){ return uid1<uid2? uid1+'_'+uid2 : uid2+'_'+uid1; }
 
 // ===================== UNREAD COUNTERS =====================
 db.ref('chats').on('child_added', snap=>{
