@@ -101,14 +101,15 @@ const typingIndicator = document.getElementById("typingIndicator");
 let typingTimeout;
 const unreadCounters = {};
 
-// ===================== NAVIGATION & AUTH =====================
-console.log("Friends.html script loaded");
+// ===================== NOTIFICATIONS =====================
+if("Notification" in window && Notification.permission !== "granted"){
+  Notification.requestPermission();
+}
 
+// ===================== NAVIGATION =====================
 auth.onAuthStateChanged(user => {
-  if(user){
-    console.log("User logged in:", user.uid);
+  if(user && user.emailVerified){
     currentUserUid = user.uid;
-
     nav.innerHTML = `
       <a href="index.html">Home</a>
       <a href="friends.html">Friends</a>
@@ -118,16 +119,14 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
-
-    document.getElementById("logoutBtn").addEventListener("click", () => {
+    document.getElementById("logoutBtn").addEventListener("click", ()=>{
       db.ref('users/' + currentUserUid + '/public/online').set(false);
-      auth.signOut().then(() => window.location.href="login.html");
+      auth.signOut().then(()=> window.location.href="login.html");
     });
 
     setupOnlineStatus();
     loadUsersRealtime();
   } else {
-    console.log("No user logged in");
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
     document.querySelector(".friends-container").innerHTML = "<p>Please login to view users.</p>";
   }
@@ -136,10 +135,8 @@ auth.onAuthStateChanged(user => {
 // ===================== ONLINE STATUS =====================
 function setupOnlineStatus(){
   const userStatusRef = db.ref('users/' + currentUserUid + '/public/online');
-
   db.ref('.info/connected').on('value', snap => {
     if(snap.val() === true){
-      console.log("Connected! Setting online=true");
       userStatusRef.set(true);
       userStatusRef.onDisconnect().set(false);
     }
@@ -151,6 +148,13 @@ function loadUsersRealtime(){
   db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
     userList.innerHTML = '';
+    if(Object.keys(usersData).length===0){
+      const div = document.createElement('div'); 
+      div.classList.add("user-card"); 
+      div.innerHTML = "No users online";
+      userList.appendChild(div); 
+      return;
+    }
 
     Object.keys(usersData).forEach(uid => {
       if(uid === currentUserUid) return;
@@ -198,6 +202,7 @@ function openChat(friendUid, friendName){
 
   if(currentChatListener) currentChatListener.off();
 
+  // Load history
   db.ref('chats/'+chatId).once('value', snapshot => {
     const msgs = snapshot.val() || {};
     Object.values(msgs).forEach(msg => addMessageToChat(msg, msg.sender===currentUserUid));
@@ -208,8 +213,14 @@ function openChat(friendUid, friendName){
   currentChatListener.on('child_added', snap => {
     const msg = snap.val();
     const isSelf = msg.sender === currentUserUid;
+
     if(chatMessages.querySelector(`.message[data-ts="${msg.timestamp}"]`)) return;
+
     addMessageToChat(msg, isSelf);
+
+    if(!isSelf && Notification.permission==="granted" && chatModal.style.display !== "flex"){
+      new Notification(`New message from ${friendName}`, { body: msg.text });
+    }
   });
 }
 
@@ -223,7 +234,7 @@ function addMessageToChat(msg,isSelf){
   chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior:'smooth'});
 }
 
-// ===================== TYPING INDICATOR =====================
+// ===================== TYPING =====================
 chatInput.addEventListener("input", () => {
   if(!currentChatFriendUid) return;
   db.ref('typing/' + currentChatFriendUid + '/' + currentUserUid).set(true);
@@ -246,9 +257,20 @@ function listenTyping(friendUid){
 function sendMessage(){
   const text = chatInput.value.trim();
   if(!text || !currentChatFriendUid) return;
+
+  const chatId = getChatId(currentUserUid,currentChatFriendUid);
+  const chatRef = db.ref('chats/'+chatId);
+
   const msgObj = { sender: currentUserUid, receiver: currentChatFriendUid, text, timestamp: Date.now() };
+
+  // Ensure 'members' exists for rules
+  chatRef.child('members').update({
+    [currentUserUid]: true,
+    [currentChatFriendUid]: true
+  });
+
+  chatRef.push(msgObj);
   addMessageToChat(msgObj,true);
-  db.ref('chats/'+getChatId(currentUserUid,currentChatFriendUid)).push(msgObj);
   chatInput.value = '';
 }
 
@@ -265,6 +287,20 @@ function closeChat(){
 }
 
 function getChatId(uid1,uid2){ return uid1<uid2? uid1+'_'+uid2 : uid2+'_'+uid1; }
+
+// ===================== UNREAD COUNTERS =====================
+db.ref('chats').on('child_added', snap=>{
+  snap.ref.on('child_added', msgSnap=>{
+    const msg = msgSnap.val();
+    if(msg.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
+      unreadCounters[msg.sender] = (unreadCounters[msg.sender]||0)+1;
+      updateFriendListBadges();
+      if(Notification.permission==="granted"){
+        new Notification(`New message`, { body: msg.text });
+      }
+    }
+  });
+});
 
 function updateFriendListBadges(){
   document.querySelectorAll('.user-card').forEach(card=>{
