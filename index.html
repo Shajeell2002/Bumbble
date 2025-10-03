@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -64,3 +66,65 @@
   @media(max-width:768px) { .hero img { max-width:90%; } }
 </style>
 </head>
+
+<body>
+<header>
+  <h1>Bumbble</h1>
+  <nav id="navLinks">
+    <!-- Links inserted dynamically -->
+  </nav>
+</header>
+
+<section class="hero">
+  <img src="images/hero.png" alt="Two people using phones illustration">
+  <h2>Meet. Match. Connect.</h2>
+  <p>Your journey to meaningful connections starts here.</p>
+  <button onclick="window.location.href='signup.html'">Join Bumbble Now</button>
+</section>
+
+<footer>
+  <p>&copy; 2025 Bumbble. All rights reserved.</p>
+</footer>
+
+<script>
+// Dynamic navigation
+const nav = document.getElementById("navLinks");
+const currentUser = localStorage.getItem("current_user");
+
+if(currentUser){
+    // Member is logged in: hide Login & Sign Up
+    nav.innerHTML = `
+        <a href="index.html">Home</a>
+        <a href="friends.html">Friends</a>
+        <a href="stories.html">Stories</a>
+        <a href="events.html">Events</a>
+        <a href="safety.html">Safety</a>
+        <a href="profile.html">Profile</a>
+        <a href="#" id="logoutBtn">Logout</a>
+    `;
+
+    document.getElementById("logoutBtn").addEventListener("click", function(){
+        localStorage.removeItem("current_user");
+        alert("✅ Logged out successfully.");
+        window.location.href = "login.html";
+    });
+
+    // Hide "Join Now" button for logged-in users
+    const joinBtn = document.querySelector(".hero button");
+    if(joinBtn) joinBtn.style.display = "none";
+
+} else {
+    // Not logged in: show default menu
+    nav.innerHTML = `
+        <a href="index.html">Home</a>
+        <a href="friends.html">Friends</a>
+        <a href="stories.html">Stories</a>
+        <a href="events.html">Events</a>
+        <a href="safety.html">Safety</a>
+        <a href="login.html">Login</a>
+        <a href="signup.html">Sign Up</a>
+    `;
+}
+</script>
+</body>
+</html>
