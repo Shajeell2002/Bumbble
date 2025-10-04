@@ -1,136 +1,162 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bumbble - Sign Up</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #fff;
+  color: #333;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+.signup-container {
+  width: 350px;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.signup-container h2 { text-align: center; margin-bottom: 20px; }
+.signup-container input, .signup-container select {
+  width: 100%;
+  padding: 8px;
+  margin: 8px 0;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+.signup-container button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  background: #ffcb2b;
+  border: none;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.signup-container button:hover { background: #f1b800; }
+.error-msg { color: red; font-size: 14px; margin-top: 5px; }
+</style>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bumbble - Signup</title>
-
-  <style>
-    /* Reset */
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family: Arial, sans-serif; background:#fefefe; color:#333; display:flex; flex-direction:column; min-height:100vh; }
-
-    /* Header */
-    header { display:flex; justify-content:space-between; align-items:center; padding:20px; background:#ffcb2b; }
-    header h1 { font-size:24px; }
-    nav a { margin:0 10px; text-decoration:none; color:#333; font-weight:bold; }
-    nav a:hover { text-decoration:underline; }
-
-    /* Signup Section */
-    .signup-container {
-      flex:1;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      padding:40px 20px;
-      background:#fff8dc;
-    }
-    .signup-box {
-      background:#fff;
-      padding:30px 40px;
-      border-radius:12px;
-      box-shadow:0 4px 12px rgba(0,0,0,0.1);
-      width:100%;
-      max-width:400px;
-      text-align:center;
-    }
-    .signup-box h2 {
-      margin-bottom:20px;
-      font-size:26px;
-      color:#333;
-    }
-    .signup-box input, .signup-box select {
-      width:100%;
-      padding:12px;
-      margin:10px 0;
-      border:1px solid #ccc;
-      border-radius:8px;
-      font-size:16px;
-    }
-    .signup-box button {
-      width:100%;
-      background:#ffcb2b;
-      border:none;
-      padding:14px;
-      margin-top:15px;
-      font-size:18px;
-      font-weight:bold;
-      cursor:pointer;
-      border-radius:30px;
-      transition:background 0.3s;
-    }
-    .signup-box button:hover {
-      background:#e6b800;
-    }
-    .error-message {
-      color:red;
-      margin-top:10px;
-    }
-
-    /* Footer */
-    footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:auto; }
-
-    @media(max-width:768px) {
-      .signup-box { padding:20px; }
-    }
-  </style>
+  <title>Signup</title>
 </head>
 <body>
+  <h2>Create Account</h2>
 
-  <header>
-    <h1>Bumbble</h1>
-    <nav>
-      <a href="index.html">Home</a>
-      <a href="login.html">Login</a>
-      <a href="signup.html">Sign Up</a>
-    </nav>
-  </header>
+<div class="signup-container">
+  <h2>Sign Up</h2>
+  <input type="text" id="name" placeholder="Full Name" required>
+  <input type="number" id="age" placeholder="Age">
+  <select id="gender">
+    <option value="">Select Gender</option>
+    <option value="Male">Male</option>
+    <option value="Female">Female</option>
+    <option value="Other">Other</option>
+  </select>
+  <input type="text" id="location" placeholder="Location">
+  <input type="email" id="email" placeholder="Email" required>
+  <input type="password" id="password" placeholder="Password" required>
+  <button onclick="signupUser()">Sign Up</button>
+  <p class="error-msg" id="errorMsg"></p>
+  <p style="font-size:12px;margin-top:10px;">Already have an account? <a href="login.html">Login</a></p>
+</div>
+  <form id="signupForm">
+    <input type="text" id="username" placeholder="Enter your name" required><br><br>
+    <input type="email" id="email" placeholder="Enter email" required><br><br>
+    <input type="password" id="password" placeholder="Enter password" required><br><br>
 
-  <section class="signup-container">
-    <div class="signup-box">
-      <h2>Create Your Account</h2>
-      <form id="signupForm">
-        <input type="text" id="username" placeholder="Enter your name" required>
-        <input type="email" id="email" placeholder="Enter email" required>
-        <input type="password" id="password" placeholder="Enter password" required>
-        
-        <select id="gender" required>
-          <option value="">Select Gender</option>
-          <option value="Female">Female</option>
-          <option value="Male">Male</option>
-          <option value="Other">Other</option>
-        </select>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+  authDomain: "bumbble-c061f.firebaseapp.com",
+  databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
+  projectId: "bumbble-c061f",
+  storageBucket: "bumbble-c061f.appspot.com",
+  messagingSenderId: "213165886981",
+  appId: "1:213165886981:web:c18652003444869b1bd66c"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+    <label>Gender:</label><br>
+    <select id="gender" required>
+      <option value="">Select</option>
+      <option value="Female">Female</option>
+      <option value="Male">Male</option>
+      <option value="Other">Other</option>
+    </select><br><br>
 
-        <input type="number" id="age" placeholder="Enter your age" required>
+async function signupUser() {
+  const name = document.getElementById("name").value.trim();
+  const age = document.getElementById("age").value.trim();
+  const location = document.getElementById("location").value.trim();
+  const gender = document.getElementById("gender").value;
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const errorMsg = document.getElementById("errorMsg");
+  errorMsg.textContent = "";
+    <input type="number" id="age" placeholder="Enter your age" required><br><br>
 
-        <button type="submit">Sign Up</button>
-      </form>
-      <p id="errorMsg" class="error-message"></p>
-    </div>
-  </section>
+  if (!name || !email || !password || !gender) {
+    return errorMsg.textContent = "Please fill all required fields!";
+  }
+    <button type="submit">Sign Up</button>
+  </form>
 
-  <footer>
-    <p>&copy; 2025 Bumbble. All rights reserved.</p>
-  </footer>
+  try {
+    // 1️⃣ Create user
+    const cred = await auth.createUserWithEmailAndPassword(email, password);
+    const user = cred.user;
+    const uid = user.uid;
+  <p id="errorMsg" style="color:red;"></p>
 
+    // 2️⃣ Send email verification
+    await user.sendEmailVerification({
+      url: 'https://bumbble.in/login.html'
+    });
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
+    // 3️⃣ Save public profile
+    await db.ref(`users/${uid}/public`).set({
+      name: name,
+      age: age || "N/A",
+      gender: gender,
+      location: location || "",
+      pic: "images/profile1.png",
+      online: false
+    });
   <script>
     // 🔹 Replace with your Firebase config
     const firebaseConfig = {
-      apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
-  authDomain: "bumbble-c061f.firebaseapp.com",
-      databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
-projectId: "bumbble-c061f",
-  storageBucket: "bumbble-c061f.firebasestorage.appspot.com",
-  messagingSenderId: "213165886981",
-  appId: "1:213165886981:web:c18652003444869b1bd66c"
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
     };
     firebase.initializeApp(firebaseConfig);
 
+    // 4️⃣ Save private profile
+    await db.ref(`users/${uid}/private`).set({
+      email: email,
+      createdAt: Date.now()
+    });
     const auth = firebase.auth();
     const db = firebase.database();
 
@@ -138,12 +164,20 @@ projectId: "bumbble-c061f",
     document.getElementById("signupForm").addEventListener("submit", function(e) {
       e.preventDefault();
 
+    alert("Signup successful! A verification email has been sent. Please verify your email before logging in.");
+    window.location.href = "login.html";
       const username = document.getElementById("username").value;
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
       const gender = document.getElementById("gender").value;
       const age = document.getElementById("age").value;
 
+  } catch (err) {
+    console.error("Signup error:", err);
+    errorMsg.textContent = err.message;
+  }
+}
+</script>
       auth.createUserWithEmailAndPassword(email, password)
         .then(cred => {
           const uid = cred.user.uid;
@@ -161,12 +195,12 @@ projectId: "bumbble-c061f",
             email: email
           });
 
-          // Presence system
+          // Presence system: update on disconnect
           const userStatusRef = db.ref("users/" + uid + "/public/online");
           userStatusRef.set(true);
           userStatusRef.onDisconnect().set(false);
 
-          // Redirect
+          // Redirect to friends.html
           window.location.href = "friends.html";
         })
         .catch(error => {
@@ -176,4 +210,3 @@ projectId: "bumbble-c061f",
   </script>
 </body>
 </html>
-
