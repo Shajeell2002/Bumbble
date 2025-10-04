@@ -15,7 +15,7 @@ body {
   flex-direction: column;
 }
 
-/* Header stays fixed on top */
+/* Header */
 header { 
   display:flex; 
   justify-content:space-between; 
@@ -34,7 +34,7 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 nav a:hover{ text-decoration:underline; }
 #sidebarToggle { display:none; font-size:20px; cursor:pointer; }
 
-/* Sidebar for user list */
+/* Sidebar */
 .friends-container {
   width:250px; 
   background:#fffbe6;
@@ -42,37 +42,28 @@ nav a:hover{ text-decoration:underline; }
   padding:10px;
   overflow-y:auto;
   position:fixed;
-  top:60px; /* below header */
+  top:60px; 
   bottom:0;
   left:0;
   transition: transform 0.3s ease;
   z-index:400;
 }
-.friends-container.hide {
-  transform: translateX(-100%);
-}
+.friends-container.hide { transform: translateX(-100%); }
 
-/* main content area */
+/* Main content */
 .main-content {
   flex:1;
-  margin-left:250px; /* space for sidebar */
-  padding:80px 20px 20px 20px; /* space for header */
+  margin-left:250px; 
+  padding:80px 20px 20px 20px;
   transition: margin-left 0.3s ease;
 }
-.main-content.full {
-  margin-left:0;
-}
+.main-content.full { margin-left:0; }
 
-/* user list */
-.user-list {
-  display:flex;
-  flex-direction:column;
-  gap:2px;
-  font-size:14px;
-}
+/* User list */
+.user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
 .user-row { 
   display:flex; 
-  justify-content:space-between; 
+  justify-content:flex-start; 
   align-items:center; 
   padding:4px 8px; 
   border-bottom:1px solid #eee; 
@@ -80,36 +71,10 @@ nav a:hover{ text-decoration:underline; }
   transition:0.2s; 
 }
 .user-row:hover { background:#fffbcc; }
-
-.status-dot {
-  width:10px;
-  height:10px;
-  border-radius:50%;
-  display:inline-block;
-  margin-right:6px;
-}
+.status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
 .online { background:green; }
 .offline { background:red; }
-
-.chatBtn {
-  padding:2px 6px;
-  font-size:12px;
-  background:#ffcb2b;
-  border:none;
-  border-radius:4px;
-  cursor:pointer;
-}
-.chatBtn:hover { background:#f1b800; }
-
-.badge {
-  background:red;
-  color:white;
-  font-size:10px;
-  font-weight:bold;
-  padding:1px 5px;
-  border-radius:10px;
-  margin-left:6px;
-}
+.badge { background:red; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
 
 /* Chat modal */
 #chatModal {
@@ -199,29 +164,19 @@ nav a:hover{ text-decoration:underline; }
 const sidebar = document.getElementById('sidebar');
 const mainContent = document.getElementById('mainContent');
 const sidebarToggle = document.getElementById('sidebarToggle');
-
-function toggleSidebar() {
-  sidebar.classList.toggle('hide');
-  mainContent.classList.toggle('full');
-}
+function toggleSidebar() { sidebar.classList.toggle('hide'); mainContent.classList.toggle('full'); }
 sidebarToggle.addEventListener('click', toggleSidebar);
 
 // --- Swipe gestures ---
-let touchStartX = 0;
-let touchEndX = 0;
-document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, {passive:true});
+let touchStartX = 0, touchEndX = 0;
+document.addEventListener('touchstart', e => touchStartX = e.changedTouches[0].screenX, {passive:true});
 document.addEventListener('touchend', e => { touchEndX = e.changedTouches[0].screenX; handleGesture(); }, {passive:true});
 function handleGesture(){
-  if(touchEndX - touchStartX > 50){ // swipe right
-    sidebar.classList.remove('hide');
-    mainContent.classList.remove('full');
-  } else if(touchStartX - touchEndX > 50){ // swipe left
-    sidebar.classList.add('hide');
-    mainContent.classList.add('full');
-  }
+  if(touchEndX - touchStartX > 50){ sidebar.classList.remove('hide'); mainContent.classList.remove('full'); }
+  else if(touchStartX - touchEndX > 50){ sidebar.classList.add('hide'); mainContent.classList.add('full'); }
 }
 
-// --- Firebase Config ---
+// --- Firebase ---
 const firebaseConfig = { 
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs", 
   authDomain:"bumbble-c061f.firebaseapp.com", 
@@ -250,7 +205,7 @@ const typingIndicator = document.getElementById("typingIndicator");
 let typingTimeout;
 const unreadCounters = {};
 
-// --- Auth & Online Status ---
+// --- Auth & online ---
 auth.onAuthStateChanged(user => {
   if(user && user.emailVerified){
     currentUserUid = user.uid;
@@ -285,7 +240,7 @@ function setupOnlineStatus(){
   });
 }
 
-// --- Load Users ---
+// --- Load users ---
 function loadUsersRealtime(){
   db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
@@ -304,24 +259,21 @@ function loadUsersRealtime(){
       let badgeHtml = "";
       if(unreadCounters[uid]) badgeHtml = `<span class="badge">${unreadCounters[uid]}</span>`;
       row.innerHTML = `
-        <div>
+        <div class="user-name">
           <span class="status-dot ${user.online?'online':'offline'}"></span>
           ${name} (${gender})
           ${badgeHtml}
         </div>
-        <button class="chatBtn">Chat</button>
       `;
-      row.querySelector(".chatBtn").addEventListener('click', e => {
-        e.stopPropagation();
-        openChat(uid, name);
-      });
+      // Click anywhere on row opens chat
+      row.addEventListener('click', () => openChat(uid, name));
       userList.appendChild(row);
     });
     if(firstFriendUid){ openChat(firstFriendUid, firstFriendName); }
   });
 }
 
-// --- Chat functions ---
+// --- Chat ---
 function openChat(friendUid, friendName){
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
