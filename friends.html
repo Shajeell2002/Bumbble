@@ -11,26 +11,99 @@ header h1{ font-size:24px; margin:0; }
 nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 nav a:hover{ text-decoration:underline; }
 
-.friends-container { flex:1; max-width:600px; margin:20px auto; padding:0 10px; }
-.user-list { display:flex; flex-direction:column; gap:2px; overflow-y:auto; max-height:80vh; padding:0; font-size:14px; }
-.user-list::-webkit-scrollbar { width:6px; }
-.user-list::-webkit-scrollbar-thumb { background:#ffcb2b; border-radius:3px; }
-.user-list::-webkit-scrollbar-track { background:#f1f1f1; }
+.friends-container {
+  flex:1;
+  max-width:600px;
+  margin:20px auto;
+  padding:0 10px;
+}
+.user-list {
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  overflow-y:auto;
+  max-height:80vh;
+  padding:0;
+  font-size:14px;
+}
+.user-list::-webkit-scrollbar {
+  width:6px;
+}
+.user-list::-webkit-scrollbar-thumb {
+  background:#ffcb2b;
+  border-radius:3px;
+}
+.user-list::-webkit-scrollbar-track {
+  background:#f1f1f1;
+}
 
-.user-row { display:flex; justify-content:space-between; align-items:center; padding:4px 8px; border-bottom:1px solid #eee; cursor:pointer; transition:0.2s; }
+.user-row {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:4px 8px;
+  border-bottom:1px solid #eee;
+  cursor:pointer;
+  transition:0.2s;
+}
 .user-row:hover { background:#fffbcc; }
 
-.status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
+.status-dot {
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  display:inline-block;
+  margin-right:6px;
+}
 .online { background:green; }
 .offline { background:red; }
 
-.chatBtn { padding:2px 6px; font-size:12px; background:#ffcb2b; border:none; border-radius:4px; cursor:pointer; }
+.chatBtn {
+  padding:2px 6px;
+  font-size:12px;
+  background:#ffcb2b;
+  border:none;
+  border-radius:4px;
+  cursor:pointer;
+}
 .chatBtn:hover { background:#f1b800; }
 
-.badge { background:red; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
+.badge {
+  background:red;
+  color:white;
+  font-size:10px;
+  font-weight:bold;
+  padding:1px 5px;
+  border-radius:10px;
+  margin-left:6px;
+}
 
-#chatModal { position:fixed; bottom:0; right:20px; width:300px; max-height:400px; border:1px solid #ccc; background:#fff; border-radius:10px 10px 0 0; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); resize:both; overflow:hidden; z-index:1000; }
-#chatHeader { background:#ffcb2b; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; border-radius:10px 10px 0 0; cursor:move; }
+#chatModal {
+  position:fixed;
+  bottom:0;
+  right:20px;
+  width:300px;
+  max-height:400px;
+  border:1px solid #ccc;
+  background:#fff;
+  border-radius:10px 10px 0 0;
+  display:none;
+  flex-direction:column;
+  box-shadow:0 4px 12px rgba(0,0,0,0.2);
+  resize:both;
+  overflow:hidden;
+  z-index:1000;
+}
+#chatHeader {
+  background:#ffcb2b;
+  padding:10px;
+  font-weight:bold;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-radius:10px 10px 0 0;
+  cursor:move;
+}
 #chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; background:#fefefe; }
 #typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
 .message { max-width:80%; padding:6px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
@@ -41,6 +114,16 @@ nav a:hover{ text-decoration:underline; }
 #chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:0 0 0 10px; }
 #sendBtn { padding:8px 12px; border:none; background:#ffcb2b; border-radius:0 0 10px 0; cursor:pointer; }
 #sendBtn:hover { background:#f1b800; }
+
+/* Highlight animation for new message */
+@keyframes highlightFlash {
+  0% { background-color: #fffbcc; }
+  50% { background-color: #fff59d; }
+  100% { background-color: #fffbcc; }
+}
+.highlight {
+  animation: highlightFlash 1s ease-in-out;
+}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -89,7 +172,7 @@ const nav = document.getElementById("navLinks");
 const userList = document.getElementById("userList");
 
 let currentUserUid = "";
-let currentChatFriendUid = "";
+let currentChatFriendUid = localStorage.getItem('lastChatFriend') || "";
 let currentChatListener = null;
 const chatModal = document.getElementById("chatModal");
 const chatMessages = document.getElementById("chatMessages");
@@ -143,11 +226,11 @@ function loadUsersRealtime(){
     let firstFriendName = "";
 
     Object.keys(usersData).forEach(uid => {
-      const user = usersData[uid].public || {};
+      let user = usersData[uid].public || {};
       let name = uid === currentUserUid ? "You" : (user.name || "Unknown");
       const gender = uid === currentUserUid ? "" : (user.gender || "N/A");
 
-      if(uid !== currentUserUid && !firstFriendUid){
+      if(!firstFriendUid && uid !== currentUserUid){
         firstFriendUid = uid;
         firstFriendName = name;
       }
@@ -162,10 +245,10 @@ function loadUsersRealtime(){
       row.innerHTML = `
         <div>
           <span class="status-dot ${user.online?'online':'offline'}"></span>
-          ${name} ${gender ? `(${gender})` : ""}
+          ${name} ${gender ? '('+gender+')' : ''}
           ${badgeHtml}
         </div>
-        ${uid !== currentUserUid ? '<button class="chatBtn">Chat</button>' : ''}
+        ${uid!==currentUserUid ? '<button class="chatBtn">Chat</button>' : ''}
       `;
 
       if(uid !== currentUserUid){
@@ -178,11 +261,8 @@ function loadUsersRealtime(){
       userList.appendChild(row);
     });
 
-    // Open last chat if exists
-    const lastUid = localStorage.getItem('lastChatFriendUid');
-    const lastName = localStorage.getItem('lastChatFriendName');
-    if(lastUid && usersData[lastUid]){
-      openChat(lastUid, lastName);
+    if(currentChatFriendUid && usersData[currentChatFriendUid]){
+      openChat(currentChatFriendUid, usersData[currentChatFriendUid].public.name || "Unknown");
     } else if(firstFriendUid){
       openChat(firstFriendUid, firstFriendName);
     }
@@ -192,16 +272,13 @@ function loadUsersRealtime(){
 // --- Chat functions ---
 function openChat(friendUid, friendName){
   currentChatFriendUid = friendUid;
+  localStorage.setItem('lastChatFriend', friendUid);
   chatWith.textContent = friendName;
   chatModal.style.display = "flex";
   chatMessages.innerHTML = '';
   typingIndicator.textContent = "";
   unreadCounters[friendUid] = 0;
   updateFriendListBadges();
-
-  // Store last chat friend
-  localStorage.setItem('lastChatFriendUid', friendUid);
-  localStorage.setItem('lastChatFriendName', friendName);
 
   listenTyping(friendUid);
 
@@ -222,10 +299,13 @@ function openChat(friendUid, friendName){
     const msg = snap.val();
     if(!msg.sender) return;
     addMessageToChat(msg, msg.sender === currentUserUid);
-    // Highlight unread for others
-    if(msg.receiver === currentUserUid && msg.sender !== currentChatFriendUid){
+
+    if(msg.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
       unreadCounters[msg.sender] = (unreadCounters[msg.sender]||0)+1;
       updateFriendListBadges();
+      // Scroll the friend list to the user who sent message
+      const row = document.querySelector(`.user-row[data-uid="${msg.sender}"]`);
+      if(row) row.scrollIntoView({ behavior:'smooth', block:'center' });
     }
   });
 }
@@ -293,6 +373,10 @@ function updateFriendListBadges(){
         span.textContent = unreadCounters[uid];
         row.querySelector('div').appendChild(span);
       }
+      row.classList.add('highlight');
+      setTimeout(()=>row.classList.remove('highlight'),1000);
+      // Scroll row into view
+      row.scrollIntoView({ behavior:'smooth', block:'center' });
     } else if(badge) badge.remove();
   });
 }
