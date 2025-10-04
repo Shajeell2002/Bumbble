@@ -1,136 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bumbble - Friends & Chat</title>
-<style>
-body { font-family: Arial, sans-serif; margin:0; background:#fefefe; color:#333; display:flex; flex-direction:column; min-height:100vh; }
-header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#ffcb2b; box-shadow:0 3px 6px rgba(0,0,0,0.1);}
-header h1{ font-size:24px; margin:0; }
-nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
-nav a:hover{ text-decoration:underline; }
-
-.friends-container {
-  flex:1;
-  max-width:600px;
-  margin:20px auto;
-  padding:0 10px;
-}
-.user-list {
-  display:flex;
-  flex-direction:column;
-  gap:2px;
-  overflow-y:auto;
-  max-height:80vh;
-  padding:0;
-  font-size:14px;
-}
-.user-list::-webkit-scrollbar { width:6px; }
-.user-list::-webkit-scrollbar-thumb { background:#ffcb2b; border-radius:3px; }
-.user-list::-webkit-scrollbar-track { background:#f1f1f1; }
-
-.user-row {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:4px 8px;
-  border-bottom:1px solid #eee;
-  cursor:pointer;
-  transition:0.2s;
-}
-.user-row:hover { background:#fffbcc; }
-
-.status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
-.online { background:green; }
-.offline { background:red; }
-
-.chatBtn {
-  padding:2px 6px;
-  font-size:12px;
-  background:#ffcb2b;
-  border:none;
-  border-radius:4px;
-  cursor:pointer;
-}
-.chatBtn:hover { background:#f1b800; }
-
-.badge {
-  background:red;
-  color:white;
-  font-size:10px;
-  font-weight:bold;
-  padding:1px 5px;
-  border-radius:10px;
-  margin-left:6px;
-}
-
-#chatModal {
-  position:fixed;
-  bottom:0;
-  right:20px;
-  width:300px;
-  max-height:400px;
-  border:1px solid #ccc;
-  background:#fff;
-  border-radius:10px 10px 0 0;
-  display:none;
-  flex-direction:column;
-  box-shadow:0 4px 12px rgba(0,0,0,0.2);
-  resize:both;
-  overflow:hidden;
-  z-index:1000;
-}
-#chatHeader {
-  background:#ffcb2b;
-  padding:10px;
-  font-weight:bold;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  border-radius:10px 10px 0 0;
-  cursor:move;
-}
-#chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; background:#fefefe; }
-#typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
-.message { max-width:80%; padding:6px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
-.message.self { background:green; color:white; align-self:flex-end; }
-.message.friend { background:#e0e0e0; align-self:flex-start; }
-.timestamp { font-size:10px; color:#555; margin-top:2px; text-align:right; }
-#chatInputContainer { display:flex; border-top:1px solid #ddd; }
-#chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:0 0 0 10px; }
-#sendBtn { padding:8px 12px; border:none; background:#ffcb2b; border-radius:0 0 10px 0; cursor:pointer; }
-#sendBtn:hover { background:#f1b800; }
-</style>
-
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-</head>
-<body>
-
-<header>
-  <h1>Bumbble</h1>
-  <nav id="navLinks"></nav>
-</header>
-
-<div class="friends-container">
-  <div class="user-list" id="userList"></div>
-</div>
-
-<div id="chatModal">
-  <div id="chatHeader">
-    <span id="chatWith">Friend</span>
-    <button onclick="closeChat()">X</button>
-  </div>
-  <div id="chatMessages"></div>
-  <div id="typingIndicator"></div>
-  <div id="chatInputContainer">
-    <input type="text" id="chatInput" placeholder="Type a message">
-    <button id="sendBtn">Send</button>
-  </div>
-</div>
-
 <script>
 const firebaseConfig = { 
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs", 
@@ -180,6 +47,7 @@ auth.onAuthStateChanged(user => {
 
     setupOnlineStatus();
     loadUsersRealtime();
+    listenAllChats();
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
     document.querySelector(".friends-container").innerHTML = "<p>Please login to view users.</p>";
@@ -196,9 +64,9 @@ function setupOnlineStatus(){
   });
 }
 
-// --- Updated Realtime Users Loader ---
+// --- Load users & sort by last message like WhatsApp ---
 function loadUsersRealtime(){
-  db.ref('users').on('value', snapshot => {
+  db.ref('users').once('value').then(snapshot => {
     const usersData = snapshot.val() || {};
     userList.innerHTML = '';
     const usersArray = [];
@@ -236,18 +104,18 @@ function loadUsersRealtime(){
       usersArray.push({row, lastMsgTs});
     });
 
-    // Sort users: most recent message first
+    // Sort by last message timestamp (newest first)
     usersArray.sort((a,b) => b.lastMsgTs - a.lastMsgTs);
     usersArray.forEach(u => userList.appendChild(u.row));
 
-    // Open first friend automatically if no chat open
+    // Auto open first friend if none open
     if(firstFriendUid && !currentChatFriendUid){
       openChat(firstFriendUid, firstFriendName);
     }
   });
 }
 
-// --- Chat functions (same as before) ---
+// --- Open chat ---
 function openChat(friendUid, friendName){
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
@@ -265,9 +133,11 @@ function openChat(friendUid, friendName){
   const chatRef = db.ref('chats/'+chatId);
   chatRef.child('members').update({ [currentUserUid]: true, [friendUid]: true });
 
+  // Load full messages sorted by timestamp
   chatRef.child('messages').once('value', snapshot => {
     const msgs = snapshot.val() || {};
-    Object.values(msgs).forEach(msg => addMessageToChat(msg, msg.sender===currentUserUid));
+    const sortedMsgs = Object.values(msgs).sort((a,b)=> a.timestamp - b.timestamp);
+    sortedMsgs.forEach(msg => addMessageToChat(msg, msg.sender===currentUserUid));
     chatMessages.scrollTop = chatMessages.scrollHeight;
   });
 
@@ -290,6 +160,7 @@ function addMessageToChat(msg,isSelf){
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
+// --- Typing indicator ---
 chatInput.addEventListener("input", () => {
   if(!currentChatFriendUid) return;
   db.ref('typing/' + currentChatFriendUid + '/' + currentUserUid).set(true);
@@ -306,6 +177,7 @@ function listenTyping(friendUid){
   });
 }
 
+// --- Send message ---
 function sendMessage(){
   const text = chatInput.value.trim();
   if(!text || !currentChatFriendUid) return;
@@ -333,22 +205,25 @@ function closeChat(){
 
 function getChatId(uid1,uid2){ return uid1<uid2? uid1+'_'+uid2 : uid2+'_'+uid1; }
 
-// --- Real-time chat listener for unread and lastMessageTime ---
-db.ref('chats').on('child_added', snap=>{
-  snap.ref.child('messages').on('child_added', msgSnap=>{
-    const msg = msgSnap.val();
-    if(!msg.sender || !msg.timestamp) return;
+// --- Listen all chats for lastMessageTime & unread counters ---
+function listenAllChats(){
+  db.ref('chats').on('child_added', snap => {
+    snap.ref.child('messages').on('child_added', msgSnap => {
+      const msg = msgSnap.val();
+      if(!msg.sender || !msg.timestamp) return;
 
-    lastMessageTime[msg.sender] = msg.timestamp;
+      const friendUid = (msg.sender === currentUserUid) ? msg.receiver : msg.sender;
+      lastMessageTime[friendUid] = msg.timestamp;
 
-    if(msg.receiver === currentUserUid && msg.sender !== currentChatFriendUid){
-      unreadCounters[msg.sender] = (unreadCounters[msg.sender]||0)+1;
-    }
+      if(msg.receiver === currentUserUid && msg.sender !== currentChatFriendUid){
+        unreadCounters[msg.sender] = (unreadCounters[msg.sender]||0)+1;
+      }
 
-    loadUsersRealtime();
-    updateFriendListBadges();
+      loadUsersRealtime();
+      updateFriendListBadges();
+    });
   });
-});
+}
 
 function updateFriendListBadges(){
   document.querySelectorAll('.user-row').forEach(row=>{
@@ -376,6 +251,3 @@ function dragElement(elmnt){
   function closeDragElement(){ document.onmouseup=null; document.onmousemove=null; }
 }
 </script>
-
-</body>
-</html>
