@@ -15,6 +15,9 @@ nav a:hover{text-decoration:underline;}
 .login-form h2{text-align:center;margin-bottom:10px;}
 .login-form input{padding:12px;border-radius:8px;border:1px solid #ccc;font-size:16px;}
 .login-form button{padding:12px;border:none;border-radius:8px;background:#ffcb2b;font-size:18px;font-weight:bold;cursor:pointer;}
+.forgot-password{text-align:right;font-size:14px;margin-top:-5px;}
+.forgot-password a{color:#0073e6;text-decoration:none;}
+.forgot-password a:hover{text-decoration:underline;}
 </style>
 
 <!-- Firebase SDK -->
@@ -58,6 +61,11 @@ const db = firebase.database();
   <h2>Login</h2>
   <input type="email" id="email" placeholder="Email" required>
   <input type="password" id="password" placeholder="Password" required>
+  
+  <div class="forgot-password">
+    <a href="#" id="resetPassword">Forgot Password?</a>
+  </div>
+  
   <button type="submit">Login</button>
 </form>
 </div>
@@ -84,6 +92,7 @@ auth.onAuthStateChanged((user) => {
     }
 });
 
+// Login form handler
 document.getElementById("loginForm").addEventListener("submit", function(e){
   e.preventDefault();
   const email = document.getElementById("email").value.trim();
@@ -102,7 +111,7 @@ document.getElementById("loginForm").addEventListener("submit", function(e){
     // Update lastLogin timestamp
     db.ref('users/' + user.uid).update({ lastLogin: Date.now() });
 
-    localStorage.setItem("current_user", user.uid); // store current logged in UID
+    localStorage.setItem("current_user", user.uid);
 
     alert("✅ Login successful!");
     window.location.href = "friends.html";
@@ -110,6 +119,23 @@ document.getElementById("loginForm").addEventListener("submit", function(e){
   .catch((error)=>{
     alert("❌ " + error.message);
   });
+});
+
+// Password Reset handler
+document.getElementById("resetPassword").addEventListener("click", function(e){
+  e.preventDefault();
+  const email = document.getElementById("email").value.trim();
+  if(!email){
+    alert("⚠️ Please enter your email above to reset password.");
+    return;
+  }
+  auth.sendPasswordResetEmail(email)
+    .then(()=>{
+      alert("📩 Password reset email sent. Check your inbox!");
+    })
+    .catch((error)=>{
+      alert("❌ " + error.message);
+    });
 });
 </script>
 
