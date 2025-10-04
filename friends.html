@@ -88,6 +88,20 @@ nav a:hover{ text-decoration:underline; }
   100% { transform: scale(1) translateY(-50%); }
 }
 
+.unread-dot {
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:red;
+  display:inline-block;
+  margin-left:6px;
+  animation: blink 1.2s infinite;
+}
+@keyframes blink {
+  0%, 50%, 100% { opacity: 1; }
+  25%, 75% { opacity: 0; }
+}
+
 #chatModal {
   position:fixed;
   bottom:0;
@@ -170,7 +184,6 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-/* ---------- UI refs ---------- */
 const nav = document.getElementById("navLinks");
 const userList = document.getElementById("userList");
 const chatModal = document.getElementById("chatModal");
@@ -181,18 +194,16 @@ const sendBtn = document.getElementById("sendBtn");
 const typingIndicator = document.getElementById("typingIndicator");
 const verifyNotice = document.getElementById('verifyNotice');
 
-/* ---------- State ---------- */
 let currentUserUid = "";
 let currentChatFriendUid = localStorage.getItem('lastChatFriend') || "";
-let currentChatRef = null;        // firebase ref for messages of the open chat
-let currentChatListener = null;   // callback for messages
-let currentTypingRef = null;      // firebase ref for typing indicator listener
+let currentChatRef = null;
+let currentChatListener = null;
+let currentTypingRef = null;
 let typingTimeout = null;
-const unreadCounters = {};        // uid -> count
+const unreadCounters = {};
 
 /* ---------- Auth ---------- */
 auth.onAuthStateChanged(user => {
-  // show nav even if email not verified (user can still chat), but display a notice
   if(user){
     currentUserUid = user.uid;
     nav.innerHTML = `
@@ -204,7 +215,6 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
-    // show verification notice if not verified
     if(!user.emailVerified){
       verifyNotice.style.display = 'block';
       verifyNotice.textContent = 'Please verify your email to unlock all features.';
@@ -214,10 +224,8 @@ auth.onAuthStateChanged(user => {
     }
 
     document.getElementById("logoutBtn").addEventListener("click", ()=> {
-      // clear presence/typing before signout
       if(currentUserUid) {
         db.ref('users/' + currentUserUid + '/public/online').set(false).catch(()=>{});
-        // optionally remove any typing flags where others might be waiting for us
         db.ref('typing').child(currentUserUid).remove().catch(()=>{});
       }
       auth.signOut().then(()=> window.location.href="login.html");
@@ -242,44 +250,65 @@ function setupOnlineStatus(){
       userStatusRef.onDisconnect().set(false);
     }
   });
-  // if user leaves via browser close, ensure onbeforeunload clears typing flags
-  window.addEventListener('beforeunload', () => {
-    try { if(currentChatFriendUid) db.ref('typing/' + currentChatFriendUid + '/' + currentUserUid).remove(); } catch(e){}
-    try { db.ref('users/' + currentUserUid + '/public/online').set(false); } catch(e){}
-  });
 }
 
-/* ---------- Load users (realtime) ---------- */
+/* ---------- Load users ---------- */
 function loadUsersRealtime(){
   db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
     userList.innerHTML = '';
-    // iterate in stable order (you can alter for sorting)
     Object.keys(usersData).forEach(uid => {
       const userPublic = (usersData[uid] && usersData[uid].public) ? usersData[uid].public : {};
       const row = createUserRow(uid, userPublic);
       userList.appendChild(row);
     });
-
-    // auto-open last chat if that user still exists
     if(currentChatFriendUid && usersData[currentChatFriendUid]){
-      const name = usersData[currentChatFriendUid].public && usersData[currentChatFriendUid].public.name ? usersData[currentChatFriendUid].public.name : "Unknown";
+      const name = usersData[currentChatFriendUid].public?.name || "Unknown";
       openChat(currentChatFriendUid, name);
     }
   });
+
+  // global listener for all chat updates
+  db.ref('chats').on('child_added', listenForNewMessages);
+  db.ref('chats').on('child_changed', listenForNewMessages);
 }
 
-/* ---------- build user row safely ---------- */
+function listenForNewMessages(snapshot){
+  const chat = snapshot.val();
+  if(!chat || !chat.messages) return;
+  const chatId = snapshot.key;
+  const parts = chatId.split('_');
+  if(!parts.includes(currentUserUid)) return;
+  const otherUserId = parts[0] === currentUserUid ? parts[1] : parts[0];
+
+  // last message detection
+  const msgs = Object.values(chat.messages);
+  const lastMsg = msgs[msgs.length - 1];
+  if(lastMsg && lastMsg.receiver === currentUserUid && otherUserId !== currentChatFriendUid){
+    unreadCounters[otherUserId] = (unreadCounters[otherUserId] || 0) + 1;
+    markUserAsUnread(otherUserId);
+    moveUserToTop(otherUserId);
+    updateFriendListBadges();
+  }
+}
+
+function markUserAsUnread(uid){
+  const row = document.querySelector(`.user-row[data-uid="${uid}"]`);
+  if(row && !row.querySelector('.unread-dot')){
+    const dot = document.createElement('span');
+    dot.className = 'unread-dot';
+    row.querySelector('span').appendChild(dot);
+  }
+}
+
+/* ---------- Chat functions ---------- */
 function createUserRow(uid, user) {
   const name = uid === currentUserUid ? "You" : (user.name || "Unknown");
-  const gender = uid === currentUserUid ? "" : (user.gender || "");
   const isOnline = !!user.online;
-
   const row = document.createElement('div');
   row.className = "user-row";
   row.dataset.uid = uid;
 
-  // left side
   const leftDiv = document.createElement('div');
   leftDiv.style.display = 'flex';
   leftDiv.style.alignItems = 'center';
@@ -290,12 +319,11 @@ function createUserRow(uid, user) {
   leftDiv.appendChild(dot);
 
   const text = document.createElement('span');
-  text.textContent = name + (gender ? (' (' + gender + ')') : '');
+  text.textContent = name;
   leftDiv.appendChild(text);
 
   row.appendChild(leftDiv);
 
-  // optional chat button + click handler for rows (except for current user)
   if(uid !== currentUserUid){
     const chatBtn = document.createElement('button');
     chatBtn.className = 'chatBtn';
@@ -305,43 +333,20 @@ function createUserRow(uid, user) {
       openChat(uid, user.name || "Unknown");
     });
     row.appendChild(chatBtn);
-
-    // click entire row to open chat too
     row.addEventListener('click', ()=> openChat(uid, user.name || "Unknown"));
-  } else {
-    // if it's the current user, slightly dim the row
-    row.style.opacity = 0.9;
-  }
-
-  // badge (unread) appended as sibling so absolute positioning works
-  if(unreadCounters[uid]){
-    const newBadge = document.createElement('span');
-    newBadge.className = 'badge flashBadge';
-    newBadge.textContent = unreadCounters[uid];
-    row.appendChild(newBadge);
   }
 
   return row;
 }
 
-/* ---------- Open chat ---------- */
 function openChat(friendUid, friendName){
-  if(!currentUserUid) { alert('Please login first.'); return; }
-  // detach previous message listener (if any)
-  if(currentChatRef && currentChatListener){
-    currentChatRef.off('child_added', currentChatListener);
-    currentChatRef = null;
-    currentChatListener = null;
-  }
-  // detach previous typing listener
-  if(currentTypingRef){
-    currentTypingRef.off();
-    currentTypingRef = null;
-  }
+  if(!currentUserUid) return alert('Please login first.');
+  if(currentChatRef && currentChatListener) currentChatRef.off('child_added', currentChatListener);
+  if(currentTypingRef) currentTypingRef.off();
 
   currentChatFriendUid = friendUid;
   localStorage.setItem('lastChatFriend', friendUid);
-  chatWith.textContent = friendName || 'Friend';
+  chatWith.textContent = friendName;
   chatModal.style.display = "flex";
   chatMessages.innerHTML = '';
   typingIndicator.textContent = "";
@@ -351,39 +356,23 @@ function openChat(friendUid, friendName){
   const chatId = getChatId(currentUserUid, friendUid);
   const chatRef = db.ref('chats/' + chatId);
 
-  // ensure both members listed
-  chatRef.child('members').update({ [currentUserUid]: true, [friendUid]: true }).catch(()=>{});
-
-  // listen for messages and append
   const onMessageAdded = snap => {
     const msg = snap.val();
-    if(!msg || !msg.sender) return;
+    if(!msg) return;
     addMessageToChat(msg, msg.sender === currentUserUid);
-
-    // if the message was for me but from someone else and not the open friend, mark unread
-    if(msg.receiver === currentUserUid && msg.sender !== currentChatFriendUid){
-      unreadCounters[msg.sender] = (unreadCounters[msg.sender] || 0) + 1;
-      moveUserToTop(msg.sender);
-      flashRow(msg.sender);
-      updateFriendListBadges();
-    }
   };
-
   currentChatRef = chatRef.child('messages');
   currentChatListener = onMessageAdded;
   currentChatRef.on('child_added', onMessageAdded);
 
-  // listen for typing from the friend: typing/{currentUserUid}/{friendUid}
-  currentTypingRef = db.ref('typing/' + currentUserUid + '/' + friendUid);
-  currentTypingRef.on('value', snapshot => {
-    typingIndicator.textContent = snapshot.exists() ? `${chatWith.textContent} is typing...` : '';
-  });
+  const typingPath = 'typing/' + currentUserUid + '/' + friendUid;
+  currentTypingRef = db.ref(typingPath);
+  currentTypingRef.on('value', s => typingIndicator.textContent = s.exists() ? `${friendName} is typing...` : '');
+
+  clearUnreadDot(friendUid);
 }
 
-/* ---------- Add message UI ---------- */
 function addMessageToChat(msg, isSelf){
-  // guard duplicate messages
-  if(chatMessages.querySelector(`.message[data-ts="${msg.timestamp}"]`)) return;
   const div = document.createElement('div');
   div.className = `message ${isSelf ? 'self' : 'friend'}`;
   div.dataset.ts = msg.timestamp;
@@ -393,104 +382,49 @@ function addMessageToChat(msg, isSelf){
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-/* ---------- Send message ---------- */
 function sendMessage(){
   const text = chatInput.value.trim();
   if(!text || !currentChatFriendUid || !currentUserUid) return;
   const chatId = getChatId(currentUserUid, currentChatFriendUid);
   const msgObj = { sender: currentUserUid, receiver: currentChatFriendUid, text, timestamp: Date.now() };
-  db.ref('chats/'+chatId+'/messages').push(msgObj).catch(err => console.error(err));
+  db.ref('chats/'+chatId+'/messages').push(msgObj);
   chatInput.value = '';
-
-  // clear typing flag for the receiver (so it doesn't stick)
-  try { db.ref('typing/' + currentChatFriendUid + '/' + currentUserUid).remove(); } catch(e){}
 }
 sendBtn.addEventListener('click', sendMessage);
-
-/* ---------- Typing indicator handling ---------- */
-chatInput.addEventListener("input", ()=>{
-  if(!currentChatFriendUid || !currentUserUid) return;
-  // set typing flag for the friend so they see "X is typing..."
-  db.ref('typing/' + currentChatFriendUid + '/' + currentUserUid).set(true).catch(()=>{});
-  clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(()=>{
-    db.ref('typing/' + currentChatFriendUid + '/' + currentUserUid).remove().catch(()=>{});
-  }, 1000);
-});
-
 chatInput.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); sendMessage(); } });
 
-/* ---------- Close chat cleanup ---------- */
 function closeChat(){
-  // remove message listener
   if(currentChatRef && currentChatListener) currentChatRef.off('child_added', currentChatListener);
-  currentChatRef = null;
-  currentChatListener = null;
-
-  // remove typing listener for incoming
   if(currentTypingRef) currentTypingRef.off();
-  currentTypingRef = null;
-
-  // clear typing flag that indicates I'm typing to the friend
-  if(currentChatFriendUid && currentUserUid){
-    try { db.ref('typing/' + currentChatFriendUid + '/' + currentUserUid).remove(); } catch(e){}
-  }
-
   chatModal.style.display = 'none';
-  currentChatFriendUid = '';
   typingIndicator.textContent = '';
+  currentChatFriendUid = '';
 }
 
-/* ---------- Utility functions ---------- */
+/* ---------- Utils ---------- */
 function updateFriendListBadges(){
   document.querySelectorAll('.user-row').forEach(row => {
     const uid = row.dataset.uid;
-    const badge = row.querySelector('.badge');
-    if(unreadCounters[uid]){
-      if(badge){ badge.textContent = unreadCounters[uid]; badge.classList.add('flashBadge'); }
-      else {
-        const newBadge = document.createElement('span');
-        newBadge.className = 'badge flashBadge';
-        newBadge.textContent = unreadCounters[uid];
-        row.appendChild(newBadge);
-      }
-    } else if(badge){ badge.remove(); }
+    const dot = row.querySelector('.unread-dot');
+    if(unreadCounters[uid] > 0){
+      if(!dot) markUserAsUnread(uid);
+    } else if(dot) dot.remove();
   });
 }
 function moveUserToTop(uid){
   const row = document.querySelector(`.user-row[data-uid="${uid}"]`);
-  if(row){ userList.prepend(row); }
+  if(row) userList.prepend(row);
 }
-function flashRow(uid){
+function clearUnreadDot(uid){
   const row = document.querySelector(`.user-row[data-uid="${uid}"]`);
   if(row){
-    row.classList.add('flash');
-    setTimeout(()=> row.classList.remove('flash'), 600);
+    const dot = row.querySelector('.unread-dot');
+    if(dot) dot.remove();
   }
 }
 function getChatId(uid1, uid2){ return uid1 < uid2 ? uid1 + '_' + uid2 : uid2 + '_' + uid1; }
-
-function escapeHtml(str){
-  if(!str) return '';
-  return str.replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
-}
-
-/* ---------- Utility: drag chat modal ---------- */
-dragElement(chatModal);
-function dragElement(elmnt){
-  let pos1=0,pos2=0,pos3=0,pos4=0;
-  const header = document.getElementById("chatHeader");
-  if(header) header.onmousedown = dragMouseDown;
-  else elmnt.onmousedown = dragMouseDown;
-  function dragMouseDown(e){ e = e || window.event; e.preventDefault(); pos3 = e.clientX; pos4 = e.clientY; document.onmouseup = closeDragElement; document.onmousemove = elementDrag; }
-  function elementDrag(e){ e = e || window.event; e.preventDefault(); pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY; pos3 = e.clientX; pos4 = e.clientY; elmnt.style.top = (elmnt.offsetTop - pos2) + 'px'; elmnt.style.left = (elmnt.offsetLeft - pos1) + 'px'; }
-  function closeDragElement(){ document.onmouseup = null; document.onmousemove = null; }
-}
-
-/* ---------- helper: show last-message notification (example) ---------- */
-/* Optionally, you could update chat metadata, last message, etc. when pushing messages. */
+function escapeHtml(str){ return str.replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
 
 </script>
-
 </body>
 </html>
