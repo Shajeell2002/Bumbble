@@ -159,7 +159,7 @@ const sendBtn = document.getElementById("sendBtn");
 const typingIndicator = document.getElementById("typingIndicator");
 let typingTimeout;
 const unreadCounters = {};
-const lastMessageTime = {}; // last message timestamp per user
+const lastMessageTime = {};
 
 auth.onAuthStateChanged(user => {
   if(user && user.emailVerified){
@@ -197,7 +197,7 @@ function setupOnlineStatus(){
 }
 
 function loadUsersRealtime(){
-  db.ref('users').on('value', snapshot => {
+  db.ref('users').once('value').then(snapshot => {
     const usersData = snapshot.val() || {};
     userList.innerHTML = '';
 
@@ -236,9 +236,7 @@ function loadUsersRealtime(){
       else otherUsers.push({row, ts: regTime});
     });
 
-    // Sort top users by last message descending
     topUsers.sort((a,b)=> b.ts - a.ts);
-    // Sort other users by registration descending
     otherUsers.sort((a,b)=> b.ts - a.ts);
 
     topUsers.forEach(u=> userList.appendChild(u.row));
@@ -311,6 +309,7 @@ function sendMessage(){
   const msgObj = { sender: currentUserUid, receiver: currentChatFriendUid, text, timestamp: Date.now() };
   db.ref('chats/'+chatId+'/members').update({ [currentUserUid]: true, [currentChatFriendUid]: true });
   db.ref('chats/'+chatId+'/messages').push(msgObj);
+
   lastMessageTime[currentChatFriendUid] = Date.now();
   chatInput.value = '';
   loadUsersRealtime();
