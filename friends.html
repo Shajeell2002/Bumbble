@@ -115,7 +115,6 @@ auth.onAuthStateChanged(user => {
     setupOnlineStatus();
     loadUsersRealtime();
 
-    // ✅ Reopen last chat after list loads
     setTimeout(() => {
       const lastUid = localStorage.getItem("lastChatFriendUid");
       const lastName = localStorage.getItem("lastChatFriendName");
@@ -139,6 +138,7 @@ function setupOnlineStatus(){
   });
 }
 
+// ✅ Updated: sort by name descending (Z → A)
 function loadUsersRealtime(){
   db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
@@ -150,11 +150,16 @@ function loadUsersRealtime(){
       const name = user.name || "Unknown";
       const gender = user.gender || "N/A";
       const online = user.online || false;
-      const lastChat = lastChatTimestamps[uid] || 0;
-      friends.push({ uid, name, gender, online, lastChat });
+      friends.push({ uid, name, gender, online });
     });
 
-    friends.sort((a,b)=> b.lastChat - a.lastChat);
+    friends.sort((a,b) => {
+      const nameA = a.name.toLowerCase();
+      const nameB = b.name.toLowerCase();
+      if(nameA < nameB) return 1;
+      if(nameA > nameB) return -1;
+      return 0;
+    });
 
     userList.innerHTML = '';
     friends.forEach(f=>{
@@ -170,6 +175,7 @@ function loadUsersRealtime(){
   });
 }
 
+// ---- Chat functions (kept as-is) ----
 function openChat(friendUid, friendName){
   document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
   const activeRow=document.querySelector(`.user-row[data-uid="${friendUid}"]`);
@@ -177,8 +183,6 @@ function openChat(friendUid, friendName){
 
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
-
-  // ✅ Save last opened chat
   localStorage.setItem("lastChatFriendUid", friendUid);
   localStorage.setItem("lastChatFriendName", friendName);
 
@@ -234,7 +238,7 @@ chatInput.addEventListener("input",()=>{
 function listenTyping(friendUid){
   const typingRef=db.ref('typing/'+currentUserUid+'/'+friendUid);
   typingRef.on('value',snap=>{
-    typingIndicator.textContent=snap.exists()?`${chatWith.textContent} is typing...`:'';
+    typingIndicator.textContent=snap.exists()?`${chatWith.textContent} is typing...`:''; 
   });
 }
 
@@ -304,4 +308,3 @@ function dragElement(elmnt){
 
 </body>
 </html>
-
