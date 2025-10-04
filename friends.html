@@ -154,6 +154,7 @@ function loadUsersRealtime(){
       friends.push({ uid, name, gender, online, lastChat });
     });
 
+    // ✅ Sort in descending order (most recent first)
     friends.sort((a,b)=> b.lastChat - a.lastChat);
 
     userList.innerHTML = '';
@@ -208,6 +209,7 @@ function openChat(friendUid, friendName){
     if(!msg.sender) return;
     addMessageToChat(msg,msg.sender===currentUserUid);
     lastChatTimestamps[friendUid]=msg.timestamp;
+    refreshFriendList(); // ✅ update order when message arrives
   });
 }
 
@@ -222,12 +224,16 @@ function addMessageToChat(msg,isSelf){
   chatMessages.scrollTop=chatMessages.scrollHeight;
 }
 
-chatInput.addEventListener("input",()=>{
+function refreshFriendList(){
+  loadUsersRealtime();
+}
+
+chatInput.addEventListener("input",()=>{ 
   if(!currentChatFriendUid) return;
   db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).set(true);
   clearTimeout(typingTimeout);
-  typingTimeout=setTimeout(()=>{
-    db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove();
+  typingTimeout=setTimeout(()=>{ 
+    db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove(); 
   },1000);
 });
 
@@ -247,6 +253,7 @@ function sendMessage(){
   db.ref('chats/'+chatId+'/messages').push(msgObj);
   chatInput.value='';
   lastChatTimestamps[currentChatFriendUid]=msgObj.timestamp;
+  refreshFriendList(); // ✅ push active chat to top immediately
 }
 
 chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); } });
@@ -271,6 +278,7 @@ db.ref('chats').on('child_added',snap=>{
       unreadCounters[msg.sender]=(unreadCounters[msg.sender]||0)+1;
       lastChatTimestamps[msg.sender]=msg.timestamp;
       updateFriendListBadges();
+      refreshFriendList(); // ✅ move sender to top
     }
   });
 });
