@@ -219,7 +219,7 @@ function loadUsersRealtime(){
       if(uid === currentUserUid) return;
       const user = usersData[uid].public || {};
       const name = user.name || "Unknown";
-      const gender = user.gender || "N/A";
+      const gender = user.gender || "Gender";
 
       if(!firstFriendUid){
         firstFriendUid = uid;
@@ -378,3 +378,4 @@ function dragElement(elmnt){
 
 </body>
 </html>
+
