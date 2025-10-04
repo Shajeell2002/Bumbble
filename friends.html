@@ -5,46 +5,69 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Friends & Chat</title>
 <style>
-body { font-family: Arial, sans-serif; margin:0; background:#fefefe; color:#333; display:flex; flex-direction:column; min-height:100vh; }
-header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#ffcb2b; box-shadow:0 3px 6px rgba(0,0,0,0.1);}
+body { 
+  font-family: Arial, sans-serif; 
+  margin:0; 
+  background:#fefefe; 
+  color:#333; 
+  display:flex; 
+  min-height:100vh; 
+  flex-direction: column;
+}
+
+/* Header stays fixed on top */
+header { 
+  display:flex; 
+  justify-content:space-between; 
+  align-items:center; 
+  padding:15px 20px; 
+  background:#ffcb2b; 
+  box-shadow:0 3px 6px rgba(0,0,0,0.1);
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  z-index:500;
+}
 header h1{ font-size:24px; margin:0; }
 nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 nav a:hover{ text-decoration:underline; }
 
+/* Sidebar for user list */
 .friends-container {
-  flex:1;
-  max-width:600px;
-  margin:20px auto;
-  padding:0 10px;
+  width:250px; 
+  background:#fffbe6;
+  border-right:1px solid #eee;
+  padding:10px;
+  overflow-y:auto;
+  position:fixed;
+  top:60px; /* below header */
+  bottom:0;
+  left:0;
 }
+
+/* main content area */
+.main-content {
+  flex:1;
+  margin-left:250px; /* space for sidebar */
+  padding:80px 20px 20px 20px; /* space for header */
+}
+
+/* user list */
 .user-list {
   display:flex;
   flex-direction:column;
   gap:2px;
-  overflow-y:auto;
-  max-height:80vh;
-  padding:0;
   font-size:14px;
 }
-.user-list::-webkit-scrollbar {
-  width:6px;
-}
-.user-list::-webkit-scrollbar-thumb {
-  background:#ffcb2b;
-  border-radius:3px;
-}
-.user-list::-webkit-scrollbar-track {
-  background:#f1f1f1;
-}
-
-.user-row {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:4px 8px;
-  border-bottom:1px solid #eee;
-  cursor:pointer;
-  transition:0.2s;
+.user-row { 
+  display:flex; 
+  justify-content:space-between; 
+  align-items:center; 
+  padding:4px 8px; 
+  border-bottom:1px solid #eee; 
+  cursor:pointer; 
+  transition:0.2s; 
 }
 .user-row:hover { background:#fffbcc; }
 
@@ -78,6 +101,7 @@ nav a:hover{ text-decoration:underline; }
   margin-left:6px;
 }
 
+/* Chat modal */
 #chatModal {
   position:fixed;
   bottom:0;
@@ -114,6 +138,11 @@ nav a:hover{ text-decoration:underline; }
 #chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:0 0 0 10px; }
 #sendBtn { padding:8px 12px; border:none; background:#ffcb2b; border-radius:0 0 10px 0; cursor:pointer; }
 #sendBtn:hover { background:#f1b800; }
+
+/* Scrollbar for sidebar */
+.friends-container::-webkit-scrollbar { width:6px; }
+.friends-container::-webkit-scrollbar-thumb { background:#ffcb2b; border-radius:3px; }
+.friends-container::-webkit-scrollbar-track { background:#f1f1f1; }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -131,16 +160,18 @@ nav a:hover{ text-decoration:underline; }
   <div class="user-list" id="userList"></div>
 </div>
 
-<div id="chatModal">
-  <div id="chatHeader">
-    <span id="chatWith">Friend</span>
-    <button onclick="closeChat()">X</button>
-  </div>
-  <div id="chatMessages"></div>
-  <div id="typingIndicator"></div>
-  <div id="chatInputContainer">
-    <input type="text" id="chatInput" placeholder="Type a message">
-    <button id="sendBtn">Send</button>
+<div class="main-content">
+  <div id="chatModal">
+    <div id="chatHeader">
+      <span id="chatWith">Friend</span>
+      <button onclick="closeChat()">X</button>
+    </div>
+    <div id="chatMessages"></div>
+    <div id="typingIndicator"></div>
+    <div id="chatInputContainer">
+      <input type="text" id="chatInput" placeholder="Type a message">
+      <button id="sendBtn">Send</button>
+    </div>
   </div>
 </div>
 
@@ -185,9 +216,9 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
-    document.getElementById("logoutBtn").addEventListener("click", ()=>{
-      db.ref('users/' + currentUserUid + '/public/online').set(false);
-      auth.signOut().then(()=> window.location.href="login.html");
+    document.getElementById("logoutBtn").addEventListener("click", ()=>{ 
+      db.ref('users/' + currentUserUid + '/public/online').set(false); 
+      auth.signOut().then(()=> window.location.href="login.html"); 
     });
 
     setupOnlineStatus();
@@ -256,7 +287,6 @@ function loadUsersRealtime(){
   });
 }
 
-// --- Chat functions same as before ---
 function openChat(friendUid, friendName){
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
