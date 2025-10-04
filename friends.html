@@ -11,26 +11,86 @@ header h1{ font-size:24px; margin:0; }
 nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 nav a:hover{ text-decoration:underline; }
 
-.friends-container { flex:1; max-width:600px; margin:20px auto; padding:0 10px; }
-.user-list { display:flex; flex-direction:column; gap:2px; overflow-y:auto; max-height:80vh; padding:0; font-size:14px; }
+.friends-container {
+  flex:1;
+  max-width:600px;
+  margin:20px auto;
+  padding:0 10px;
+}
+.user-list {
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  overflow-y:auto;
+  max-height:80vh;
+  padding:0;
+  font-size:14px;
+}
 .user-list::-webkit-scrollbar { width:6px; }
 .user-list::-webkit-scrollbar-thumb { background:#ffcb2b; border-radius:3px; }
 .user-list::-webkit-scrollbar-track { background:#f1f1f1; }
 
-.user-row { display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #eee; cursor:pointer; transition:0.2s; background:transparent;}
+.user-row {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:4px 8px;
+  border-bottom:1px solid #eee;
+  cursor:pointer;
+  transition:0.2s;
+}
 .user-row:hover { background:#fffbcc; }
 
 .status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
 .online { background:green; }
 .offline { background:red; }
 
-.chatBtn { padding:6px 8px; font-size:12px; background:#ffcb2b; border:none; border-radius:4px; cursor:pointer; }
+.chatBtn {
+  padding:2px 6px;
+  font-size:12px;
+  background:#ffcb2b;
+  border:none;
+  border-radius:4px;
+  cursor:pointer;
+}
 .chatBtn:hover { background:#f1b800; }
 
-.badge { background:red; color:white; font-size:10px; font-weight:bold; padding:1px 6px; border-radius:10px; margin-left:6px; }
+.badge {
+  background:red;
+  color:white;
+  font-size:10px;
+  font-weight:bold;
+  padding:1px 5px;
+  border-radius:10px;
+  margin-left:6px;
+}
 
-#chatModal { position:fixed; bottom:0; right:20px; width:300px; max-height:400px; border:1px solid #ccc; background:#fff; border-radius:10px 10px 0 0; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); resize:both; overflow:hidden; z-index:1000; }
-#chatHeader { background:#ffcb2b; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; border-radius:10px 10px 0 0; cursor:move; }
+#chatModal {
+  position:fixed;
+  bottom:0;
+  right:20px;
+  width:300px;
+  max-height:400px;
+  border:1px solid #ccc;
+  background:#fff;
+  border-radius:10px 10px 0 0;
+  display:none;
+  flex-direction:column;
+  box-shadow:0 4px 12px rgba(0,0,0,0.2);
+  resize:both;
+  overflow:hidden;
+  z-index:1000;
+}
+#chatHeader {
+  background:#ffcb2b;
+  padding:10px;
+  font-weight:bold;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-radius:10px 10px 0 0;
+  cursor:move;
+}
 #chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; background:#fefefe; }
 #typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
 .message { max-width:80%; padding:6px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
@@ -41,12 +101,6 @@ nav a:hover{ text-decoration:underline; }
 #chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:0 0 0 10px; }
 #sendBtn { padding:8px 12px; border:none; background:#ffcb2b; border-radius:0 0 10px 0; cursor:pointer; }
 #sendBtn:hover { background:#f1b800; }
-
-@keyframes pop {
-  0% { transform: scale(0.6); opacity: 0.5; }
-  80% { transform: scale(1.1); opacity: 1; }
-  100% { transform: scale(1); opacity: 1; }
-}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -104,10 +158,8 @@ const chatInput = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
 const typingIndicator = document.getElementById("typingIndicator");
 let typingTimeout;
-
-let usersCache = {};
 const unreadCounters = {};
-const lastMessageAt = {};
+const lastMessageTime = {}; // last message timestamp per user
 
 auth.onAuthStateChanged(user => {
   if(user && user.emailVerified){
@@ -126,23 +178,13 @@ auth.onAuthStateChanged(user => {
       auth.signOut().then(()=> window.location.href="login.html");
     });
 
-    loadUnreadCounters();
     setupOnlineStatus();
     loadUsersRealtime();
-    watchChatMessages();
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
     document.querySelector(".friends-container").innerHTML = "<p>Please login to view users.</p>";
   }
 });
-
-function loadUnreadCounters(){
-  db.ref('users/' + currentUserUid + '/unread').on('value', snapshot => {
-    const data = snapshot.val() || {};
-    Object.keys(data).forEach(uid => unreadCounters[uid] = data[uid]);
-    renderUserList();
-  });
-}
 
 function setupOnlineStatus(){
   const userStatusRef = db.ref('users/' + currentUserUid + '/public/online');
@@ -156,87 +198,52 @@ function setupOnlineStatus(){
 
 function loadUsersRealtime(){
   db.ref('users').on('value', snapshot => {
-    usersCache = snapshot.val() || {};
-    renderUserList();
-  });
-}
+    const usersData = snapshot.val() || {};
+    userList.innerHTML = '';
 
-function renderUserList(){
-  const arr = Object.entries(usersCache)
-    .filter(([uid]) => uid !== currentUserUid)
-    .map(([uid, data]) => {
-      const pub = (data && data.public) || {};
-      return {
-        uid,
-        name: pub.name || "Unknown",
-        gender: pub.gender || "N/A",
-        online: !!pub.online,
-        lastActive: data.lastActive || 0
-      };
+    const topUsers = [];
+    const otherUsers = [];
+
+    Object.keys(usersData).forEach(uid => {
+      if(uid === currentUserUid) return;
+      const user = usersData[uid].public || {};
+      const name = user.name || "Unknown";
+      const gender = user.gender || "N/A";
+      const regTime = user.registerTime || 0;
+
+      const row = document.createElement('div'); 
+      row.classList.add("user-row"); 
+      row.dataset.uid = uid;
+
+      let badgeHtml = "";
+      if(unreadCounters[uid]) badgeHtml = `<span class="badge">${unreadCounters[uid]}</span>`;
+
+      row.innerHTML = `
+        <div>
+          <span class="status-dot ${user.online?'online':'offline'}"></span>
+          ${name} (${gender})
+          ${badgeHtml}
+        </div>
+        <button class="chatBtn">Chat</button>
+      `;
+
+      row.querySelector(".chatBtn").addEventListener('click', e => {
+        e.stopPropagation();
+        openChat(uid, name);
+      });
+
+      if(lastMessageTime[uid]) topUsers.push({row, ts: lastMessageTime[uid]});
+      else otherUsers.push({row, ts: regTime});
     });
 
-  arr.sort((a,b) => {
-    const aUnread = unreadCounters[a.uid] || 0;
-    const bUnread = unreadCounters[b.uid] || 0;
-    if(aUnread !== bUnread) return bUnread - aUnread;
+    // Sort top users by last message descending
+    topUsers.sort((a,b)=> b.ts - a.ts);
+    // Sort other users by registration descending
+    otherUsers.sort((a,b)=> b.ts - a.ts);
 
-    const aAct = a.lastActive || 0;
-    const bAct = b.lastActive || 0;
-    if(aAct !== bAct) return bAct - aAct;
-
-    return (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase());
+    topUsers.forEach(u=> userList.appendChild(u.row));
+    otherUsers.forEach(u=> userList.appendChild(u.row));
   });
-
-  const limited = arr.slice(0, 10);
-  userList.innerHTML = '';
-  limited.forEach(u => {
-    const row = document.createElement('div');
-    row.className = 'user-row';
-    row.dataset.uid = u.uid;
-    const statusClass = u.online ? 'online' : 'offline';
-    const unread = unreadCounters[u.uid] || 0;
-    const badgeHtml = unread > 0 ? `<span class="badge" style="animation:pop 0.3s ease;">${unread}</span>` : '';
-    const lastActiveText = u.lastActive ? new Date(u.lastActive).toLocaleString([], {hour:'2-digit',minute:'2-digit'}) : '';
-    row.innerHTML = `
-      <div>
-        <span class="status-dot ${statusClass}"></span>
-        <span class="user-name">${escapeHtml(u.name)}</span> (${escapeHtml(u.gender)}) ${badgeHtml}
-        <small style="color:#555;margin-left:4px;">${lastActiveText}</small>
-      </div>
-      <button class="chatBtn">Chat</button>
-    `;
-    row.querySelector('.chatBtn').addEventListener('click', e => { e.stopPropagation(); openChat(u.uid, u.name); });
-    row.addEventListener('click', () => openChat(u.uid, u.name));
-    userList.appendChild(row);
-  });
-}
-
-function watchChatMessages(){
-  db.ref('chats').on('child_added', chatSnap => {
-    const chatId = chatSnap.key;
-    const messagesRef = chatSnap.ref.child('messages');
-    messagesRef.on('child_added', msgSnap => {
-      const msg = msgSnap.val();
-      if(!msg || !msg.sender || !msg.receiver) return;
-
-      if (msg.receiver !== currentUserUid && msg.sender !== currentUserUid) return;
-
-      const friendUid = msg.sender === currentUserUid ? msg.receiver : msg.sender;
-      lastMessageAt[friendUid] = msg.timestamp || Date.now();
-      updateLastActive(friendUid);
-
-      if (msg.receiver === currentUserUid && msg.sender !== currentChatFriendUid) {
-        unreadCounters[msg.sender] = (unreadCounters[msg.sender] || 0) + 1;
-        db.ref('users/' + currentUserUid + '/unread/' + msg.sender).set(unreadCounters[msg.sender]);
-      }
-
-      renderUserList();
-    });
-  });
-}
-
-function updateLastActive(uid){
-  db.ref("users/" + uid).update({ lastActive: Date.now() });
 }
 
 function openChat(friendUid, friendName){
@@ -245,42 +252,40 @@ function openChat(friendUid, friendName){
   chatModal.style.display = "flex";
   chatMessages.innerHTML = '';
   typingIndicator.textContent = "";
-
   unreadCounters[friendUid] = 0;
-  db.ref('users/' + currentUserUid + '/unread/' + friendUid).set(0);
-
-  renderUserList();
+  updateFriendListBadges();
 
   listenTyping(friendUid);
+
   const chatId = getChatId(currentUserUid, friendUid);
   if(currentChatListener) currentChatListener.off();
+
   const chatRef = db.ref('chats/'+chatId);
   chatRef.child('members').update({ [currentUserUid]: true, [friendUid]: true });
+
   chatRef.child('messages').once('value', snapshot => {
     const msgs = snapshot.val() || {};
-    const arr = Object.values(msgs).sort((a,b)=> (a.timestamp||0)-(b.timestamp||0));
-    arr.forEach(msg => addMessageToChat(msg, msg.sender===currentUserUid));
-    if(arr.length) lastMessageAt[friendUid] = arr[arr.length-1].timestamp || lastMessageAt[friendUid];
+    Object.values(msgs).forEach(msg => addMessageToChat(msg, msg.sender===currentUserUid));
     chatMessages.scrollTop = chatMessages.scrollHeight;
   });
+
   currentChatListener = chatRef.child('messages');
   currentChatListener.on('child_added', snap => {
     const msg = snap.val();
     if(!msg.sender) return;
-    addMessageToChat(msg, msg.sender===currentUserUid);
-    updateLastActive(msg.sender);
+    addMessageToChat(msg, msg.sender === currentUserUid);
   });
 }
 
 function addMessageToChat(msg,isSelf){
   if(chatMessages.querySelector(`.message[data-ts="${msg.timestamp}"]`)) return;
-  const div=document.createElement('div');
+  const div = document.createElement('div'); 
   div.classList.add('message', isSelf?'self':'friend');
-  div.dataset.ts=msg.timestamp;
-  const ts=new Date(msg.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-  div.innerHTML=`${escapeHtml(msg.text)}<div class="timestamp">${ts}</div>`;
+  div.dataset.ts = msg.timestamp;
+  const ts = new Date(msg.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  div.innerHTML = `${msg.text}<div class="timestamp">${ts}</div>`;
   chatMessages.appendChild(div);
-  chatMessages.scrollTop=chatMessages.scrollHeight;
+  chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
 chatInput.addEventListener("input", () => {
@@ -306,11 +311,9 @@ function sendMessage(){
   const msgObj = { sender: currentUserUid, receiver: currentChatFriendUid, text, timestamp: Date.now() };
   db.ref('chats/'+chatId+'/members').update({ [currentUserUid]: true, [currentChatFriendUid]: true });
   db.ref('chats/'+chatId+'/messages').push(msgObj);
+  lastMessageTime[currentChatFriendUid] = Date.now();
   chatInput.value = '';
-  lastMessageAt[currentChatFriendUid] = msgObj.timestamp;
-  updateLastActive(currentUserUid);
-  updateLastActive(currentChatFriendUid);
-  renderUserList();
+  loadUsersRealtime();
 }
 
 chatInput.addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); sendMessage(); } });
@@ -325,16 +328,35 @@ function closeChat(){
   typingIndicator.textContent = "";
 }
 
-function getChatId(uid1,uid2){ return uid1 < uid2 ? uid1 + '_' + uid2 : uid2 + '_' + uid1; }
+function getChatId(uid1,uid2){ return uid1<uid2? uid1+'_'+uid2 : uid2+'_'+uid1; }
 
-function escapeHtml(str){
-  if(!str && str !== 0) return '';
-  return String(str)
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&#039;");
+db.ref('chats').on('child_added', snap=>{
+  snap.ref.child('messages').on('child_added', msgSnap=>{
+    const msg = msgSnap.val();
+    if(!msg.sender) return;
+    if(msg.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
+      unreadCounters[msg.sender] = (unreadCounters[msg.sender]||0)+1;
+      lastMessageTime[msg.sender] = msg.timestamp;
+      updateFriendListBadges();
+      loadUsersRealtime();
+    }
+  });
+});
+
+function updateFriendListBadges(){
+  document.querySelectorAll('.user-row').forEach(row=>{
+    const uid = row.dataset.uid;
+    const badge = row.querySelector('.badge');
+    if(unreadCounters[uid]){
+      if(badge) badge.textContent = unreadCounters[uid];
+      else {
+        const span = document.createElement('span');
+        span.className='badge';
+        span.textContent = unreadCounters[uid];
+        row.querySelector('div').appendChild(span);
+      }
+    } else if(badge) badge.remove();
+  });
 }
 
 dragElement(chatModal);
@@ -346,5 +368,6 @@ function dragElement(elmnt){
   function closeDragElement(){ document.onmouseup=null; document.onmousemove=null; }
 }
 </script>
+
 </body>
 </html>
