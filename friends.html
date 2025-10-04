@@ -11,26 +11,99 @@ header h1{ font-size:24px; margin:0; }
 nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 nav a:hover{ text-decoration:underline; }
 
-.friends-container { flex:1; max-width:600px; margin:20px auto; padding:0 10px; }
-.user-list { display:flex; flex-direction:column; gap:2px; overflow-y:auto; max-height:80vh; padding:0; font-size:14px; }
-.user-list::-webkit-scrollbar { width:6px; }
-.user-list::-webkit-scrollbar-thumb { background:#ffcb2b; border-radius:3px; }
-.user-list::-webkit-scrollbar-track { background:#f1f1f1; }
+.friends-container {
+  flex:1;
+  max-width:600px;
+  margin:20px auto;
+  padding:0 10px;
+}
+.user-list {
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  overflow-y:auto;
+  max-height:80vh;
+  padding:0;
+  font-size:14px;
+}
+.user-list::-webkit-scrollbar {
+  width:6px;
+}
+.user-list::-webkit-scrollbar-thumb {
+  background:#ffcb2b;
+  border-radius:3px;
+}
+.user-list::-webkit-scrollbar-track {
+  background:#f1f1f1;
+}
 
-.user-row { display:flex; justify-content:space-between; align-items:center; padding:4px 8px; border-bottom:1px solid #eee; cursor:pointer; transition:0.2s; }
+.user-row {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:4px 8px;
+  border-bottom:1px solid #eee;
+  cursor:pointer;
+  transition:0.2s;
+}
 .user-row:hover { background:#fffbcc; }
 
-.status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
+.status-dot {
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  display:inline-block;
+  margin-right:6px;
+}
 .online { background:green; }
 .offline { background:red; }
 
-.chatBtn { padding:2px 6px; font-size:12px; background:#ffcb2b; border:none; border-radius:4px; cursor:pointer; }
+.chatBtn {
+  padding:2px 6px;
+  font-size:12px;
+  background:#ffcb2b;
+  border:none;
+  border-radius:4px;
+  cursor:pointer;
+}
 .chatBtn:hover { background:#f1b800; }
 
-.badge { background:red; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
+.badge {
+  background:red;
+  color:white;
+  font-size:10px;
+  font-weight:bold;
+  padding:1px 5px;
+  border-radius:10px;
+  margin-left:6px;
+}
 
-#chatModal { position:fixed; bottom:0; right:20px; width:300px; max-height:400px; border:1px solid #ccc; background:#fff; border-radius:10px 10px 0 0; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); resize:both; overflow:hidden; z-index:1000; }
-#chatHeader { background:#ffcb2b; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; border-radius:10px 10px 0 0; cursor:move; }
+#chatModal {
+  position:fixed;
+  bottom:0;
+  right:20px;
+  width:300px;
+  max-height:400px;
+  border:1px solid #ccc;
+  background:#fff;
+  border-radius:10px 10px 0 0;
+  display:none;
+  flex-direction:column;
+  box-shadow:0 4px 12px rgba(0,0,0,0.2);
+  resize:both;
+  overflow:hidden;
+  z-index:1000;
+}
+#chatHeader {
+  background:#ffcb2b;
+  padding:10px;
+  font-weight:bold;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-radius:10px 10px 0 0;
+  cursor:move;
+}
 #chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; background:#fefefe; }
 #typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
 .message { max-width:80%; padding:6px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
@@ -143,14 +216,12 @@ function loadUsersRealtime(){
     let firstFriendName = "";
 
     Object.keys(usersData).forEach(uid => {
+      if(uid === currentUserUid) return;
       const user = usersData[uid].public || {};
-      let name = user.name || "Unknown";
+      const name = user.name || "Unknown";
       const gender = user.gender || "N/A";
 
-      // Show "You" for self in user list
-      if(uid === currentUserUid){
-        name = "You";
-      } else if(!firstFriendUid){
+      if(!firstFriendUid){
         firstFriendUid = uid;
         firstFriendName = name;
       }
@@ -185,7 +256,7 @@ function loadUsersRealtime(){
   });
 }
 
-// Chat functions remain unchanged
+// --- Chat functions same as before ---
 function openChat(friendUid, friendName){
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
