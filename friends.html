@@ -29,9 +29,10 @@ header {
   right:0;
   z-index:500;
 }
-header h1{ font-size:24px; margin:0; }
+header h1{ font-size:24px; margin:0; display:flex; align-items:center; gap:10px; }
 nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 nav a:hover{ text-decoration:underline; }
+#sidebarToggle { display:none; font-size:20px; cursor:pointer; }
 
 /* Sidebar for user list */
 .friends-container {
@@ -44,6 +45,11 @@ nav a:hover{ text-decoration:underline; }
   top:60px; /* below header */
   bottom:0;
   left:0;
+  transition: transform 0.3s ease;
+  z-index:400;
+}
+.friends-container.hide {
+  transform: translateX(-100%);
 }
 
 /* main content area */
@@ -51,6 +57,10 @@ nav a:hover{ text-decoration:underline; }
   flex:1;
   margin-left:250px; /* space for sidebar */
   padding:80px 20px 20px 20px; /* space for header */
+  transition: margin-left 0.3s ease;
+}
+.main-content.full {
+  margin-left:0;
 }
 
 /* user list */
@@ -143,6 +153,13 @@ nav a:hover{ text-decoration:underline; }
 .friends-container::-webkit-scrollbar { width:6px; }
 .friends-container::-webkit-scrollbar-thumb { background:#ffcb2b; border-radius:3px; }
 .friends-container::-webkit-scrollbar-track { background:#f1f1f1; }
+
+/* Responsive */
+@media screen and (max-width:768px){
+  #sidebarToggle { display:block; }
+  .friends-container { transform: translateX(-100%); }
+  .main-content { margin-left:0; }
+}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -152,15 +169,17 @@ nav a:hover{ text-decoration:underline; }
 <body>
 
 <header>
-  <h1>Bumbble</h1>
+  <h1>
+    <span id="sidebarToggle">&#9776;</span> Bumbble
+  </h1>
   <nav id="navLinks"></nav>
 </header>
 
-<div class="friends-container">
+<div class="friends-container" id="sidebar">
   <div class="user-list" id="userList"></div>
 </div>
 
-<div class="main-content">
+<div class="main-content" id="mainContent">
   <div id="chatModal">
     <div id="chatHeader">
       <span id="chatWith">Friend</span>
@@ -176,6 +195,33 @@ nav a:hover{ text-decoration:underline; }
 </div>
 
 <script>
+// --- Sidebar toggle ---
+const sidebar = document.getElementById('sidebar');
+const mainContent = document.getElementById('mainContent');
+const sidebarToggle = document.getElementById('sidebarToggle');
+
+function toggleSidebar() {
+  sidebar.classList.toggle('hide');
+  mainContent.classList.toggle('full');
+}
+sidebarToggle.addEventListener('click', toggleSidebar);
+
+// --- Swipe gestures ---
+let touchStartX = 0;
+let touchEndX = 0;
+document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, {passive:true});
+document.addEventListener('touchend', e => { touchEndX = e.changedTouches[0].screenX; handleGesture(); }, {passive:true});
+function handleGesture(){
+  if(touchEndX - touchStartX > 50){ // swipe right
+    sidebar.classList.remove('hide');
+    mainContent.classList.remove('full');
+  } else if(touchStartX - touchEndX > 50){ // swipe left
+    sidebar.classList.add('hide');
+    mainContent.classList.add('full');
+  }
+}
+
+// --- Firebase Config ---
 const firebaseConfig = { 
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs", 
   authDomain:"bumbble-c061f.firebaseapp.com", 
@@ -189,9 +235,9 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
+// --- Variables ---
 const nav = document.getElementById("navLinks");
 const userList = document.getElementById("userList");
-
 let currentUserUid = "";
 let currentChatFriendUid = "";
 let currentChatListener = null;
@@ -204,6 +250,7 @@ const typingIndicator = document.getElementById("typingIndicator");
 let typingTimeout;
 const unreadCounters = {};
 
+// --- Auth & Online Status ---
 auth.onAuthStateChanged(user => {
   if(user && user.emailVerified){
     currentUserUid = user.uid;
@@ -220,7 +267,6 @@ auth.onAuthStateChanged(user => {
       db.ref('users/' + currentUserUid + '/public/online').set(false); 
       auth.signOut().then(()=> window.location.href="login.html"); 
     });
-
     setupOnlineStatus();
     loadUsersRealtime();
   } else {
@@ -239,31 +285,24 @@ function setupOnlineStatus(){
   });
 }
 
+// --- Load Users ---
 function loadUsersRealtime(){
   db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
     userList.innerHTML = '';
     let firstFriendUid = null;
     let firstFriendName = "";
-
     Object.keys(usersData).forEach(uid => {
       if(uid === currentUserUid) return;
       const user = usersData[uid].public || {};
       const name = user.name || "Unknown";
       const gender = user.gender || "N/A";
-
-      if(!firstFriendUid){
-        firstFriendUid = uid;
-        firstFriendName = name;
-      }
-
+      if(!firstFriendUid){ firstFriendUid = uid; firstFriendName = name; }
       const row = document.createElement('div'); 
       row.classList.add("user-row"); 
       row.dataset.uid = uid;
-
       let badgeHtml = "";
       if(unreadCounters[uid]) badgeHtml = `<span class="badge">${unreadCounters[uid]}</span>`;
-
       row.innerHTML = `
         <div>
           <span class="status-dot ${user.online?'online':'offline'}"></span>
@@ -272,21 +311,17 @@ function loadUsersRealtime(){
         </div>
         <button class="chatBtn">Chat</button>
       `;
-
       row.querySelector(".chatBtn").addEventListener('click', e => {
         e.stopPropagation();
         openChat(uid, name);
       });
-
       userList.appendChild(row);
     });
-
-    if(firstFriendUid){
-      openChat(firstFriendUid, firstFriendName);
-    }
+    if(firstFriendUid){ openChat(firstFriendUid, firstFriendName); }
   });
 }
 
+// --- Chat functions ---
 function openChat(friendUid, friendName){
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
@@ -295,21 +330,16 @@ function openChat(friendUid, friendName){
   typingIndicator.textContent = "";
   unreadCounters[friendUid] = 0;
   updateFriendListBadges();
-
   listenTyping(friendUid);
-
   const chatId = getChatId(currentUserUid, friendUid);
   if(currentChatListener) currentChatListener.off();
-
   const chatRef = db.ref('chats/'+chatId);
   chatRef.child('members').update({ [currentUserUid]: true, [friendUid]: true });
-
   chatRef.child('messages').once('value', snapshot => {
     const msgs = snapshot.val() || {};
     Object.values(msgs).forEach(msg => addMessageToChat(msg, msg.sender===currentUserUid));
     chatMessages.scrollTop = chatMessages.scrollHeight;
   });
-
   currentChatListener = chatRef.child('messages');
   currentChatListener.on('child_added', snap => {
     const msg = snap.val();
@@ -396,6 +426,7 @@ function updateFriendListBadges(){
   });
 }
 
+// --- Drag chat modal ---
 dragElement(chatModal);
 function dragElement(elmnt){
   let pos1=0,pos2=0,pos3=0,pos4=0; const header=document.getElementById("chatHeader");
@@ -405,6 +436,5 @@ function dragElement(elmnt){
   function closeDragElement(){ document.onmouseup=null; document.onmousemove=null; }
 }
 </script>
-
 </body>
 </html>
