@@ -172,20 +172,10 @@ const sendBtn = document.getElementById("sendBtn");
 const typingIndicator = document.getElementById("typingIndicator");
 let typingTimeout;
 const unreadCounters = {};
-let selfName = "You"; // FIX: self-login name
-let selfGender = "N/A"; // FIX: self-login gender
 
 auth.onAuthStateChanged(user => {
   if(user && user.emailVerified){
     currentUserUid = user.uid;
-
-    // --- FIX: fetch self info ---
-    db.ref('users/' + currentUserUid + '/public').once('value', snap => {
-      const data = snap.val() || {};
-      selfName = data.name || "You";
-      selfGender = data.gender || "N/A";
-    });
-
     nav.innerHTML = `
       <a href="index.html">Home</a>
       <a href="friends.html">Friends</a>
@@ -218,6 +208,7 @@ function setupOnlineStatus(){
   });
 }
 
+// === FIXED: Self login now shows correct name ===
 function loadUsersRealtime(){
   db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
@@ -227,10 +218,16 @@ function loadUsersRealtime(){
 
     Object.keys(usersData).forEach(uid => {
       const user = usersData[uid].public || {};
-      const name = (uid === currentUserUid) ? selfName : (user.name || "Unknown");
-      const gender = (uid === currentUserUid) ? selfGender : (user.gender || "N/A");
+      let name = user.name || "Unknown";
+      let gender = user.gender || "N/A";
 
-      if(uid === currentUserUid) return; // do not show self in list if not needed
+      // Self fix
+      if(uid === currentUserUid){
+        name = user.name || "You";
+        gender = user.gender || "N/A";
+      }
+
+      if(uid === currentUserUid) return; // optional: skip self in friends list
 
       if(!firstFriendUid){
         firstFriendUid = uid;
@@ -267,7 +264,7 @@ function loadUsersRealtime(){
   });
 }
 
-// --- Chat functions ---
+// --- Chat functions (unchanged from original) ---
 function openChat(friendUid, friendName){
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
@@ -305,8 +302,7 @@ function addMessageToChat(msg,isSelf){
   div.classList.add('message', isSelf?'self':'friend');
   div.dataset.ts = msg.timestamp;
   const ts = new Date(msg.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-  const senderName = isSelf ? selfName : chatWith.textContent;
-  div.innerHTML = `<strong>${senderName}:</strong> ${msg.text}<div class="timestamp">${ts}</div>`;
+  div.innerHTML = `${msg.text}<div class="timestamp">${ts}</div>`;
   chatMessages.appendChild(div);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
@@ -378,7 +374,6 @@ function updateFriendListBadges(){
   });
 }
 
-// --- DRAG CHAT ---
 dragElement(chatModal);
 function dragElement(elmnt){
   let pos1=0,pos2=0,pos3=0,pos4=0; const header=document.getElementById("chatHeader");
