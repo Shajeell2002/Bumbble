@@ -222,18 +222,11 @@ function loadUsersRealtime(){
   db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
     userList.innerHTML = '';
-    let firstFriendUid = null;
-    let firstFriendName = "";
 
     Object.keys(usersData).forEach(uid => {
       let user = usersData[uid].public || {};
       let name = uid === currentUserUid ? "You" : (user.name || "Unknown");
       const gender = uid === currentUserUid ? "" : (user.gender || "N/A");
-
-      if(!firstFriendUid && uid !== currentUserUid){
-        firstFriendUid = uid;
-        firstFriendName = name;
-      }
 
       const row = document.createElement('div'); 
       row.classList.add("user-row"); 
@@ -261,10 +254,9 @@ function loadUsersRealtime(){
       userList.appendChild(row);
     });
 
+    // Open last chat friend automatically
     if(currentChatFriendUid && usersData[currentChatFriendUid]){
       openChat(currentChatFriendUid, usersData[currentChatFriendUid].public.name || "Unknown");
-    } else if(firstFriendUid){
-      openChat(firstFriendUid, firstFriendName);
     }
   });
 }
@@ -302,7 +294,7 @@ function openChat(friendUid, friendName){
 
     if(msg.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
       unreadCounters[msg.sender] = (unreadCounters[msg.sender]||0)+1;
-      updateFriendListBadges();
+      highlightUnread(msg.sender);
     }
   });
 }
@@ -358,23 +350,21 @@ function closeChat(){
 
 function getChatId(uid1,uid2){ return uid1<uid2? uid1+'_'+uid2 : uid2+'_'+uid1; }
 
-function updateFriendListBadges(){
-  document.querySelectorAll('.user-row').forEach(row=>{
-    const uid = row.dataset.uid;
+function highlightUnread(uid){
+  const row = document.querySelector(`.user-row[data-uid="${uid}"]`);
+  if(row){
     let badge = row.querySelector('.badge');
-    if(unreadCounters[uid]){
-      if(!badge){
-        badge = document.createElement('span');
-        badge.className='badge flash';
-        badge.textContent = unreadCounters[uid];
-        row.appendChild(badge);
-      } else {
-        badge.textContent = unreadCounters[uid];
-        badge.classList.add('flash');
-      }
-      setTimeout(()=>badge.classList.remove('flash'),500);
-    } else if(badge) badge.remove();
-  });
+    if(!badge){
+      badge = document.createElement('span');
+      badge.className='badge flash';
+      badge.textContent = unreadCounters[uid];
+      row.appendChild(badge);
+    } else {
+      badge.textContent = unreadCounters[uid];
+      badge.classList.add('flash');
+    }
+    setTimeout(()=>badge.classList.remove('flash'),500);
+  }
 }
 
 dragElement(chatModal);
