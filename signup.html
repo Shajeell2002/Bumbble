@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Bumbble - Sign Up (Test Mode)</title>
+<title>Bumbble - Sign Up</title>
 
 <style>
+  /* Page layout matching your site theme */
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: Arial, sans-serif;
@@ -15,13 +16,17 @@
     flex-direction: column;
     min-height: 100vh;
   }
+
+  /* Header (same yellow theme) */
   header { display:flex; justify-content:space-between; align-items:center; padding:16px 24px; background:#ffcb2b; }
   header h1 { font-size:22px; margin:0; }
   nav a { margin-left:12px; color:#000; text-decoration:none; font-weight:600; }
   nav a:hover { text-decoration:underline; }
 
+  /* Main area */
   main { flex:1; display:flex; justify-content:center; align-items:flex-start; padding:40px 20px; background: linear-gradient(180deg,#fffdf8,#fff8e1); }
 
+  /* Signup card */
   .signup-container {
     width: 100%;
     max-width: 420px;
@@ -40,7 +45,7 @@
     font-size:15px;
     outline:none;
   }
-  input:focus, select:focus {
+  input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus, select:focus, input[type="number"]:focus {
     border-color:#ffcb2b;
     box-shadow:0 0 0 4px rgba(255,203,43,0.08);
   }
@@ -57,12 +62,15 @@
     color:#111;
   }
   .btn:disabled { opacity:0.6; cursor:not-allowed; }
+
   .msg { text-align:center; margin-top:10px; font-size:14px; }
   .error { color:#c62828; }
   .success { color:#2e7d32; }
+
   .small { font-size:13px; text-align:center; margin-top:12px; }
   .small a { color:#0073e6; text-decoration:none; }
   .small a:hover { text-decoration:underline; }
+
   footer { text-align:center; padding:14px; background:#f1f1f1; font-size:13px; }
   @media(max-width:480px){
     main { padding:20px 12px; }
@@ -80,18 +88,20 @@
 
 <header>
   <h1>Bumbble</h1>
-  <nav>
+  <nav id="navLinks">
     <a href="index.html">Home</a>
     <a href="friends.html">Friends</a>
     <a href="stories.html">Stories</a>
     <a href="events.html">Events</a>
     <a href="safety.html">Safety</a>
+    <a href="login.html">Login</a>
+    <a href="signup.html">Sign Up</a>
   </nav>
 </header>
 
 <main>
-  <div class="signup-container">
-    <h2>Create Test Account</h2>
+  <div class="signup-container" role="region" aria-label="Signup form">
+    <h2>Create Your Account</h2>
 
     <div class="form-row">
       <input id="name" type="text" placeholder="Full name" required />
@@ -115,26 +125,28 @@
     </div>
 
     <div class="form-row">
-      <input id="email" type="email" placeholder="Email (any test email)" />
+      <input id="email" type="email" placeholder="Email address" required />
     </div>
 
     <div class="form-row">
-      <input id="password" type="password" placeholder="Password (min 6 chars)" />
+      <input id="password" type="password" placeholder="Password (min 6 characters)" required />
     </div>
 
-    <button id="signupBtn" class="btn">Create Test User</button>
+    <button id="signupBtn" class="btn">Sign Up</button>
 
-    <p id="errorMsg" class="msg error"></p>
-    <p id="successMsg" class="msg success"></p>
+    <p id="errorMsg" class="msg error" aria-live="polite"></p>
+    <p id="successMsg" class="msg success" aria-live="polite"></p>
+
+    <p class="small">Already have an account? <a href="login.html">Login</a></p>
   </div>
 </main>
 
 <footer>
-  &copy; 2025 Bumbble. Test Environment.
+  &copy; 2025 Bumbble. All rights reserved.
 </footer>
 
 <script>
-  // ---------- Firebase config ----------
+  // ---------- Firebase config (keep your real keys) ----------
   const firebaseConfig = {
     apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
     authDomain: "bumbble-c061f.firebaseapp.com",
@@ -148,13 +160,46 @@
   const auth = firebase.auth();
   const db = firebase.database();
 
+  // update header depending on auth state (keeps nav consistent)
+  const nav = document.getElementById('navLinks');
+  auth.onAuthStateChanged(user => {
+    if (user && user.emailVerified) {
+      nav.innerHTML = `
+        <a href="index.html">Home</a>
+        <a href="friends.html">Friends</a>
+        <a href="stories.html">Stories</a>
+        <a href="events.html">Events</a>
+        <a href="safety.html">Safety</a>
+        <a href="profile.html">Profile</a>
+        <a href="#" id="logoutBtn">Logout</a>
+      `;
+      document.getElementById('logoutBtn').addEventListener('click', () => {
+        auth.signOut();
+        localStorage.removeItem('current_user');
+        window.location.href = 'login.html';
+      });
+    } else {
+      // default nav (not logged in)
+      nav.innerHTML = `
+        <a href="index.html">Home</a>
+        <a href="friends.html">Friends</a>
+        <a href="stories.html">Stories</a>
+        <a href="events.html">Events</a>
+        <a href="safety.html">Safety</a>
+        <a href="login.html">Login</a>
+        <a href="signup.html">Sign Up</a>
+      `;
+    }
+  });
+
+  // Signup handler
   document.getElementById('signupBtn').addEventListener('click', async function () {
-    const name = document.getElementById('name').value.trim() || 'Guest User';
-    const age = document.getElementById('age').value.trim() || 'N/A';
-    const gender = document.getElementById('gender').value || 'Other';
-    const location = document.getElementById('location').value.trim() || 'Unknown';
-    const email = document.getElementById('email').value.trim() || `guest${Date.now()}@test.com`;
-    const password = document.getElementById('password').value || 'password123';
+    const name = document.getElementById('name').value.trim();
+    const age = document.getElementById('age').value.trim();
+    const gender = document.getElementById('gender').value;
+    const location = document.getElementById('location').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
 
     const errorMsg = document.getElementById('errorMsg');
     const successMsg = document.getElementById('successMsg');
@@ -163,44 +208,57 @@
     errorMsg.textContent = '';
     successMsg.textContent = '';
 
+    // Basic validation
+    if (!name || !email || !password) {
+      errorMsg.textContent = 'Please fill in name, email and password.';
+      return;
+    }
+    if (password.length < 6) {
+      errorMsg.textContent = 'Password must be at least 6 characters.';
+      return;
+    }
+
     btn.disabled = true;
-    btn.textContent = 'Creating dummy user...';
+    btn.textContent = 'Creating account...';
 
     try {
-      // Create user without verification
+      // create account
       const cred = await auth.createUserWithEmailAndPassword(email, password);
       const user = cred.user;
       const uid = user.uid;
 
-      // Store dummy profile data
+      // send verification email (redirects to login on click)
+      await user.sendEmailVerification({ url: 'https://bumbble.in/login.html' });
+
+      // save public profile
       await db.ref(`users/${uid}/public`).set({
-        name,
-        age,
-        gender,
-        location,
+        name: name,
+        age: age || 'N/A',
+        gender: gender || '',
+        location: location || '',
         pic: 'images/profile1.png',
-        online: true,
-        testAccount: true
+        online: false,
+        testAccount: false
       });
 
+      // save private profile
       await db.ref(`users/${uid}/private`).set({
-        email,
-        createdAt: Date.now(),
-        verified: false
+        email: email,
+        createdAt: Date.now()
       });
 
-      successMsg.textContent = '✅ Test user created successfully!';
-      localStorage.setItem('current_user', uid);
-      setTimeout(() => window.location.href = 'friends.html', 1500);
+      successMsg.textContent = 'Account created — verification email sent. Please verify before login.';
+      btn.textContent = 'Done';
+      // optional: redirect after short delay
+      setTimeout(() => { window.location.href = 'login.html'; }, 3500);
 
     } catch (err) {
-      console.error(err);
-      errorMsg.textContent = err.message;
+      console.error('Signup error:', err);
+      errorMsg.textContent = err.message || 'Signup failed.';
       btn.disabled = false;
-      btn.textContent = 'Create Test User';
+      btn.textContent = 'Sign Up';
     }
   });
 </script>
-
 </body>
 </html>
