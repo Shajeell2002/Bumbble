@@ -41,6 +41,12 @@ nav a:hover{ text-decoration:underline; }
 #chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:0 0 0 10px; }
 #sendBtn { padding:8px 12px; border:none; background:#ffcb2b; border-radius:0 0 10px 0; cursor:pointer; }
 #sendBtn:hover { background:#f1b800; }
+
+@keyframes pop {
+  0% { transform: scale(0.6); opacity: 0.5; }
+  80% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -139,7 +145,6 @@ function setupOnlineStatus(){
   });
 }
 
-/* ---------- Load and sort by recent activity ---------- */
 function loadUsersRealtime(){
   db.ref('users').on('value', snapshot => {
     usersCache = snapshot.val() || {};
@@ -161,7 +166,6 @@ function renderUserList(){
       };
     });
 
-  // Sort by lastActive DESC → unread DESC → name
   arr.sort((a,b) => {
     const aUnread = unreadCounters[a.uid] || 0;
     const bUnread = unreadCounters[b.uid] || 0;
@@ -174,14 +178,15 @@ function renderUserList(){
     return (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase());
   });
 
-  const limited = arr.slice(0, 10); // only 10 most recent
+  const limited = arr.slice(0, 10);
   userList.innerHTML = '';
   limited.forEach(u => {
     const row = document.createElement('div');
     row.className = 'user-row';
     row.dataset.uid = u.uid;
     const statusClass = u.online ? 'online' : 'offline';
-    const badgeHtml = unreadCounters[u.uid] ? `<span class="badge">${unreadCounters[u.uid]}</span>` : '';
+    const unread = unreadCounters[u.uid] || 0;
+    const badgeHtml = unread > 0 ? `<span class="badge" style="animation:pop 0.3s ease;">${unread}</span>` : '';
     const lastActiveText = u.lastActive ? new Date(u.lastActive).toLocaleString([], {hour:'2-digit',minute:'2-digit'}) : '';
     row.innerHTML = `
       <div>
@@ -197,37 +202,33 @@ function renderUserList(){
   });
 }
 
-/* ---------- Chat Watchers ---------- */
 function watchChatMessages(){
-  db.ref('chats').on('child_added', snap => {
-    const messagesRef = snap.ref.child('messages');
+  db.ref('chats').on('child_added', chatSnap => {
+    const chatId = chatSnap.key;
+    const messagesRef = chatSnap.ref.child('messages');
     messagesRef.on('child_added', msgSnap => {
       const msg = msgSnap.val();
       if(!msg || !msg.sender || !msg.receiver) return;
 
-      if(msg.receiver === currentUserUid){
-        lastMessageAt[msg.sender] = msg.timestamp || Date.now();
-        updateLastActive(msg.sender);
-      }
-      if(msg.sender === currentUserUid){
-        lastMessageAt[msg.receiver] = msg.timestamp || Date.now();
-        updateLastActive(msg.receiver);
-      }
+      if (msg.receiver !== currentUserUid && msg.sender !== currentUserUid) return;
 
-      if(msg.receiver === currentUserUid && msg.sender !== currentChatFriendUid){
+      const friendUid = msg.sender === currentUserUid ? msg.receiver : msg.sender;
+      lastMessageAt[friendUid] = msg.timestamp || Date.now();
+      updateLastActive(friendUid);
+
+      if (msg.receiver === currentUserUid && msg.sender !== currentChatFriendUid) {
         unreadCounters[msg.sender] = (unreadCounters[msg.sender] || 0) + 1;
       }
+
       renderUserList();
     });
   });
 }
 
-/* ---------- Update lastActive ---------- */
 function updateLastActive(uid){
   db.ref("users/" + uid).update({ lastActive: Date.now() });
 }
 
-/* ---------- Open Chat ---------- */
 function openChat(friendUid, friendName){
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
@@ -324,7 +325,6 @@ function escapeHtml(str){
     .replace(/'/g,"&#039;");
 }
 
-/* ---------- Make Chat Draggable ---------- */
 dragElement(chatModal);
 function dragElement(elmnt){
   let pos1=0,pos2=0,pos3=0,pos4=0; const header=document.getElementById("chatHeader");
