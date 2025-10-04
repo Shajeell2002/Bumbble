@@ -15,7 +15,7 @@ body {
   flex-direction: column;
 }
 
-/* Header stays fixed on top */
+/* Header */
 header { 
   display:flex; 
   justify-content:space-between; 
@@ -33,7 +33,7 @@ header h1{ font-size:24px; margin:0; }
 nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 nav a:hover{ text-decoration:underline; }
 
-/* Sidebar for user list */
+/* Sidebar */
 .friends-container {
   width:250px; 
   background:#fffbe6;
@@ -41,19 +41,19 @@ nav a:hover{ text-decoration:underline; }
   padding:10px;
   overflow-y:auto;
   position:fixed;
-  top:60px; /* below header */
+  top:60px;
   bottom:0;
   left:0;
 }
 
-/* main content area */
+/* Main content */
 .main-content {
   flex:1;
-  margin-left:250px; /* space for sidebar */
-  padding:80px 20px 20px 20px; /* space for header */
+  margin-left:250px;
+  padding:80px 20px 20px 20px;
 }
 
-/* user list */
+/* User list */
 .user-list {
   display:flex;
   flex-direction:column;
@@ -64,7 +64,7 @@ nav a:hover{ text-decoration:underline; }
   display:flex; 
   justify-content:space-between; 
   align-items:center; 
-  padding:4px 8px; 
+  padding:6px 8px; 
   border-bottom:1px solid #eee; 
   cursor:pointer; 
   transition:0.2s; 
@@ -80,16 +80,6 @@ nav a:hover{ text-decoration:underline; }
 }
 .online { background:green; }
 .offline { background:red; }
-
-.chatBtn {
-  padding:2px 6px;
-  font-size:12px;
-  background:#ffcb2b;
-  border:none;
-  border-radius:4px;
-  cursor:pointer;
-}
-.chatBtn:hover { background:#f1b800; }
 
 .badge {
   background:red;
@@ -128,7 +118,15 @@ nav a:hover{ text-decoration:underline; }
   border-radius:10px 10px 0 0;
   cursor:move;
 }
-#chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; background:#fefefe; }
+#chatMessages { 
+  flex:1; 
+  padding:10px; 
+  overflow-y:auto; 
+  display:flex; 
+  flex-direction:column; 
+  gap:6px; 
+  background:#fefefe; 
+}
 #typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
 .message { max-width:80%; padding:6px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
 .message.self { background:green; color:white; align-self:flex-end; }
@@ -139,7 +137,7 @@ nav a:hover{ text-decoration:underline; }
 #sendBtn { padding:8px 12px; border:none; background:#ffcb2b; border-radius:0 0 10px 0; cursor:pointer; }
 #sendBtn:hover { background:#f1b800; }
 
-/* Scrollbar for sidebar */
+/* Scrollbar */
 .friends-container::-webkit-scrollbar { width:6px; }
 .friends-container::-webkit-scrollbar-thumb { background:#ffcb2b; border-radius:3px; }
 .friends-container::-webkit-scrollbar-track { background:#f1f1f1; }
@@ -260,6 +258,7 @@ function loadUsersRealtime(){
       const row = document.createElement('div'); 
       row.classList.add("user-row"); 
       row.dataset.uid = uid;
+      row.dataset.name = name;
 
       let badgeHtml = "";
       if(unreadCounters[uid]) badgeHtml = `<span class="badge">${unreadCounters[uid]}</span>`;
@@ -270,14 +269,9 @@ function loadUsersRealtime(){
           ${name} (${gender})
           ${badgeHtml}
         </div>
-        <button class="chatBtn">Chat</button>
       `;
 
-      row.querySelector(".chatBtn").addEventListener('click', e => {
-        e.stopPropagation();
-        openChat(uid, name);
-      });
-
+      row.addEventListener('click', () => openChat(uid, name));
       userList.appendChild(row);
     });
 
