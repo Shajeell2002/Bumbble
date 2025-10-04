@@ -12,27 +12,7 @@ body {
   color:#333; 
   display:flex; 
   min-height:100vh; 
-  flex-direction: column;
 }
-
-/* Header */
-header { 
-  display:flex; 
-  justify-content:space-between; 
-  align-items:center; 
-  padding:15px 20px; 
-  background:#ffcb2b; 
-  box-shadow:0 3px 6px rgba(0,0,0,0.1);
-  position:fixed;
-  top:0;
-  left:0;
-  right:0;
-  z-index:500;
-}
-header h1{ font-size:24px; margin:0; display:flex; align-items:center; gap:10px; }
-nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
-nav a:hover{ text-decoration:underline; }
-#sidebarToggle { display:none; font-size:20px; cursor:pointer; }
 
 /* Sidebar */
 .friends-container {
@@ -42,39 +22,66 @@ nav a:hover{ text-decoration:underline; }
   padding:10px;
   overflow-y:auto;
   position:fixed;
-  top:60px; 
+  top:0;
   bottom:0;
   left:0;
-  transition: transform 0.3s ease;
-  z-index:400;
+  transition:transform 0.3s ease;
+  z-index:1000;
 }
-.friends-container.hide { transform: translateX(-100%); }
+.friends-container.hide {
+  transform:translateX(-100%);
+}
+
+/* Sidebar toggle for mobile */
+#sidebarToggle {
+  position:fixed;
+  top:15px;
+  left:15px;
+  background:#ffcb05;
+  border:none;
+  padding:8px 12px;
+  border-radius:6px;
+  cursor:pointer;
+  z-index:1100;
+}
 
 /* Main content */
 .main-content {
   flex:1;
-  margin-left:250px; 
-  padding:80px 20px 20px 20px;
-  transition: margin-left 0.3s ease;
+  margin-left:250px;
+  padding:20px;
+  transition:margin-left 0.3s ease;
 }
-.main-content.full { margin-left:0; }
+.main-content.full {
+  margin-left:0;
+}
 
 /* User list */
-.user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
+.user-list {
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  font-size:14px;
+}
 .user-row { 
   display:flex; 
-  justify-content:flex-start; 
   align-items:center; 
-  padding:4px 8px; 
+  justify-content:space-between; 
+  padding:8px; 
   border-bottom:1px solid #eee; 
   cursor:pointer; 
-  transition:0.2s; 
+  transition:background 0.2s;
 }
-.user-row:hover { background:#fffbcc; }
-.status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
-.online { background:green; }
-.offline { background:red; }
-.badge { background:red; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
+.user-row:hover { background:#fff6b3; }
+.status-dot {
+  width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px;
+}
+.status-dot.online { background:#2ecc71; }
+.status-dot.offline { background:#ccc; }
+.badge {
+  background:#ff3b30; color:#fff; padding:1px 5px; font-size:11px; border-radius:8px;
+  margin-left:4px;
+}
 
 /* Chat modal */
 #chatModal {
@@ -91,302 +98,173 @@ nav a:hover{ text-decoration:underline; }
   box-shadow:0 4px 12px rgba(0,0,0,0.2);
   resize:both;
   overflow:hidden;
-  z-index:1000;
+  z-index:2000;
 }
-#chatHeader {
-  background:#ffcb2b;
-  padding:10px;
-  font-weight:bold;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  border-radius:10px 10px 0 0;
-  cursor:move;
+.chat-header {
+  background:#ffcb05; padding:10px; font-weight:bold; cursor:move;
 }
-#chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; background:#fefefe; }
-#typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
-.message { max-width:80%; padding:6px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
-.message.self { background:green; color:white; align-self:flex-end; }
-.message.friend { background:#e0e0e0; align-self:flex-start; }
-.timestamp { font-size:10px; color:#555; margin-top:2px; text-align:right; }
-#chatInputContainer { display:flex; border-top:1px solid #ddd; }
-#chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:0 0 0 10px; }
-#sendBtn { padding:8px 12px; border:none; background:#ffcb2b; border-radius:0 0 10px 0; cursor:pointer; }
-#sendBtn:hover { background:#f1b800; }
-
-/* Scrollbar for sidebar */
-.friends-container::-webkit-scrollbar { width:6px; }
-.friends-container::-webkit-scrollbar-thumb { background:#ffcb2b; border-radius:3px; }
-.friends-container::-webkit-scrollbar-track { background:#f1f1f1; }
-
-/* Responsive */
-@media screen and (max-width:768px){
-  #sidebarToggle { display:block; }
-  .friends-container { transform: translateX(-100%); }
-  .main-content { margin-left:0; }
+.chat-messages {
+  flex:1; overflow-y:auto; padding:10px; font-size:13px;
+}
+.chat-input {
+  display:flex; border-top:1px solid #ddd;
+}
+.chat-input input {
+  flex:1; border:none; padding:8px;
+}
+.chat-input button {
+  background:#ffcb05; border:none; padding:8px 10px; cursor:pointer;
 }
 </style>
-
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
-<header>
-  <h1>
-    <span id="sidebarToggle">&#9776;</span> Bumbble
-  </h1>
-  <nav id="navLinks"></nav>
-</header>
+<button id="sidebarToggle">☰</button>
 
 <div class="friends-container" id="sidebar">
+  <h3 style="margin-top:0;">Friends</h3>
   <div class="user-list" id="userList"></div>
 </div>
 
 <div class="main-content" id="mainContent">
-  <div id="chatModal">
-    <div id="chatHeader">
-      <span id="chatWith">Friend</span>
-      <button onclick="closeChat()">X</button>
-    </div>
-    <div id="chatMessages"></div>
-    <div id="typingIndicator"></div>
-    <div id="chatInputContainer">
-      <input type="text" id="chatInput" placeholder="Type a message">
-      <button id="sendBtn">Send</button>
-    </div>
+  <h1>Welcome to Bumbble Chat</h1>
+  <p>Click on any user name to start chatting.</p>
+</div>
+
+<!-- Chat modal -->
+<div id="chatModal">
+  <div class="chat-header" id="chatHeader"></div>
+  <div class="chat-messages" id="chatMessages"></div>
+  <div class="chat-input">
+    <input type="text" id="chatInput" placeholder="Type a message..." />
+    <button id="sendBtn">Send</button>
   </div>
 </div>
 
-<script>
-// --- Sidebar toggle ---
-const sidebar = document.getElementById('sidebar');
-const mainContent = document.getElementById('mainContent');
-const sidebarToggle = document.getElementById('sidebarToggle');
-function toggleSidebar() { sidebar.classList.toggle('hide'); mainContent.classList.toggle('full'); }
-sidebarToggle.addEventListener('click', toggleSidebar);
+<script type="module">
+// Firebase setup
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { getDatabase, ref, onValue, push, set } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
-// --- Swipe gestures ---
-let touchStartX = 0, touchEndX = 0;
-document.addEventListener('touchstart', e => touchStartX = e.changedTouches[0].screenX, {passive:true});
-document.addEventListener('touchend', e => { touchEndX = e.changedTouches[0].screenX; handleGesture(); }, {passive:true});
-function handleGesture(){
-  if(touchEndX - touchStartX > 50){ sidebar.classList.remove('hide'); mainContent.classList.remove('full'); }
-  else if(touchStartX - touchEndX > 50){ sidebar.classList.add('hide'); mainContent.classList.add('full'); }
-}
-
-// --- Firebase ---
 const firebaseConfig = { 
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs", 
   authDomain:"bumbble-c061f.firebaseapp.com", 
   databaseURL:"https://bumbble-c061f-default-rtdb.firebaseio.com", 
   projectId:"bumbble-c061f", 
   storageBucket:"bumbble-c061f.appspot.com", 
-  messagingSenderId:"213165886981", 
-  appId:"1:213165886981:web:c18652003444869b1bd66c" 
+  messagingSenderId:"327821837105", 
+  appId:"1:327821837105:web:cc3727d91c0e85d7ecbdb1"
 };
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.database();
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-// --- Variables ---
-const nav = document.getElementById("navLinks");
+// Elements
 const userList = document.getElementById("userList");
-let currentUserUid = "";
-let currentChatFriendUid = "";
-let currentChatListener = null;
 const chatModal = document.getElementById("chatModal");
+const chatHeader = document.getElementById("chatHeader");
 const chatMessages = document.getElementById("chatMessages");
-const chatWith = document.getElementById("chatWith");
 const chatInput = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
-const typingIndicator = document.getElementById("typingIndicator");
-let typingTimeout;
-const unreadCounters = {};
 
-// --- Auth & online ---
-auth.onAuthStateChanged(user => {
-  if(user && user.emailVerified){
-    currentUserUid = user.uid;
-    nav.innerHTML = `
-      <a href="index.html">Home</a>
-      <a href="friends.html">Friends</a>
-      <a href="stories.html">Stories</a>
-      <a href="events.html">Events</a>
-      <a href="safety.html">Safety</a>
-      <a href="profile.html">Profile</a>
-      <a href="#" id="logoutBtn">Logout</a>
-    `;
-    document.getElementById("logoutBtn").addEventListener("click", ()=>{ 
-      db.ref('users/' + currentUserUid + '/public/online').set(false); 
-      auth.signOut().then(()=> window.location.href="login.html"); 
+let currentUser = { uid: "demoUser123", name: "You" };
+let activeChatUid = null;
+
+// Load users realtime
+function loadUsersRealtime() {
+  const usersRef = ref(db, "users");
+  onValue(usersRef, (snapshot) => {
+    userList.innerHTML = "";
+    const users = [];
+    snapshot.forEach((child) => {
+      const user = child.val();
+      if (child.key !== currentUser.uid) {
+        users.push({ uid: child.key, ...user });
+      }
     });
-    setupOnlineStatus();
-    loadUsersRealtime();
-  } else {
-    nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
-    document.querySelector(".friends-container").innerHTML = "<p>Please login to view users.</p>";
-  }
-});
 
-function setupOnlineStatus(){
-  const userStatusRef = db.ref('users/' + currentUserUid + '/public/online');
-  db.ref('.info/connected').on('value', snap => {
-    if(snap.val() === true){
-      userStatusRef.set(true);
-      userStatusRef.onDisconnect().set(false);
-    }
-  });
-}
+    users.sort((a,b) => (b.online === true) - (a.online === true));
 
-// --- Load users ---
-function loadUsersRealtime(){
-  db.ref('users').on('value', snapshot => {
-    const usersData = snapshot.val() || {};
-    userList.innerHTML = '';
-    let firstFriendUid = null;
-    let firstFriendName = "";
-    Object.keys(usersData).forEach(uid => {
-      if(uid === currentUserUid) return;
-      const user = usersData[uid].public || {};
-      const name = user.name || "Unknown";
-      const gender = user.gender || "N/A";
-      if(!firstFriendUid){ firstFriendUid = uid; firstFriendName = name; }
-      const row = document.createElement('div'); 
-      row.classList.add("user-row"); 
-      row.dataset.uid = uid;
-      let badgeHtml = "";
-      if(unreadCounters[uid]) badgeHtml = `<span class="badge">${unreadCounters[uid]}</span>`;
+    users.forEach(user => {
+      const name = user.name || "User";
+      const gender = user.gender || "";
+      const badgeHtml = user.unread ? `<span class='badge'>${user.unread}</span>` : "";
+      const row = document.createElement("div");
+      row.className = "user-row";
       row.innerHTML = `
         <div class="user-name">
           <span class="status-dot ${user.online?'online':'offline'}"></span>
-          ${name} (${gender})
-          ${badgeHtml}
+          ${name} (${gender}) ${badgeHtml}
         </div>
       `;
-      // Click anywhere on row opens chat
-      row.addEventListener('click', () => openChat(uid, name));
+      row.addEventListener('click', () => {
+        openChat(user.uid, name);
+      });
       userList.appendChild(row);
     });
-    if(firstFriendUid){ openChat(firstFriendUid, firstFriendName); }
   });
 }
+loadUsersRealtime();
 
-// --- Chat ---
-function openChat(friendUid, friendName){
-  currentChatFriendUid = friendUid;
-  chatWith.textContent = friendName;
+// Open chat
+function openChat(uid, name) {
+  activeChatUid = uid;
+  chatHeader.textContent = "Chat with " + name;
   chatModal.style.display = "flex";
-  chatMessages.innerHTML = '';
-  typingIndicator.textContent = "";
-  unreadCounters[friendUid] = 0;
-  updateFriendListBadges();
-  listenTyping(friendUid);
-  const chatId = getChatId(currentUserUid, friendUid);
-  if(currentChatListener) currentChatListener.off();
-  const chatRef = db.ref('chats/'+chatId);
-  chatRef.child('members').update({ [currentUserUid]: true, [friendUid]: true });
-  chatRef.child('messages').once('value', snapshot => {
-    const msgs = snapshot.val() || {};
-    Object.values(msgs).forEach(msg => addMessageToChat(msg, msg.sender===currentUserUid));
+  loadChatMessages(uid);
+}
+
+// Load messages realtime
+function loadChatMessages(uid) {
+  const msgRef = ref(db, `messages/${uid}`);
+  onValue(msgRef, (snapshot) => {
+    chatMessages.innerHTML = "";
+    snapshot.forEach((child) => {
+      const msg = child.val();
+      const div = document.createElement("div");
+      div.textContent = `${msg.sender}: ${msg.text}`;
+      chatMessages.appendChild(div);
+    });
     chatMessages.scrollTop = chatMessages.scrollHeight;
   });
-  currentChatListener = chatRef.child('messages');
-  currentChatListener.on('child_added', snap => {
-    const msg = snap.val();
-    if(!msg.sender) return;
-    addMessageToChat(msg, msg.sender === currentUserUid);
-  });
 }
 
-function addMessageToChat(msg,isSelf){
-  if(chatMessages.querySelector(`.message[data-ts="${msg.timestamp}"]`)) return;
-  const div = document.createElement('div'); 
-  div.classList.add('message', isSelf?'self':'friend');
-  div.dataset.ts = msg.timestamp;
-  const ts = new Date(msg.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-  div.innerHTML = `${msg.text}<div class="timestamp">${ts}</div>`;
-  chatMessages.appendChild(div);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-chatInput.addEventListener("input", () => {
-  if(!currentChatFriendUid) return;
-  db.ref('typing/' + currentChatFriendUid + '/' + currentUserUid).set(true);
-  clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(() => {
-    db.ref('typing/' + currentChatFriendUid + '/' + currentUserUid).remove();
-  }, 1000);
-});
-
-function listenTyping(friendUid){
-  const typingRef = db.ref('typing/' + currentUserUid + '/' + friendUid);
-  typingRef.on('value', snapshot => {
-    typingIndicator.textContent = snapshot.exists() ? `${chatWith.textContent} is typing...` : '';
-  });
-}
-
-function sendMessage(){
+// Send message
+sendBtn.addEventListener("click", () => {
   const text = chatInput.value.trim();
-  if(!text || !currentChatFriendUid) return;
-  const chatId = getChatId(currentUserUid, currentChatFriendUid);
-  const msgObj = { sender: currentUserUid, receiver: currentChatFriendUid, text, timestamp: Date.now() };
-  db.ref('chats/'+chatId+'/members').update({ [currentUserUid]: true, [currentChatFriendUid]: true });
-  db.ref('chats/'+chatId+'/messages').push(msgObj);
-  chatInput.value = '';
-}
-
-chatInput.addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); sendMessage(); } });
-sendBtn.addEventListener('click', sendMessage);
-
-function closeChat(){
-  if(currentChatFriendUid){
-    db.ref('typing/' + currentChatFriendUid + '/' + currentUserUid).remove();
-  }
-  chatModal.style.display='none';
-  currentChatFriendUid='';
-  typingIndicator.textContent = "";
-}
-
-function getChatId(uid1,uid2){ return uid1<uid2? uid1+'_'+uid2 : uid2+'_'+uid1; }
-
-db.ref('chats').on('child_added', snap=>{
-  snap.ref.child('messages').on('child_added', msgSnap=>{
-    const msg = msgSnap.val();
-    if(!msg.sender) return;
-    if(msg.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
-      unreadCounters[msg.sender] = (unreadCounters[msg.sender]||0)+1;
-      updateFriendListBadges();
-    }
-  });
+  if (!text || !activeChatUid) return;
+  const msgRef = push(ref(db, `messages/${activeChatUid}`));
+  set(msgRef, { sender: currentUser.name, text, timestamp: Date.now() });
+  chatInput.value = "";
 });
+</script>
 
-function updateFriendListBadges(){
-  document.querySelectorAll('.user-row').forEach(row=>{
-    const uid = row.dataset.uid;
-    const badge = row.querySelector('.badge');
-    if(unreadCounters[uid]){
-      if(badge) badge.textContent = unreadCounters[uid];
-      else {
-        const span = document.createElement('span');
-        span.className='badge';
-        span.textContent = unreadCounters[uid];
-        row.querySelector('div').appendChild(span);
-      }
-    } else if(badge) badge.remove();
-  });
+<script>
+// --- Sidebar toggle ---
+const sidebar = document.getElementById('sidebar');
+const mainContent = document.getElementById('mainContent');
+const sidebarToggle = document.getElementById('sidebarToggle');
+
+function toggleSidebar() {
+  sidebar.classList.toggle('hide');
+  mainContent.classList.toggle('full');
 }
+sidebarToggle.addEventListener('click', toggleSidebar);
 
-// --- Drag chat modal ---
-dragElement(chatModal);
-function dragElement(elmnt){
-  let pos1=0,pos2=0,pos3=0,pos4=0; const header=document.getElementById("chatHeader");
-  if(header) header.onmousedown=dragMouseDown; else elmnt.onmousedown=dragMouseDown;
-  function dragMouseDown(e){ e=e||window.event; e.preventDefault(); pos3=e.clientX; pos4=e.clientY; document.onmouseup=closeDragElement; document.onmousemove=elementDrag; }
-  function elementDrag(e){ e=e||window.event; e.preventDefault(); pos1=pos3-e.clientX; pos2=pos4-e.clientY; pos3=e.clientX; pos4=e.clientY; elmnt.style.top=(elmnt.offsetTop-pos2)+'px'; elmnt.style.left=(elmnt.offsetLeft-pos1)+'px'; }
-  function closeDragElement(){ document.onmouseup=null; document.onmousemove=null; }
+// --- Swipe gestures ---
+let touchStartX = 0;
+let touchEndX = 0;
+document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
+document.addEventListener('touchend', e => { touchEndX = e.changedTouches[0].screenX; handleGesture(); }, {passive: true});
+function handleGesture() {
+  if (touchEndX - touchStartX > 50) { // swipe right
+    sidebar.classList.remove('hide');
+    mainContent.classList.remove('full');
+  } else if (touchStartX - touchEndX > 50) { // swipe left
+    sidebar.classList.add('hide');
+    mainContent.classList.add('full');
+  }
 }
 </script>
+
 </body>
 </html>
