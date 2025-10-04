@@ -92,7 +92,7 @@ const sendBtn = document.getElementById("sendBtn");
 const typingIndicator = document.getElementById("typingIndicator");
 let typingTimeout;
 const unreadCounters = {};
-const lastChatTimestamps = {}; // Store last message timestamps
+const lastChatTimestamps = {};
 
 auth.onAuthStateChanged(user => {
   if(user && user.emailVerified){
@@ -108,10 +108,21 @@ auth.onAuthStateChanged(user => {
     `;
     document.getElementById("logoutBtn").addEventListener("click", ()=>{ 
       db.ref('users/' + currentUserUid + '/public/online').set(false); 
+      localStorage.removeItem("lastChatFriendUid");
+      localStorage.removeItem("lastChatFriendName");
       auth.signOut().then(()=> window.location.href="login.html"); 
     });
     setupOnlineStatus();
     loadUsersRealtime();
+
+    // ✅ Reopen last chat after list loads
+    setTimeout(() => {
+      const lastUid = localStorage.getItem("lastChatFriendUid");
+      const lastName = localStorage.getItem("lastChatFriendName");
+      if(lastUid && lastName){
+        openChat(lastUid, lastName);
+      }
+    }, 1000);
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
     document.querySelector(".friends-container").innerHTML = "<p>Please login to view users.</p>";
@@ -128,7 +139,6 @@ function setupOnlineStatus(){
   });
 }
 
-// ✅ Load and sort friends list by recent chat timestamp
 function loadUsersRealtime(){
   db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
@@ -144,7 +154,6 @@ function loadUsersRealtime(){
       friends.push({ uid, name, gender, online, lastChat });
     });
 
-    // Sort descending by last chat timestamp
     friends.sort((a,b)=> b.lastChat - a.lastChat);
 
     userList.innerHTML = '';
@@ -158,11 +167,6 @@ function loadUsersRealtime(){
       row.addEventListener('click',()=>openChat(f.uid,f.name));
       userList.appendChild(row);
     });
-
-    // ✅ Automatically open the most recent chat (top of list)
-    if(friends.length>0 && !currentChatFriendUid){
-      openChat(friends[0].uid, friends[0].name);
-    }
   });
 }
 
@@ -173,6 +177,11 @@ function openChat(friendUid, friendName){
 
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
+
+  // ✅ Save last opened chat
+  localStorage.setItem("lastChatFriendUid", friendUid);
+  localStorage.setItem("lastChatFriendName", friendName);
+
   chatModal.style.display = "flex";
   chatMessages.innerHTML = '';
   typingIndicator.textContent = "";
@@ -199,7 +208,6 @@ function openChat(friendUid, friendName){
     if(!msg.sender) return;
     addMessageToChat(msg,msg.sender===currentUserUid);
     lastChatTimestamps[friendUid]=msg.timestamp;
-    loadUsersRealtime(); // Resort on new message
   });
 }
 
@@ -239,7 +247,6 @@ function sendMessage(){
   db.ref('chats/'+chatId+'/messages').push(msgObj);
   chatInput.value='';
   lastChatTimestamps[currentChatFriendUid]=msgObj.timestamp;
-  loadUsersRealtime();
 }
 
 chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); } });
@@ -264,7 +271,6 @@ db.ref('chats').on('child_added',snap=>{
       unreadCounters[msg.sender]=(unreadCounters[msg.sender]||0)+1;
       lastChatTimestamps[msg.sender]=msg.timestamp;
       updateFriendListBadges();
-      loadUsersRealtime();
     }
   });
 });
