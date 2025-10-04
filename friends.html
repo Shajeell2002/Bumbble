@@ -126,6 +126,7 @@ auth.onAuthStateChanged(user => {
       auth.signOut().then(()=> window.location.href="login.html");
     });
 
+    loadUnreadCounters();
     setupOnlineStatus();
     loadUsersRealtime();
     watchChatMessages();
@@ -134,6 +135,14 @@ auth.onAuthStateChanged(user => {
     document.querySelector(".friends-container").innerHTML = "<p>Please login to view users.</p>";
   }
 });
+
+function loadUnreadCounters(){
+  db.ref('users/' + currentUserUid + '/unread').on('value', snapshot => {
+    const data = snapshot.val() || {};
+    Object.keys(data).forEach(uid => unreadCounters[uid] = data[uid]);
+    renderUserList();
+  });
+}
 
 function setupOnlineStatus(){
   const userStatusRef = db.ref('users/' + currentUserUid + '/public/online');
@@ -218,6 +227,7 @@ function watchChatMessages(){
 
       if (msg.receiver === currentUserUid && msg.sender !== currentChatFriendUid) {
         unreadCounters[msg.sender] = (unreadCounters[msg.sender] || 0) + 1;
+        db.ref('users/' + currentUserUid + '/unread/' + msg.sender).set(unreadCounters[msg.sender]);
       }
 
       renderUserList();
@@ -237,6 +247,8 @@ function openChat(friendUid, friendName){
   typingIndicator.textContent = "";
 
   unreadCounters[friendUid] = 0;
+  db.ref('users/' + currentUserUid + '/unread/' + friendUid).set(0);
+
   renderUserList();
 
   listenTyping(friendUid);
