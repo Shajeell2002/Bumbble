@@ -99,10 +99,9 @@ const sendBtn = document.getElementById("sendBtn");
 const typingIndicator = document.getElementById("typingIndicator");
 let typingTimeout;
 
-// state caches
-let usersCache = {};           // full users snapshot
-const unreadCounters = {};     // uid -> count
-const lastMessageAt = {};      // uid -> timestamp
+let usersCache = {};
+const unreadCounters = {};
+const lastMessageAt = {};
 
 auth.onAuthStateChanged(user => {
   if(user && user.emailVerified){
@@ -123,7 +122,7 @@ auth.onAuthStateChanged(user => {
 
     setupOnlineStatus();
     loadUsersRealtime();
-    watchChatMessages(); // attach message listeners after we have currentUserUid
+    watchChatMessages();
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
     document.querySelector(".friends-container").innerHTML = "<p>Please login to view users.</p>";
@@ -140,17 +139,15 @@ function setupOnlineStatus(){
   });
 }
 
-/* ---------- USERS: cache + render ---------- */
+/* ---------- Load and sort by recent activity ---------- */
 function loadUsersRealtime(){
   db.ref('users').on('value', snapshot => {
     usersCache = snapshot.val() || {};
-    // ensure we preserve known lastMessageAt and unread counters
     renderUserList();
   });
 }
 
 function renderUserList(){
-  // Build array of users (exclude self)
   const arr = Object.entries(usersCache)
     .filter(([uid]) => uid !== currentUserUid)
     .map(([uid, data]) => {
@@ -159,164 +156,118 @@ function renderUserList(){
         uid,
         name: pub.name || "Unknown",
         gender: pub.gender || "N/A",
-        online: !!pub.online
+        online: !!pub.online,
+        lastActive: data.lastActive || 0
       };
     });
 
-  // Sort: unread desc -> lastMessageAt desc -> name asc
+  // Sort by lastActive DESC → unread DESC → name
   arr.sort((a,b) => {
     const aUnread = unreadCounters[a.uid] || 0;
     const bUnread = unreadCounters[b.uid] || 0;
     if(aUnread !== bUnread) return bUnread - aUnread;
 
-    const aTime = lastMessageAt[a.uid] || 0;
-    const bTime = lastMessageAt[b.uid] || 0;
-    if(aTime !== bTime) return bTime - aTime;
+    const aAct = a.lastActive || 0;
+    const bAct = b.lastActive || 0;
+    if(aAct !== bAct) return bAct - aAct;
 
     return (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase());
   });
 
+  const limited = arr.slice(0, 10); // only 10 most recent
   userList.innerHTML = '';
-  arr.forEach(u => {
+  limited.forEach(u => {
     const row = document.createElement('div');
     row.className = 'user-row';
     row.dataset.uid = u.uid;
-
     const statusClass = u.online ? 'online' : 'offline';
     const badgeHtml = unreadCounters[u.uid] ? `<span class="badge">${unreadCounters[u.uid]}</span>` : '';
-
+    const lastActiveText = u.lastActive ? new Date(u.lastActive).toLocaleString([], {hour:'2-digit',minute:'2-digit'}) : '';
     row.innerHTML = `
       <div>
         <span class="status-dot ${statusClass}"></span>
         <span class="user-name">${escapeHtml(u.name)}</span> (${escapeHtml(u.gender)}) ${badgeHtml}
+        <small style="color:#555;margin-left:4px;">${lastActiveText}</small>
       </div>
       <button class="chatBtn">Chat</button>
     `;
-
-    // open chat by clicking the button or row
     row.querySelector('.chatBtn').addEventListener('click', e => { e.stopPropagation(); openChat(u.uid, u.name); });
     row.addEventListener('click', () => openChat(u.uid, u.name));
-
     userList.appendChild(row);
   });
 }
 
-/* ---------- CHAT message watchers (unread counting) ---------- */
+/* ---------- Chat Watchers ---------- */
 function watchChatMessages(){
-  // listen chats -> messages (only after currentUserUid known)
   db.ref('chats').on('child_added', snap => {
     const messagesRef = snap.ref.child('messages');
     messagesRef.on('child_added', msgSnap => {
       const msg = msgSnap.val();
       if(!msg || !msg.sender || !msg.receiver) return;
 
-      // update lastMessageAt for involved users so render sorting is aware
-      if(msg.sender && msg.receiver){
-        // update lastMessageAt for sender and receiver sides (we record per other user)
-        // If sender is someone else and receiver is currentUser, update that sender ts
-        if(msg.receiver === currentUserUid){
-          lastMessageAt[msg.sender] = msg.timestamp || Date.now();
-        }
-        // If I (currentUser) am the sender, update the receiver timestamp (so their card sorts)
-        if(msg.sender === currentUserUid){
-          lastMessageAt[msg.receiver] = msg.timestamp || Date.now();
-        }
+      if(msg.receiver === currentUserUid){
+        lastMessageAt[msg.sender] = msg.timestamp || Date.now();
+        updateLastActive(msg.sender);
+      }
+      if(msg.sender === currentUserUid){
+        lastMessageAt[msg.receiver] = msg.timestamp || Date.now();
+        updateLastActive(msg.receiver);
       }
 
-      // If an incoming message for current user and the chat is NOT open, increment unread
       if(msg.receiver === currentUserUid && msg.sender !== currentChatFriendUid){
         unreadCounters[msg.sender] = (unreadCounters[msg.sender] || 0) + 1;
-        renderUserList();
-      } else {
-        // If message belongs to current open chat, just render chat messages (openChat has its own listener)
-        // still re-render the list to keep lastMessageAt ordering updated
-        renderUserList();
       }
+      renderUserList();
     });
-  });
-
-  // Optionally, populate unreadCounts from existing messages on startup:
-  // Scan chats once to compute unread counts for messages already in DB
-  db.ref('chats').once('value', snap => {
-    const chats = snap.val() || {};
-    Object.values(chats).forEach(chat => {
-      if(!chat.messages) return;
-      Object.values(chat.messages).forEach(msg => {
-        if(msg.receiver === currentUserUid){
-          // if chat with that sender is not currently open, count unread
-          // (this is a simple heuristic — for full read-tracking you need read receipts stored server-side)
-          if(msg.sender !== currentChatFriendUid){
-            unreadCounters[msg.sender] = Math.max(unreadCounters[msg.sender] || 0, 0) + 1;
-            lastMessageAt[msg.sender] = Math.max(lastMessageAt[msg.sender] || 0, msg.timestamp || 0);
-          } else {
-            lastMessageAt[msg.sender] = Math.max(lastMessageAt[msg.sender] || 0, msg.timestamp || 0);
-          }
-        } else if(msg.sender === currentUserUid){
-          lastMessageAt[msg.receiver] = Math.max(lastMessageAt[msg.receiver] || 0, msg.timestamp || 0);
-        }
-      });
-    });
-    renderUserList();
   });
 }
 
-/* ---------- OPEN CHAT / MESSAGE FLOW ---------- */
+/* ---------- Update lastActive ---------- */
+function updateLastActive(uid){
+  db.ref("users/" + uid).update({ lastActive: Date.now() });
+}
+
+/* ---------- Open Chat ---------- */
 function openChat(friendUid, friendName){
-  if(!friendUid) return;
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
   chatModal.style.display = "flex";
   chatMessages.innerHTML = '';
   typingIndicator.textContent = "";
 
-  // mark unread as read locally and re-render
-  if(unreadCounters[friendUid]){
-    unreadCounters[friendUid] = 0;
-    renderUserList();
-  }
+  unreadCounters[friendUid] = 0;
+  renderUserList();
 
   listenTyping(friendUid);
-
   const chatId = getChatId(currentUserUid, friendUid);
   if(currentChatListener) currentChatListener.off();
-
   const chatRef = db.ref('chats/'+chatId);
   chatRef.child('members').update({ [currentUserUid]: true, [friendUid]: true });
-
-  // load chat history
   chatRef.child('messages').once('value', snapshot => {
     const msgs = snapshot.val() || {};
-    // sort messages by timestamp and show
-    const arr = Object.values(msgs).sort((a,b)=> (a.timestamp||0) - (b.timestamp||0));
+    const arr = Object.values(msgs).sort((a,b)=> (a.timestamp||0)-(b.timestamp||0));
     arr.forEach(msg => addMessageToChat(msg, msg.sender===currentUserUid));
     if(arr.length) lastMessageAt[friendUid] = arr[arr.length-1].timestamp || lastMessageAt[friendUid];
     chatMessages.scrollTop = chatMessages.scrollHeight;
   });
-
-  // listen new messages in this chat (so open chat shows them immediately)
   currentChatListener = chatRef.child('messages');
   currentChatListener.on('child_added', snap => {
     const msg = snap.val();
     if(!msg.sender) return;
-    addMessageToChat(msg, msg.sender === currentUserUid);
-    // update lastMessageAt for friend
-    if(msg.sender !== currentUserUid){
-      lastMessageAt[msg.sender] = msg.timestamp || Date.now();
-    } else {
-      lastMessageAt[msg.receiver] = msg.timestamp || Date.now();
-    }
+    addMessageToChat(msg, msg.sender===currentUserUid);
+    updateLastActive(msg.sender);
   });
 }
 
 function addMessageToChat(msg,isSelf){
   if(chatMessages.querySelector(`.message[data-ts="${msg.timestamp}"]`)) return;
-  const div = document.createElement('div');
+  const div=document.createElement('div');
   div.classList.add('message', isSelf?'self':'friend');
-  div.dataset.ts = msg.timestamp;
-  const ts = new Date(msg.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-  div.innerHTML = `${escapeHtml(msg.text)}<div class="timestamp">${ts}</div>`;
+  div.dataset.ts=msg.timestamp;
+  const ts=new Date(msg.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  div.innerHTML=`${escapeHtml(msg.text)}<div class="timestamp">${ts}</div>`;
   chatMessages.appendChild(div);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+  chatMessages.scrollTop=chatMessages.scrollHeight;
 }
 
 chatInput.addEventListener("input", () => {
@@ -343,8 +294,9 @@ function sendMessage(){
   db.ref('chats/'+chatId+'/members').update({ [currentUserUid]: true, [currentChatFriendUid]: true });
   db.ref('chats/'+chatId+'/messages').push(msgObj);
   chatInput.value = '';
-  // update our local lastMessageAt so list sorts accordingly
   lastMessageAt[currentChatFriendUid] = msgObj.timestamp;
+  updateLastActive(currentUserUid);
+  updateLastActive(currentChatFriendUid);
   renderUserList();
 }
 
@@ -362,18 +314,17 @@ function closeChat(){
 
 function getChatId(uid1,uid2){ return uid1 < uid2 ? uid1 + '_' + uid2 : uid2 + '_' + uid1; }
 
-/* ---------- Utility / UI helpers ---------- */
 function escapeHtml(str){
   if(!str && str !== 0) return '';
   return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
 }
 
-/* ---------- Make chat draggable ---------- */
+/* ---------- Make Chat Draggable ---------- */
 dragElement(chatModal);
 function dragElement(elmnt){
   let pos1=0,pos2=0,pos3=0,pos4=0; const header=document.getElementById("chatHeader");
