@@ -28,6 +28,7 @@ nav a:hover{ text-decoration:underline; }
 .timestamp { font-size:10px; color:#555; margin-top:2px; text-align:right; }
 #chatInputContainer { display:flex; border-top:1px solid #ddd; }
 #chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:0 0 0 10px; }
+#chatFileInput { margin-left:5px; }
 #sendBtn { padding:8px 12px; border:none; background:#ffcb2b; border-radius:0 0 10px 0; cursor:pointer; }
 #sendBtn:hover { background:#f1b800; }
 .friends-container::-webkit-scrollbar { width:6px; }
@@ -38,6 +39,7 @@ nav a:hover{ text-decoration:underline; }
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 </head>
 <body>
 
@@ -60,6 +62,7 @@ nav a:hover{ text-decoration:underline; }
     <div id="typingIndicator"></div>
     <div id="chatInputContainer">
       <input type="text" id="chatInput" placeholder="Type a message">
+      <input type="file" id="chatFileInput">
       <button id="sendBtn">Send</button>
     </div>
   </div>
@@ -76,8 +79,10 @@ const firebaseConfig = {
   appId:"1:213165886981:web:c18652003444869b1bd66c" 
 };
 firebase.initializeApp(firebaseConfig);
+
 const auth = firebase.auth();
 const db = firebase.database();
+const storage = firebase.storage();
 
 const nav = document.getElementById("navLinks");
 const userList = document.getElementById("userList");
@@ -88,6 +93,7 @@ const chatModal = document.getElementById("chatModal");
 const chatMessages = document.getElementById("chatMessages");
 const chatWith = document.getElementById("chatWith");
 const chatInput = document.getElementById("chatInput");
+const chatFileInput = document.getElementById("chatFileInput");
 const sendBtn = document.getElementById("sendBtn");
 const typingIndicator = document.getElementById("typingIndicator");
 let typingTimeout;
@@ -138,7 +144,7 @@ function setupOnlineStatus(){
   });
 }
 
-// ✅ Updated: sort by name descending (Z → A)
+// Load Users (descending order)
 function loadUsersRealtime(){
   db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
@@ -147,19 +153,15 @@ function loadUsersRealtime(){
     Object.keys(usersData).forEach(uid => {
       if(uid === currentUserUid) return;
       const user = usersData[uid].public || {};
-      const name = user.name || "Unknown";
-      const gender = user.gender || "N/A";
-      const online = user.online || false;
-      friends.push({ uid, name, gender, online });
+      friends.push({ 
+        uid, 
+        name: user.name || "Unknown", 
+        gender: user.gender || "N/A", 
+        online: user.online || false 
+      });
     });
 
-    friends.sort((a,b) => {
-      const nameA = a.name.toLowerCase();
-      const nameB = b.name.toLowerCase();
-      if(nameA < nameB) return 1;
-      if(nameA > nameB) return -1;
-      return 0;
-    });
+    friends.sort((a,b) => a.name.toLowerCase()<b.name.toLowerCase()?1:-1);
 
     userList.innerHTML = '';
     friends.forEach(f=>{
@@ -175,7 +177,7 @@ function loadUsersRealtime(){
   });
 }
 
-// ---- Chat functions (kept as-is) ----
+// Open Chat
 function openChat(friendUid, friendName){
   document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
   const activeRow=document.querySelector(`.user-row[data-uid="${friendUid}"]`);
@@ -201,8 +203,7 @@ function openChat(friendUid, friendName){
 
   chatRef.child('messages').once('value', snap=>{
     const msgs = snap.val()||{};
-    const sorted = Object.values(msgs).sort((a,b)=>a.timestamp-b.timestamp);
-    sorted.forEach(msg=>addMessageToChat(msg,msg.sender===currentUserUid));
+    Object.values(msgs).sort((a,b)=>a.timestamp-b.timestamp).forEach(msg=>addMessageToChat(msg,msg.sender===currentUserUid));
     chatMessages.scrollTop=chatMessages.scrollHeight;
   });
 
@@ -215,17 +216,28 @@ function openChat(friendUid, friendName){
   });
 }
 
+// Add message (text + file)
 function addMessageToChat(msg,isSelf){
   if(chatMessages.querySelector(`.message[data-ts="${msg.timestamp}"]`)) return;
   const div=document.createElement('div');
   div.classList.add('message',isSelf?'self':'friend');
   div.dataset.ts=msg.timestamp;
-  const ts=new Date(msg.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-  div.innerHTML=`${msg.text}<div class="timestamp">${ts}</div>`;
+  let content = msg.text || '';
+  if(msg.fileUrl){
+    const ext = msg.fileName.split('.').pop().toLowerCase();
+    if(['png','jpg','jpeg','gif','webp'].includes(ext)){
+      content += `<br><a href="${msg.fileUrl}" target="_blank"><img src="${msg.fileUrl}" style="max-width:100%;border-radius:6px;margin-top:4px;"></a>`;
+    } else {
+      content += `<br><a href="${msg.fileUrl}" target="_blank">${msg.fileName}</a>`;
+    }
+  }
+  const ts = new Date(msg.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  div.innerHTML = content + `<div class="timestamp">${ts}</div>`;
   chatMessages.appendChild(div);
   chatMessages.scrollTop=chatMessages.scrollHeight;
 }
 
+// Typing indicator
 chatInput.addEventListener("input",()=>{
   if(!currentChatFriendUid) return;
   db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).set(true);
@@ -238,19 +250,42 @@ chatInput.addEventListener("input",()=>{
 function listenTyping(friendUid){
   const typingRef=db.ref('typing/'+currentUserUid+'/'+friendUid);
   typingRef.on('value',snap=>{
-    typingIndicator.textContent=snap.exists()?`${chatWith.textContent} is typing...`:''; 
+    typingIndicator.textContent=snap.exists()?`${chatWith.textContent} is typing...`:'';
   });
 }
 
+// Send message (text + optional file)
 function sendMessage(){
-  const text=chatInput.value.trim();
-  if(!text || !currentChatFriendUid) return;
-  const chatId=getChatId(currentUserUid,currentChatFriendUid);
-  const msgObj={ sender:currentUserUid, receiver:currentChatFriendUid, text, timestamp:Date.now() };
+  const text = chatInput.value.trim();
+  const file = chatFileInput.files[0];
+  if(!text && !file) return;
+
+  const chatId = getChatId(currentUserUid,currentChatFriendUid);
+  const msgObj = { sender:currentUserUid, receiver:currentChatFriendUid, timestamp:Date.now() };
+
+  if(text) msgObj.text = text;
+
+  if(file){
+    const storageRef = storage.ref('chatFiles/' + Date.now() + '_' + file.name);
+    storageRef.put(file).then(() => {
+      storageRef.getDownloadURL().then(url=>{
+        msgObj.fileUrl = url;
+        msgObj.fileName = file.name;
+        sendMsgToDB(chatId,msgObj);
+      });
+    });
+  } else {
+    sendMsgToDB(chatId,msgObj);
+  }
+
+  chatInput.value = '';
+  chatFileInput.value = '';
+  lastChatTimestamps[currentChatFriendUid] = msgObj.timestamp;
+}
+
+function sendMsgToDB(chatId,msgObj){
   db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [currentChatFriendUid]:true });
   db.ref('chats/'+chatId+'/messages').push(msgObj);
-  chatInput.value='';
-  lastChatTimestamps[currentChatFriendUid]=msgObj.timestamp;
 }
 
 chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); } });
