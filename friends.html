@@ -216,11 +216,13 @@ function loadUsersRealtime(){
     let firstFriendName = "";
 
     Object.keys(usersData).forEach(uid => {
-      if(uid === currentUserUid) return;
       const user = usersData[uid].public || {};
-      // Correction: show email if name missing instead of "Unknown"
-      const name = user.name || usersData[uid].email || "Unknown";
       const gender = user.gender || "N/A";
+
+      // Display 'You' for self, otherwise name or Unknown
+      let name = (uid === currentUserUid) ? "You" : (user.name || "Unknown");
+
+      if(uid === currentUserUid) return; // optional: skip showing self in friend list
 
       if(!firstFriendUid){
         firstFriendUid = uid;
@@ -257,7 +259,7 @@ function loadUsersRealtime(){
   });
 }
 
-// Chat functions remain exactly as before
+// Chat functions (unchanged)
 function openChat(friendUid, friendName){
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
