@@ -26,16 +26,9 @@ nav a:hover{ text-decoration:underline; }
   padding:0;
   font-size:14px;
 }
-.user-list::-webkit-scrollbar {
-  width:6px;
-}
-.user-list::-webkit-scrollbar-thumb {
-  background:#ffcb2b;
-  border-radius:3px;
-}
-.user-list::-webkit-scrollbar-track {
-  background:#f1f1f1;
-}
+.user-list::-webkit-scrollbar { width:6px; }
+.user-list::-webkit-scrollbar-thumb { background:#ffcb2b; border-radius:3px; }
+.user-list::-webkit-scrollbar-track { background:#f1f1f1; }
 
 .user-row {
   display:flex;
@@ -45,6 +38,7 @@ nav a:hover{ text-decoration:underline; }
   border-bottom:1px solid #eee;
   cursor:pointer;
   transition:0.2s;
+  position:relative;
 }
 .user-row:hover { background:#fffbcc; }
 
@@ -76,6 +70,22 @@ nav a:hover{ text-decoration:underline; }
   padding:1px 5px;
   border-radius:10px;
   margin-left:6px;
+  position:absolute;
+  right:8px;
+  top:50%;
+  transform:translateY(-50%);
+  animation:none;
+}
+
+@keyframes flashBadge {
+  0% { transform: scale(1) translateY(-50%); }
+  25% { transform: scale(1.4) translateY(-50%); }
+  50% { transform: scale(1) translateY(-50%); }
+  75% { transform: scale(1.4) translateY(-50%); }
+  100% { transform: scale(1) translateY(-50%); }
+}
+.flash {
+  animation: flashBadge 0.5s ease-in-out 2;
 }
 
 #chatModal {
@@ -114,16 +124,6 @@ nav a:hover{ text-decoration:underline; }
 #chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:0 0 0 10px; }
 #sendBtn { padding:8px 12px; border:none; background:#ffcb2b; border-radius:0 0 10px 0; cursor:pointer; }
 #sendBtn:hover { background:#f1b800; }
-
-/* Highlight animation for new message */
-@keyframes highlightFlash {
-  0% { background-color: #fffbcc; }
-  50% { background-color: #fff59d; }
-  100% { background-color: #fffbcc; }
-}
-.highlight {
-  animation: highlightFlash 1s ease-in-out;
-}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -240,7 +240,7 @@ function loadUsersRealtime(){
       row.dataset.uid = uid;
 
       let badgeHtml = "";
-      if(unreadCounters[uid]) badgeHtml = `<span class="badge">${unreadCounters[uid]}</span>`;
+      if(unreadCounters[uid]) badgeHtml = `<span class="badge flash">${unreadCounters[uid]}</span>`;
 
       row.innerHTML = `
         <div>
@@ -303,9 +303,6 @@ function openChat(friendUid, friendName){
     if(msg.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
       unreadCounters[msg.sender] = (unreadCounters[msg.sender]||0)+1;
       updateFriendListBadges();
-      // Scroll the friend list to the user who sent message
-      const row = document.querySelector(`.user-row[data-uid="${msg.sender}"]`);
-      if(row) row.scrollIntoView({ behavior:'smooth', block:'center' });
     }
   });
 }
@@ -364,19 +361,18 @@ function getChatId(uid1,uid2){ return uid1<uid2? uid1+'_'+uid2 : uid2+'_'+uid1; 
 function updateFriendListBadges(){
   document.querySelectorAll('.user-row').forEach(row=>{
     const uid = row.dataset.uid;
-    const badge = row.querySelector('.badge');
+    let badge = row.querySelector('.badge');
     if(unreadCounters[uid]){
-      if(badge) badge.textContent = unreadCounters[uid];
-      else {
-        const span = document.createElement('span');
-        span.className='badge';
-        span.textContent = unreadCounters[uid];
-        row.querySelector('div').appendChild(span);
+      if(!badge){
+        badge = document.createElement('span');
+        badge.className='badge flash';
+        badge.textContent = unreadCounters[uid];
+        row.appendChild(badge);
+      } else {
+        badge.textContent = unreadCounters[uid];
+        badge.classList.add('flash');
       }
-      row.classList.add('highlight');
-      setTimeout(()=>row.classList.remove('highlight'),1000);
-      // Scroll row into view
-      row.scrollIntoView({ behavior:'smooth', block:'center' });
+      setTimeout(()=>badge.classList.remove('flash'),500);
     } else if(badge) badge.remove();
   });
 }
