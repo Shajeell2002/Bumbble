@@ -208,7 +208,6 @@ function setupOnlineStatus(){
   });
 }
 
-// === FIXED: Self login now shows correct name ===
 function loadUsersRealtime(){
   db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
@@ -217,17 +216,11 @@ function loadUsersRealtime(){
     let firstFriendName = "";
 
     Object.keys(usersData).forEach(uid => {
+      if(uid === currentUserUid) return;
       const user = usersData[uid].public || {};
-      let name = user.name || "Unknown";
-      let gender = user.gender || "N/A";
-
-      // Self fix
-      if(uid === currentUserUid){
-        name = user.name || "You";
-        gender = user.gender || "N/A";
-      }
-
-      if(uid === currentUserUid) return; // optional: skip self in friends list
+      // Correction: show email if name missing instead of "Unknown"
+      const name = user.name || usersData[uid].email || "Unknown";
+      const gender = user.gender || "N/A";
 
       if(!firstFriendUid){
         firstFriendUid = uid;
@@ -264,7 +257,7 @@ function loadUsersRealtime(){
   });
 }
 
-// --- Chat functions (unchanged from original) ---
+// Chat functions remain exactly as before
 function openChat(friendUid, friendName){
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
