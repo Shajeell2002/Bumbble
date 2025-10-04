@@ -138,7 +138,7 @@ function setupOnlineStatus(){
   });
 }
 
-// ✅ Updated: sort by name descending (Z → A)
+// ✅ Updated: sort by name ascending (A → Z)
 function loadUsersRealtime(){
   db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
@@ -308,3 +308,4 @@ function dragElement(elmnt){
 
 </body>
 </html>
+
