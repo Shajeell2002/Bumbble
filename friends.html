@@ -17,7 +17,14 @@ nav a:hover{ text-decoration:underline; }
 .user-list::-webkit-scrollbar-thumb{ background:#ffcb2b; border-radius:3px; }
 .user-list::-webkit-scrollbar-track{ background:#f1f1f1; }
 
-.user-row { display:flex; align-items:center; padding:6px 10px; border-bottom:1px solid #eee; cursor:pointer; gap:10px; }
+.user-row {
+  display:flex;
+  align-items:center;
+  padding:6px 10px;
+  border-bottom:1px solid #eee;
+  cursor:pointer;
+  gap:10px;
+}
 .user-row:hover { background:#f9f9f9; }
 
 .status-dot{ width:10px; height:10px; border-radius:50%; display:inline-block; }
@@ -26,7 +33,13 @@ nav a:hover{ text-decoration:underline; }
 
 .badge{ background:red; color:white; font-size:12px; font-weight:bold; padding:2px 6px; border-radius:12px; }
 
-.user-info { display:flex; align-items:center; gap:6px; justify-content:flex-start; font-size:14px; }
+.user-info {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  justify-content:flex-start;
+  font-size:14px;
+}
 
 .chatBtn{ padding:4px 8px; background:#ffcb2b; border:none; border-radius:6px; cursor:pointer; font-size:12px; transition:0.3s; }
 .chatBtn:hover{ background:#f1b800; }
@@ -74,6 +87,7 @@ nav a:hover{ text-decoration:underline; }
 </div>
 
 <script>
+// ===================== FIREBASE INIT =====================
 const firebaseConfig = { 
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs", 
   authDomain:"bumbble-c061f.firebaseapp.com", 
@@ -91,7 +105,6 @@ const nav = document.getElementById("navLinks");
 const userList = document.getElementById("userList");
 
 let currentUserUid = "";
-let currentUserName = "Unknown"; // <-- stores logged-in user's name
 let currentChatFriendUid = "";
 let currentChatListener = null;
 const chatModal = document.getElementById("chatModal");
@@ -121,9 +134,8 @@ auth.onAuthStateChanged(user => {
       auth.signOut().then(()=> window.location.href="login.html");
     });
 
-    loadUsersRealtime();
     setupOnlineStatus();
-
+    loadUsersRealtime();
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
     document.querySelector(".friends-container").innerHTML = "<p>Please login to view users.</p>";
@@ -146,18 +158,11 @@ function loadUsersRealtime(){
   db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
     userList.innerHTML = '';
-
-    // store current user's name
-    if(usersData[currentUserUid] && usersData[currentUserUid].public){
-      currentUserName = usersData[currentUserUid].public.name || "Unknown";
-    }
-
     let firstFriendUid = null;
     let firstFriendName = "";
 
     Object.keys(usersData).forEach(uid => {
-      if(uid === currentUserUid) return; // skip self in friends list
-
+      if(uid === currentUserUid) return;
       const user = usersData[uid].public || {};
       const name = user.name || "Unknown";
       const gender = user.gender || "N/A";
@@ -319,5 +324,6 @@ function dragElement(elmnt){
   function closeDragElement(){ document.onmouseup=null; document.onmousemove=null; }
 }
 </script>
+
 </body>
 </html>
