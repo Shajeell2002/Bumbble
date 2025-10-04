@@ -173,7 +173,7 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
-    document.getElementById("logoutBtn").addEventListener("click", ()=>{
+    document.getElementById("logoutBtn").addEventListener("click", ()=> {
       db.ref('users/' + currentUserUid + '/public/online').set(false);
       auth.signOut().then(()=> window.location.href="login.html");
     });
@@ -196,54 +196,58 @@ function setupOnlineStatus(){
   });
 }
 
+// --- Updated Realtime Users Loader ---
 function loadUsersRealtime(){
-  db.ref('users').once('value').then(snapshot => {
+  db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
     userList.innerHTML = '';
-
-    const topUsers = [];
-    const otherUsers = [];
+    const usersArray = [];
+    let firstFriendUid = null;
+    let firstFriendName = "";
 
     Object.keys(usersData).forEach(uid => {
       if(uid === currentUserUid) return;
       const user = usersData[uid].public || {};
       const name = user.name || "Unknown";
       const gender = user.gender || "N/A";
-      const regTime = user.registerTime || 0;
+      const online = user.online ? true : false;
 
-      const row = document.createElement('div'); 
-      row.classList.add("user-row"); 
+      if(!firstFriendUid){ firstFriendUid = uid; firstFriendName = name; }
+
+      const unreadCount = unreadCounters[uid] || 0;
+      const lastMsgTs = lastMessageTime[uid] || 0;
+
+      const row = document.createElement('div');
+      row.classList.add('user-row');
       row.dataset.uid = uid;
-
-      let badgeHtml = "";
-      if(unreadCounters[uid]) badgeHtml = `<span class="badge">${unreadCounters[uid]}</span>`;
-
       row.innerHTML = `
         <div>
-          <span class="status-dot ${user.online?'online':'offline'}"></span>
+          <span class="status-dot ${online?'online':'offline'}"></span>
           ${name} (${gender})
-          ${badgeHtml}
+          ${unreadCount ? `<span class="badge">${unreadCount}</span>` : ''}
         </div>
         <button class="chatBtn">Chat</button>
       `;
-
       row.querySelector(".chatBtn").addEventListener('click', e => {
         e.stopPropagation();
         openChat(uid, name);
       });
 
-      if(lastMessageTime[uid]) topUsers.push({row, ts: lastMessageTime[uid]});
-      else otherUsers.push({row, ts: regTime});
+      usersArray.push({row, lastMsgTs});
     });
 
-    topUsers.sort((a,b)=> b.ts - a.ts);
-    otherUsers.sort((a,b)=> b.ts - a.ts);
+    // Sort users: most recent message first
+    usersArray.sort((a,b) => b.lastMsgTs - a.lastMsgTs);
+    usersArray.forEach(u => userList.appendChild(u.row));
 
-    topUsers.forEach(u=> userList.appendChild(u.row));
-    otherUsers.forEach(u=> userList.appendChild(u.row));
+    // Open first friend automatically if no chat open
+    if(firstFriendUid && !currentChatFriendUid){
+      openChat(firstFriendUid, firstFriendName);
+    }
   });
 }
 
+// --- Chat functions (same as before) ---
 function openChat(friendUid, friendName){
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
@@ -329,16 +333,20 @@ function closeChat(){
 
 function getChatId(uid1,uid2){ return uid1<uid2? uid1+'_'+uid2 : uid2+'_'+uid1; }
 
+// --- Real-time chat listener for unread and lastMessageTime ---
 db.ref('chats').on('child_added', snap=>{
   snap.ref.child('messages').on('child_added', msgSnap=>{
     const msg = msgSnap.val();
-    if(!msg.sender) return;
-    if(msg.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
+    if(!msg.sender || !msg.timestamp) return;
+
+    lastMessageTime[msg.sender] = msg.timestamp;
+
+    if(msg.receiver === currentUserUid && msg.sender !== currentChatFriendUid){
       unreadCounters[msg.sender] = (unreadCounters[msg.sender]||0)+1;
-      lastMessageTime[msg.sender] = msg.timestamp;
-      updateFriendListBadges();
-      loadUsersRealtime();
     }
+
+    loadUsersRealtime();
+    updateFriendListBadges();
   });
 });
 
@@ -358,6 +366,7 @@ function updateFriendListBadges(){
   });
 }
 
+// --- Drag chat modal ---
 dragElement(chatModal);
 function dragElement(elmnt){
   let pos1=0,pos2=0,pos3=0,pos4=0; const header=document.getElementById("chatHeader");
