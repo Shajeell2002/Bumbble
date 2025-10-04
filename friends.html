@@ -1,29 +1,25 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bumbble - Friends & Chat</title>
-<style>
-body { font-family: Arial, sans-serif; margin:0; background:#fefefe; color:#333; display:flex; min-height:100vh; flex-direction: column; }
-header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#ffcb2b; box-shadow:0 3px 6px rgba(0,0,0,0.1); position:fixed; top:0; left:0; right:0; z-index:500; }
-header h1{ font-size:24px; margin:0; }
-nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
-nav a:hover{ text-decoration:underline; }
-.friends-container { width:250px; background:#fffbe6; border-right:1px solid #eee; padding:10px; overflow-y:auto; position:fixed; top:60px; bottom:0; left:0; }
-.main-content { flex:1; margin-left:250px; padding:80px 20px 20px 20px; }
-.user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
-.user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #eee; cursor:pointer; transition:0.2s; }
-.user-row:hover, .user-row.active { background:#fffbcc; }
-.status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
-.online { background:green; } .offline { background:red; }
-.badge { background:red; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
-#chatModal { position:fixed; bottom:0; right:20px; width:300px; max-height:400px; border:1px solid #ccc; background:#fff; border-radius:10px 10px 0 0; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); resize:both; overflow:hidden; z-index:1000; }
-#chatHeader { background:#ffcb2b; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; border-radius:10px 10px 0 0; cursor:move; }
-#chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; background:#fefefe; }
-#typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
-.message { max-width:80%; padding:6px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
-.message.self { background:green; color:white; align-self:flex-end; }
-.message.friend { background:#e0e0e0; align-self:flex-start; }
-.timestamp { font-size:10px; color:#555; margin-top:2px; text-align:right; }
-
+    const uid=row.dataset.uid;
+    const badge=row.querySelector('.badge');
+    if(unreadCounters[uid]){
+      if(badge) badge.textContent=unreadCounters[uid];
+      else {
+        const span=document.createElement('span');
+        span.className='badge';
+        span.textContent=unreadCounters[uid];
+        row.querySelector('div').appendChild(span);
+      }
+    } else if(badge) badge.remove();
+  });
+}
+dragElement(chatModal);
+function dragElement(elmnt){
+  let pos1=0,pos2=0,pos3=0,pos4=0;
+  const header=document.getElementById("chatHeader");
+  if(header) header.onmousedown=dragMouseDown; else elmnt.onmousedown=dragMouseDown;
+  function dragMouseDown(e){ e=e||window.event; e.preventDefault(); pos3=e.clientX; pos4=e.clientY; document.onmouseup=closeDragElement; document.onmousemove=elementDrag; }
+  function elementDrag(e){ e=e||window.event; e.preventDefault(); pos1=pos3-e.clientX; pos2=pos4-e.clientY; pos3=e.clientX; pos4=e.clientY; elmnt.style.top=(elmnt.offsetTop-pos2)+'px'; elmnt.style.left=(elmnt.offsetLeft-pos1)+'px'; }
+  function closeDragElement(){ document.onmouseup=null; document.onmousemove=null; }
+}
+</script>
+</body>
+</html>
