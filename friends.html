@@ -1,83 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bumbble - Friends & Chat</title>
-<style>
-body { font-family: Arial, sans-serif; margin:0; background:#fefefe; color:#333; display:flex; min-height:100vh; flex-direction: column; }
-header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#ffcb2b; box-shadow:0 3px 6px rgba(0,0,0,0.1); position:fixed; top:0; left:0; right:0; z-index:500; }
-header h1{ font-size:24px; margin:0; }
-nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
-.friends-container { width:250px; background:#fffbe6; border-right:1px solid #eee; padding:10px; overflow-y:auto; position:fixed; top:60px; bottom:0; left:0; }
-.main-content { flex:1; margin-left:250px; padding:80px 20px 20px 20px; }
-.user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
-.user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #eee; cursor:pointer; transition:0.2s; }
-.user-row:hover, .user-row.active { background:#fffbcc; }
-.status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
-.online { background:green; } .offline { background:red; }
-.badge { background:red; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
-#chatModal { position:fixed; bottom:0; right:20px; width:360px; max-height:70vh; border:1px solid #ccc; background:#fff; border-radius:10px 10px 0 0; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); resize:both; overflow:hidden; z-index:1000; }
-#chatHeader { background:#ffcb2b; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; border-radius:10px 10px 0 0; cursor:move; }
-#chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:#fefefe; }
-#typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
-.message { max-width:80%; padding:8px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
-.message.self { background:#059669; color:white; align-self:flex-end; }
-.message.friend { background:#e9e9e9; color:#111; align-self:flex-start; }
-.timestamp { font-size:10px; color:#eee; margin-top:6px; text-align:right; display:block; }
-.timestamp.friend { color:#666; }
-.uploading-badge { font-size:11px; color:#444; margin-top:6px; display:inline-block; background:#fff3cd; padding:3px 6px; border-radius:6px; border:1px solid #ffeeba; }
-#chatInputContainer { display:flex; border-top:1px solid #ddd; align-items:center; gap:6px; padding:8px; }
-#chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:8px; background:#fafafa; }
-#sendBtn, #fileBtn { padding:8px 12px; border:none; background:#ffcb2b; cursor:pointer; border-radius:8px; }
-#sendBtn:hover, #fileBtn:hover { background:#f1b800; }
-.friends-container::-webkit-scrollbar { width:6px; }
-.friends-container::-webkit-scrollbar-thumb { background:#ffcb2b; border-radius:3px; }
-.friends-container::-webkit-scrollbar-track { background:#f1f1f1; }
-img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:pointer; display:block; margin-bottom:6px; }
-.file-link { display:inline-block; padding:6px 8px; background:#fff; border-radius:6px; border:1px solid #ddd; text-decoration:none; color:#333; margin-bottom:6px; font-size:14px; }
-.file-link::before { content: '⤓ '; } /* download icon */
-.preview-strip { display:flex; gap:8px; padding:8px; overflow:auto; border-bottom:1px solid #eee; background:#fff; }
-.preview-thumb { width:60px; height:60px; border-radius:6px; object-fit:cover; border:1px solid #ddd; position:relative; }
-.progress-bar { width:60px; height:4px; background:#eee; border-radius:3px; margin-top:4px; }
-.progress-fill { height:100%; width:0%; background:#059669; border-radius:3px; }
-.small-muted { font-size:11px; color:#666; }
-</style>
-
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-</head>
-<body>
-
-<header>
-  <h1>Bumbble</h1>
-  <nav id="navLinks"></nav>
-</header>
-
-<div class="friends-container">
-  <div class="user-list" id="userList"></div>
-</div>
-
-<div class="main-content">
-  <div id="chatModal">
-    <div id="chatHeader">
-      <span id="chatWith">Friend</span>
-      <button onclick="closeChat()">X</button>
-    </div>
-
-    <div id="previewStrip" class="preview-strip" style="display:none;"></div>
-    <div id="chatMessages"></div>
-    <div id="typingIndicator"></div>
-    <div id="chatInputContainer">
-      <button id="fileBtn">📎</button>
-      <input type="text" id="chatInput" placeholder="Type a message">
-      <button id="sendBtn">Send</button>
-      <input type="file" id="chatFileInput" style="display:none;" multiple>
-    </div>
-  </div>
-</div>
-
 <script>
 /* ========== Firebase config ========== */
 const firebaseConfig = { 
@@ -201,7 +121,9 @@ function openChat(friendUid, friendName){
   chatModal.style.display = "flex";
   chatMessages.innerHTML = '';
   typingIndicator.textContent = "";
-  unreadCounters[friendUid]=0;
+  
+  // Reset unread counter
+  unreadCounters[friendUid] = 0;
   updateFriendListBadges();
 
   listenTyping(friendUid);
@@ -289,7 +211,7 @@ chatInput.addEventListener("input",()=>{
 });
 function listenTyping(friendUid){
   db.ref('typing/'+currentUserUid+'/'+friendUid).on('value',snap=>{
-    typingIndicator.textContent=snap.exists()?`${chatWith.textContent} is typing...`:'';
+    typingIndicator.textContent=snap.exists()?`${chatWith.textContent} is typing...`:''; 
   });
 }
 
@@ -419,74 +341,8 @@ function compressImageToDataURL(file,maxBytes,callback){
   reader.readAsDataURL(file);
 }
 
-/* ---------- Revoke URLs ---------- */
-window.addEventListener('beforeunload', ()=>{ Object.values(localPreviewMap).forEach(url=>{ try{ if(url&&url.startsWith('blob:')) URL.revokeObjectURL(url); }catch(e){} }); });
-
-/* ---------- Realtime new message updates for all chats ---------- */
-function listenGlobalMessages() {
-  db.ref('chats').on('child_added', chatSnap => {
-    const chatId = chatSnap.key;
-
-    // Listen to all messages in this chat
-    chatSnap.ref.child('messages').on('child_added', msgSnap => {
-      const msg = msgSnap.val();
-      if(!msg) return;
-
-      // Update last timestamp
-      if(msg.sender && msg.timestamp) lastChatTimestamps[msg.sender] = msg.timestamp;
-
-      // If the message is for current user
-      if(msg.receiver === currentUserUid){
-
-        // Increment unread count if chat modal not open
-        if(msg.sender !== currentChatFriendUid){
-          unreadCounters[msg.sender] = (unreadCounters[msg.sender] || 0) + 1;
-        }
-
-        // Update badges
-        updateFriendListBadges();
-
-        // Display message in chat modal if open with that friend
-        if(currentChatFriendUid === msg.sender){
-          addOrUpdateMessageToChat(msg);
-        }
-
-        // Reorder friend list based on last message
-        updateFriendListRealtime();
-      }
-    });
-
-    // Listen for updates to messages (e.g., file upload complete)
-    chatSnap.ref.child('messages').on('child_changed', msgSnap => {
-      const msg = msgSnap.val();
-      if(!msg) return;
-      if(currentChatFriendUid === msg.sender || currentChatFriendUid === msg.receiver){
-        addOrUpdateMessageToChat(msg);
-      }
-    });
-  });
-}
-
-/* ---------- Sort friend list by last chat timestamp ---------- */
-function updateFriendListRealtime() {
-  const rows = Array.from(document.querySelectorAll('.user-row'));
-  rows.sort((a,b)=>{
-    const tA = lastChatTimestamps[a.dataset.uid] || 0;
-    const tB = lastChatTimestamps[b.dataset.uid] || 0;
-    if(tA !== tB) return tB - tA;
-    return a.dataset.name.localeCompare(b.dataset.name);
-  });
-  userList.innerHTML='';
-  rows.forEach(r=>userList.appendChild(r));
-}
-
-/* ---------- Start global listener after login ---------- */
-auth.onAuthStateChanged(user => {
-  if(user && user.emailVerified){
-    listenGlobalMessages();
-  }
+/* ---------- Revoke object URLs on unload ---------- */
+window.addEventListener('beforeunload',()=>{
+  Object.values(localPreviewMap).forEach(u=>{ if(u.startsWith('blob:')) try{URL.revokeObjectURL(u);}catch(e){}; });
 });
-
 </script>
-</body>
-</html>
