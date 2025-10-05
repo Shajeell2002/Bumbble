@@ -94,16 +94,6 @@ const auth = firebase.auth();
 const db = firebase.database();
 
 
-    document.getElementById("logoutBtn").addEventListener("click", ()=>{ 
-      db.ref('users/' + currentUserUid + '/public/online').set(false); 
-      localStorage.removeItem("lastChatFriendUid");
-      localStorage.removeItem("lastChatFriendName");
-      auth.signOut().then(()=> window.location.href="login.html"); 
-    });
-
-    setupOnlineStatus();
-    loadUsersRealtime();   // initial load of users list
-
     // ✅ Add unread messages listener here
     setupUnreadListener();
 
