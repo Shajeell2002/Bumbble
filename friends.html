@@ -339,10 +339,14 @@ function updateFriendListBadges(){
   document.querySelectorAll('.user-row').forEach(row=>{
     const uid=row.dataset.uid;
 const div = row.querySelector('div');   
+let badge = div.querySelector('.badge');
+
+
  const badge=row.querySelector('.badge');
+
     if(unreadCounters[uid]){
-      if(badge) badge.textContent=unreadCounters[uid];
-      else { const span=document.createElement('span'); span.className='badge'; span.textContent=unreadCounters[uid]; row.querySelector('div').appendChild(span); }
+      if(badge){ badge.textContent=unreadCounters[uid];
+      } else { const span=document.createElement('span'); span.className='badge'; span.textContent=unreadCounters[uid]; row.querySelector('div').appendChild(span); }
     } else if(badge) badge.remove();
   });
 }
