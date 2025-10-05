@@ -338,7 +338,8 @@ db.ref('chats').on('child_added',snap=>{
 function updateFriendListBadges(){
   document.querySelectorAll('.user-row').forEach(row=>{
     const uid=row.dataset.uid;
-    const badge=row.querySelector('.badge');
+const div = row.querySelector('div');   
+ const badge=row.querySelector('.badge');
     if(unreadCounters[uid]){
       if(badge) badge.textContent=unreadCounters[uid];
       else { const span=document.createElement('span'); span.className='badge'; span.textContent=unreadCounters[uid]; row.querySelector('div').appendChild(span); }
