@@ -35,7 +35,8 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 .friends-container::-webkit-scrollbar-thumb { background:#ffcb2b; border-radius:3px; }
 .friends-container::-webkit-scrollbar-track { background:#f1f1f1; }
 img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:pointer; display:block; margin-bottom:6px; }
-.file-link { display:inline-block; padding:6px 8px; background:#fff; border-radius:6px; border:1px solid #ddd; text-decoration:none; color:#333; margin-bottom:6px; }
+.file-link { display:inline-block; padding:6px 8px; background:#fff; border-radius:6px; border:1px solid #ddd; text-decoration:none; color:#333; margin-bottom:6px; font-size:14px; }
+.file-link::before { content: '⤓ '; } /* download icon */
 .preview-strip { display:flex; gap:8px; padding:8px; overflow:auto; border-bottom:1px solid #eee; background:#fff; }
 .preview-thumb { width:60px; height:60px; border-radius:6px; object-fit:cover; border:1px solid #ddd; position:relative; }
 .progress-bar { width:60px; height:4px; background:#eee; border-radius:3px; margin-top:4px; }
@@ -65,9 +66,7 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
       <button onclick="closeChat()">X</button>
     </div>
 
-    <!-- preview strip (for local immediate thumbnails while DB update in progress) -->
     <div id="previewStrip" class="preview-strip" style="display:none;"></div>
-
     <div id="chatMessages"></div>
     <div id="typingIndicator"></div>
     <div id="chatInputContainer">
@@ -113,7 +112,7 @@ const previewStrip = document.getElementById("previewStrip");
 let typingTimeout;
 const unreadCounters = {};
 const lastChatTimestamps = {};
-const localPreviewMap = {}; // map DB message key -> local object URL or data URL
+const localPreviewMap = {}; 
 
 /* ---------- Auth ---------- */
 auth.onAuthStateChanged(user => {
@@ -136,13 +135,10 @@ auth.onAuthStateChanged(user => {
     });
     setupOnlineStatus();
     loadUsersRealtime();
-
     setTimeout(() => {
       const lastUid = localStorage.getItem("lastChatFriendUid");
       const lastName = localStorage.getItem("lastChatFriendName");
-      if(lastUid && lastName){
-        openChat(lastUid, lastName);
-      }
+      if(lastUid && lastName) openChat(lastUid, lastName);
     }, 800);
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
@@ -166,23 +162,17 @@ function loadUsersRealtime(){
   db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
     const friends = [];
-
     Object.keys(usersData).forEach(uid => {
       if(uid === currentUserUid) return;
       const user = usersData[uid].public || {};
-      const name = user.name || "Unknown";
-      const gender = user.gender || "N/A";
-      const online = user.online || false;
-      friends.push({ uid, name, gender, online });
+      friends.push({ uid, name:user.name||"Unknown", gender:user.gender||"N/A", online:user.online||false });
     });
-
     friends.sort((a,b)=>{
       const tA = lastChatTimestamps[a.uid] || 0;
       const tB = lastChatTimestamps[b.uid] || 0;
-      if(tA !== tB) return tB - tA;
+      if(tA!==tB) return tB-tA;
       return a.name.localeCompare(b.name);
     });
-
     userList.innerHTML = '';
     friends.forEach(f=>{
       const row = document.createElement('div');
@@ -230,72 +220,59 @@ function openChat(friendUid, friendName){
 
   currentChatListener = chatRef.child('messages');
   currentChatListener.on('child_added', snap=>{
-    const msg = snap.val();
-    msg._key = snap.key;
+    const msg = snap.val(); msg._key = snap.key;
     addOrUpdateMessageToChat(msg);
     lastChatTimestamps[friendUid]=msg.timestamp;
   });
   currentChatListener.on('child_changed', snap=>{
-    const msg = snap.val();
-    msg._key = snap.key;
+    const msg = snap.val(); msg._key = snap.key;
     addOrUpdateMessageToChat(msg);
   });
 }
 
-/* ---------- Add or update message ---------- */
+/* ---------- Add/update message ---------- */
 function addOrUpdateMessageToChat(msg){
   if(!msg || !msg._key) return;
-  const id = 'msg-' + msg._key;
+  const id = 'msg-'+msg._key;
   let el = document.getElementById(id);
-  const isSelf = msg.sender === currentUserUid;
+  const isSelf = msg.sender===currentUserUid;
 
   if(!el){
     el = document.createElement('div');
-    el.id = id;
-    el.classList.add('message', isSelf ? 'self' : 'friend');
-    el.dataset.ts = msg.timestamp || Date.now();
+    el.id=id;
+    el.classList.add('message', isSelf?'self':'friend');
+    el.dataset.ts = msg.timestamp||Date.now();
     chatMessages.appendChild(el);
   }
 
-  // If fileData present (base64/data URL)
   if(msg.fileData){
-    // image?
-    if((msg.fileType||'').startsWith('image/') || msg.fileName && msg.fileName.match(/\.(jpg|jpeg|png|gif)$/i)){
-      el.innerHTML = `<img class="chat-image" src="${msg.fileData}" alt="${msg.fileName || 'image'}" />` +
-                     `<a class="file-link" href="${msg.fileData}" download="${msg.fileName || 'image'}">Download</a>` +
-                     `<span class="timestamp ${isSelf ? '' : 'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
+    if((msg.fileType||'').startsWith('image/') || msg.fileName?.match(/\.(jpg|jpeg|png|gif)$/i)){
+      el.innerHTML = `<img class="chat-image" src="${msg.fileData}" alt="${msg.fileName||'image'}" />` +
+                     `<a class="file-link" href="${msg.fileData}" download="${msg.fileName||'image'}"></a>` +
+                     `<span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
     } else {
-      // other file types: show file icon / link
-      el.innerHTML = `<div class="small-muted">${msg.fileName || 'File'}</div>` +
-                     `<a class="file-link" href="${msg.fileData}" download="${msg.fileName || 'file'}">Download</a>` +
-                     `<span class="timestamp ${isSelf ? '' : 'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
+      el.innerHTML = `<div class="small-muted">${msg.fileName||'File'}</div>` +
+                     `<a class="file-link" href="${msg.fileData}" download="${msg.fileName||'file'}"></a>` +
+                     `<span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
     }
-
-    // remove preview strip thumbnail if exists
     const thumb = document.querySelector(`[data-temp="${msg._key}"]`);
     if(thumb) thumb.remove();
-    if(previewStrip.children.length === 0) previewStrip.style.display = 'none';
-
-    // revoke local object URL if used
-    if(localPreviewMap[msg._key] && localPreviewMap[msg._key].startsWith('blob:')){
-      try{ URL.revokeObjectURL(localPreviewMap[msg._key]); }catch(e){}
-    }
+    if(previewStrip.children.length===0) previewStrip.style.display='none';
+    if(localPreviewMap[msg._key]?.startsWith('blob:')) try{URL.revokeObjectURL(localPreviewMap[msg._key]);}catch(e){}
     delete localPreviewMap[msg._key];
-
-  } else if(msg.uploading) {
-    // uploading placeholder: show local preview (if any) else name + uploading badge
+  } else if(msg.uploading){
     const local = localPreviewMap[msg._key];
-    if(local && (msg.fileType || msg.fileName || '').match(/image\/|jpg|jpeg|png|gif/i)){
+    if(local && (msg.fileType||msg.fileName||'').match(/image\/|jpg|jpeg|png|gif/i)){
       el.innerHTML = `<img class="chat-image" src="${local}" alt="preview" />` +
                      `<span class="uploading-badge">Sending...</span>` +
-                     `<span class="timestamp ${isSelf ? '' : 'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
+                     `<span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
     } else {
-      el.innerHTML = `<div class="small-muted">${msg.fileName || 'Sending file...'}</div>` +
+      el.innerHTML = `<div class="small-muted">${msg.fileName||'Sending file...'}</div>` +
                      `<span class="uploading-badge">Sending...</span>` +
-                     `<span class="timestamp ${isSelf ? '' : 'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
+                     `<span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
     }
   } else if(msg.text){
-    el.innerHTML = `${escapeHtml(msg.text)}<div class="timestamp ${isSelf ? '' : 'friend'}">${new Date(msg.timestamp).toLocaleString()}</div>`;
+    el.innerHTML = `${escapeHtml(msg.text)}<div class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</div>`;
   } else {
     el.innerHTML = `<div class="small-muted">Unknown message</div>`;
   }
@@ -311,21 +288,20 @@ chatInput.addEventListener("input",()=>{
   typingTimeout=setTimeout(()=>{ db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove(); },1000);
 });
 function listenTyping(friendUid){
-  const typingRef=db.ref('typing/'+currentUserUid+'/'+friendUid);
-  typingRef.on('value',snap=>{
-    typingIndicator.textContent=snap.exists()?`${chatWith.textContent} is typing...`:''; 
+  db.ref('typing/'+currentUserUid+'/'+friendUid).on('value',snap=>{
+    typingIndicator.textContent=snap.exists()?`${chatWith.textContent} is typing...`:'';
   });
 }
 
-/* ---------- Text send ---------- */
+/* ---------- Send message ---------- */
 function sendMessage(){
   const text = chatInput.value.trim();
   if(!text || !currentChatFriendUid) return;
-  const chatId = getChatId(currentUserUid, currentChatFriendUid);
-  const msgObj = { sender: currentUserUid, receiver: currentChatFriendUid, text, timestamp: Date.now() };
+  const chatId = getChatId(currentUserUid,currentChatFriendUid);
+  const msgObj = { sender:currentUserUid, receiver:currentChatFriendUid, text, timestamp:Date.now() };
   db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [currentChatFriendUid]:true });
   db.ref('chats/'+chatId+'/messages').push(msgObj);
-  chatInput.value = '';
+  chatInput.value='';
   lastChatTimestamps[currentChatFriendUid] = msgObj.timestamp;
 }
 chatInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); }});
@@ -333,31 +309,23 @@ sendBtn.addEventListener('click', sendMessage);
 
 /* ---------- Close chat ---------- */
 function closeChat(){
-  if(currentChatFriendUid){ db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove(); }
+  if(currentChatFriendUid) db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove();
   chatModal.style.display='none';
   currentChatFriendUid='';
   typingIndicator.textContent="";
-  previewStrip.innerHTML = '';
-  previewStrip.style.display = 'none';
+  previewStrip.innerHTML='';
+  previewStrip.style.display='none';
 }
 
 /* ---------- Helpers ---------- */
-function getChatId(uid1, uid2){ return uid1 < uid2 ? uid1 + '_' + uid2 : uid2 + '_' + uid1; }
-function escapeHtml(unsafe) {
-  return unsafe
-       .replace(/&/g, "&amp;")
-       .replace(/</g, "&lt;")
-       .replace(/>/g, "&gt;")
-       .replace(/"/g, "&quot;")
-       .replace(/'/g, "&#039;");
-}
+function getChatId(uid1,uid2){ return uid1<uid2 ? uid1+'_'+uid2 : uid2+'_'+uid1; }
+function escapeHtml(unsafe){ return unsafe.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
 
 /* ---------- Unread counters ---------- */
 db.ref('chats').on('child_added',snap=>{
   snap.ref.child('messages').on('child_added',msgSnap=>{
     const msg = msgSnap.val();
-    if(!msg || !msg.sender) return;
-    if(msg.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
+    if(msg?.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
       unreadCounters[msg.sender]=(unreadCounters[msg.sender]||0)+1;
       lastChatTimestamps[msg.sender]=msg.timestamp;
       updateFriendListBadges();
@@ -386,174 +354,73 @@ function dragElement(elmnt){
   function closeDragElement(){ document.onmouseup=null; document.onmousemove=null; }
 }
 
-/* ---------- File input & immediate send (base64/data URL in Realtime DB) ---------- */
+/* ---------- File input ---------- */
 fileBtn.addEventListener('click', ()=> chatFileInput.click());
 chatFileInput.addEventListener('change', handleFiles);
 
 function handleFiles(){
   const files = Array.from(chatFileInput.files || []);
-  if(files.length === 0 || !currentChatFriendUid) { chatFileInput.value=''; return; }
-
-  previewStrip.innerHTML = '';
-  previewStrip.style.display = 'flex';
-
+  if(files.length===0 || !currentChatFriendUid){ chatFileInput.value=''; return; }
+  previewStrip.innerHTML='';
+  previewStrip.style.display='flex';
   const chatId = getChatId(currentUserUid, currentChatFriendUid);
   db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [currentChatFriendUid]:true });
 
-  files.forEach(file => {
-    // 1) create placeholder DB message with uploading:true immediately
-    const msgRef = db.ref('chats/' + chatId + '/messages').push();
+  files.forEach(file=>{
+    const msgRef = db.ref('chats/'+chatId+'/messages').push();
     const key = msgRef.key;
-    const placeholder = {
-      sender: currentUserUid,
-      receiver: currentChatFriendUid,
-      timestamp: Date.now(),
-      fileName: file.name,
-      fileType: file.type || '',
-      uploading: true
-    };
-    msgRef.set(placeholder).then(()=> {
-      // 2) show preview immediately in previewStrip and message area (local quickly)
-      if(file.type.startsWith('image/')){
-        const objUrl = URL.createObjectURL(file);
-        localPreviewMap[key] = objUrl; // used by rendering until DB updated with fileData
-        addPreviewThumbToStrip(key, objUrl, file.name);
-      } else {
-        // other file: show generic thumb
-        addPreviewThumbToStrip(key, null, file.name);
-      }
+    const placeholder = { sender:currentUserUid, receiver:currentChatFriendUid, timestamp:Date.now(), fileName:file.name, fileType:file.type||'', uploading:true };
+    msgRef.set(placeholder).then(()=>{
+      if(file.type.startsWith('image/')){ const objUrl=URL.createObjectURL(file); localPreviewMap[key]=objUrl; addPreviewThumbToStrip(key,objUrl,file.name); }
+      else addPreviewThumbToStrip(key,null,file.name);
 
-      // 3) prepare Base64/data URL: compress if image, else read as dataURL
       if(file.type.startsWith('image/')){
-        compressImageToDataURL(file, 64 * 1024, dataUrl => {
-          // update DB message with fileData (base64/data URL) and clear uploading flag
-          db.ref('chats/'+chatId+'/messages/'+key).update({ fileData: dataUrl, uploading:false, fileName: file.name, fileType: file.type || '' });
-        });
+        compressImageToDataURL(file,64*1024,dataUrl=>{ db.ref('chats/'+chatId+'/messages/'+key).update({ fileData:dataUrl, uploading:false, fileName:file.name, fileType:file.type||'' }); });
       } else {
-        // read other files as dataURL (may be large depending on file). This is what you asked: base64 in DB
         const reader = new FileReader();
-        reader.onload = e => {
-          const dataUrl = e.target.result; // base64 data URL
-          db.ref('chats/'+chatId+'/messages/'+key).update({ fileData: dataUrl, uploading:false, fileName: file.name, fileType: file.type || '' });
-        };
-        reader.onerror = err => {
-          console.error('File read error', err);
-          db.ref('chats/'+chatId+'/messages/'+key).update({ uploading:false, uploadFailed:true });
-        };
+        reader.onload=e=>db.ref('chats/'+chatId+'/messages/'+key).update({ fileData:e.target.result, uploading:false, fileName:file.name, fileType:file.type||'' });
+        reader.onerror=err=>{ console.error(err); db.ref('chats/'+chatId+'/messages/'+key).update({ uploading:false, uploadFailed:true }); };
         reader.readAsDataURL(file);
       }
-    }).catch(err=>{
-      console.error('DB placeholder error', err);
-    });
+    }).catch(err=>console.error(err));
   });
 
-  chatFileInput.value = '';
+  chatFileInput.value='';
 }
 
-/* ---------- Add preview thumb to preview strip ---------- */
 function addPreviewThumbToStrip(key, localUrl, filename){
-  const container = document.createElement('div');
-  container.dataset.temp = key;
-  container.style.display = 'flex';
-  container.style.flexDirection = 'column';
-  container.style.alignItems = 'center';
-  container.style.width = '70px';
-
-  if(localUrl){
-    const img = document.createElement('img');
-    img.src = localUrl;
-    img.className = 'preview-thumb';
-    container.appendChild(img);
-  } else {
-    const box = document.createElement('div');
-    box.className = 'preview-thumb';
-    box.style.display = 'flex';
-    box.style.alignItems = 'center';
-    box.style.justifyContent = 'center';
-    box.textContent = filename.split('.').slice(0,1)[0] || 'FILE';
-    box.style.fontSize = '11px';
-    container.appendChild(box);
-  }
-
-  // progress fill placeholder (visually shows "in progress")
-  const progressBar = document.createElement('div');
-  progressBar.className = 'progress-bar';
-  progressBar.innerHTML = '<div class="progress-fill" style="width:30%"></div>'; // static small motion until completed
-  container.appendChild(progressBar);
-
+  const container=document.createElement('div'); container.dataset.temp=key; container.style.display='flex'; container.style.flexDirection='column'; container.style.alignItems='center'; container.style.width='70px';
+  if(localUrl){ const img=document.createElement('img'); img.src=localUrl; img.className='preview-thumb'; container.appendChild(img); }
+  else { const box=document.createElement('div'); box.className='preview-thumb'; box.style.display='flex'; box.style.alignItems='center'; box.style.justifyContent='center'; box.textContent=filename.split('.').slice(0,1)[0]||'FILE'; box.style.fontSize='11px'; container.appendChild(box); }
+  const progressBar=document.createElement('div'); progressBar.className='progress-bar'; progressBar.innerHTML='<div class="progress-fill" style="width:30%"></div>'; container.appendChild(progressBar);
   previewStrip.appendChild(container);
 }
 
-/* ---------- Image compression to Data URL (fast iterative) ---------- */
-function compressImageToDataURL(file, maxBytes, callback){
-  // If file already small, just read as dataURL
-  if(file.size <= maxBytes){
-    const r = new FileReader();
-    r.onload = e => callback(e.target.result);
-    r.readAsDataURL(file);
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = e => {
-    const img = new Image();
-    img.onload = () => {
-      // strategy: progressively reduce dimensions (scale factor) and quality until target size reached
-      let scale = Math.sqrt(maxBytes / file.size); // initial scale estimate
-      scale = Math.min(1, Math.max(0.1, scale)); // clamp
-      let quality = 0.9;
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-
-      // limit loops so we don't block too long
+/* ---------- Image compression ---------- */
+function compressImageToDataURL(file,maxBytes,callback){
+  if(file.size<=maxBytes){ const r=new FileReader(); r.onload=e=>callback(e.target.result); r.readAsDataURL(file); return; }
+  const reader=new FileReader(); reader.onload=e=>{
+    const img=new Image(); img.onload=()=>{
+      let scale=Math.sqrt(maxBytes/file.size); scale=Math.min(1,Math.max(0.1,scale)); let quality=0.9;
+      const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d');
       (function attempt(){
-        // set canvas size
-        canvas.width = Math.max(1, Math.round(img.width * scale));
-        canvas.height = Math.max(1, Math.round(img.height * scale));
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-        // produce dataURL at current quality
+        canvas.width=Math.max(1,Math.round(img.width*scale)); canvas.height=Math.max(1,Math.round(img.height*scale));
+        ctx.clearRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0,canvas.width,canvas.height);
         try {
-          const dataUrl = canvas.toDataURL(file.type || 'image/jpeg', quality);
-          // roughly estimate byte size
-          const base64Str = dataUrl.split(',')[1] || '';
-          const approxBytes = Math.round(base64Str.length * 3 / 4);
-
-          if(approxBytes <= maxBytes || (quality <= 0.35 && scale <= 0.25)){
-            // done
-            callback(dataUrl);
-          } else {
-            // reduce quality first, then scale more if necessary
-            if(quality > 0.4){
-              quality = Math.max(0.35, quality - 0.15);
-            } else {
-              scale = Math.max(0.2, scale * 0.8);
-            }
-            // yield back to event loop briefly to keep UI responsive
-            setTimeout(attempt, 10);
-          }
-        } catch(err){
-          // fallback: send original as dataURL (may be big)
-          console.warn('compress toDataURL failed, sending original', err);
-          const r2 = new FileReader();
-          r2.onload = ev => callback(ev.target.result);
-          r2.readAsDataURL(file);
-        }
+          const dataUrl=canvas.toDataURL(file.type||'image/jpeg',quality);
+          const base64Str=dataUrl.split(',')[1]||''; const approxBytes=Math.round(base64Str.length*3/4);
+          if(approxBytes<=maxBytes||(quality<=0.35&&scale<=0.25)) callback(dataUrl);
+          else{ if(quality>0.4) quality=Math.max(0.35,quality-0.15); else scale=Math.max(0.2,scale*0.8); setTimeout(attempt,10); }
+        } catch(err){ const r2=new FileReader(); r2.onload=ev=>callback(ev.target.result); r2.readAsDataURL(file); }
       })();
     };
-    img.src = e.target.result;
+    img.src=e.target.result;
   };
   reader.readAsDataURL(file);
 }
 
-/* ---------- Revoke local URLs on unload ---------- */
-window.addEventListener('beforeunload', ()=>{
-  Object.values(localPreviewMap).forEach(url => {
-    try{ if(url && url.startsWith('blob:')) URL.revokeObjectURL(url); }catch(e){}
-  });
-});
+/* ---------- Revoke URLs ---------- */
+window.addEventListener('beforeunload', ()=>{ Object.values(localPreviewMap).forEach(url=>{ try{ if(url&&url.startsWith('blob:')) URL.revokeObjectURL(url); }catch(e){} }); });
 </script>
-
 </body>
 </html>
