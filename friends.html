@@ -162,39 +162,61 @@ function loadUsersRealtime(){
   db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
     const friends = [];
+
     Object.keys(usersData).forEach(uid => {
       if(uid === currentUserUid) return;
       const user = usersData[uid].public || {};
-      friends.push({ uid, name:user.name||"Unknown", gender:user.gender||"N/A", online:user.online||false });
+      const unread = unreadCounters[uid] || 0;
+      const lastTs = lastChatTimestamps[uid] || 0;
+
+      friends.push({
+        uid,
+        name: user.name || "Unknown",
+        gender: user.gender || "N/A",
+        online: user.online || false,
+        unread,
+        lastTs
+      });
     });
-    friends.sort((a,b)=>{
-      const tA = lastChatTimestamps[a.uid] || 0;
-      const tB = lastChatTimestamps[b.uid] || 0;
-      if(tA!==tB) return tB-tA;
+
+    // Sort: unread count desc → last message timestamp desc → name
+    friends.sort((a, b) => {
+      if(b.unread !== a.unread) return b.unread - a.unread;
+      if(b.lastTs !== a.lastTs) return b.lastTs - a.lastTs;
       return a.name.localeCompare(b.name);
     });
+
+    // Render list
     userList.innerHTML = '';
-    friends.forEach(f=>{
+    friends.forEach(f => {
       const row = document.createElement('div');
-      row.classList.add("user-row");
+      row.classList.add('user-row');
       row.dataset.uid = f.uid;
       row.dataset.name = f.name;
 
-      // Add badge if unread exists
-      let badgeHtml = unreadCounters[f.uid]? `<span class="badge">${unreadCounters[f.uid]}</span>`:"";
-      row.innerHTML = `<div><span class="status-dot ${f.online?'online':'offline'}"></span>${f.name} (${f.gender}) ${badgeHtml}</div>`;
+      const innerDiv = document.createElement('div');
+      innerDiv.innerHTML = `<span class="status-dot ${f.online?'online':'offline'}"></span>${f.name} (${f.gender})`;
+      row.appendChild(innerDiv);
 
-      row.addEventListener('click',()=>{
-        // Reset unread count when opening chat
-        unreadCounters[f.uid] = 0;
-        updateFriendListBadges();
-        openChat(f.uid,f.name);
+      // Add badge if unread exists
+      if(f.unread > 0){
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.textContent = f.unread;
+        innerDiv.appendChild(badge);
+      }
+
+      row.addEventListener('click', () => {
+        unreadCounters[f.uid] = 0;          // Reset unread
+        updateFriendListBadges();           // Remove badge
+        openChat(f.uid, f.name);            // Open chat
       });
 
       userList.appendChild(row);
     });
   });
 }
+
 
 
 /* ---------- Open chat ---------- */
@@ -332,26 +354,45 @@ function getChatId(uid1,uid2){ return uid1<uid2 ? uid1+'_'+uid2 : uid2+'_'+uid1;
 function escapeHtml(unsafe){ return unsafe.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
 
 /* ---------- Unread counters ---------- */
-db.ref('chats').on('child_added',snap=>{
-  snap.ref.child('messages').on('child_added',msgSnap=>{
+db.ref('chats').on('child_added', snap => {
+  const chatId = snap.key;
+  const messagesRef = snap.ref.child('messages');
+
+  messagesRef.on('child_added', msgSnap => {
     const msg = msgSnap.val();
-    if(msg?.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
-      unreadCounters[msg.sender]=(unreadCounters[msg.sender]||0)+1;
-      lastChatTimestamps[msg.sender]=msg.timestamp;
+    if(!msg || !msg.receiver) return;
+
+    if(msg.receiver === currentUserUid){
+      // Increment unread only if chat is not currently open
+      if(msg.sender !== currentChatFriendUid){
+        unreadCounters[msg.sender] = (unreadCounters[msg.sender] || 0) + 1;
+      }
+
+      lastChatTimestamps[msg.sender] = msg.timestamp;
       updateFriendListBadges();
+      loadUsersRealtime();  // Re-sort list based on unread + timestamp
     }
   });
 });
+
 function updateFriendListBadges(){
-  document.querySelectorAll('.user-row').forEach(row=>{
-    const uid=row.dataset.uid;
-    const badge=row.querySelector('.badge');
-    if(unreadCounters[uid]){
-      if(badge) badge.textContent=unreadCounters[uid];
-      else { const span=document.createElement('span'); span.className='badge'; span.textContent=unreadCounters[uid]; row.querySelector('div').appendChild(span); }
-    } else if(badge) badge.remove();
+  document.querySelectorAll('.user-row').forEach(row => {
+    const uid = row.dataset.uid;
+    let badge = row.querySelector('.badge');
+
+    if(unreadCounters[uid] && unreadCounters[uid] > 0){
+      if(!badge){
+        badge = document.createElement('span');
+        badge.className = 'badge';
+        row.querySelector('div').appendChild(badge);
+      }
+      badge.textContent = unreadCounters[uid];
+    } else if(badge){
+      badge.remove();
+    }
   });
 }
+
 
 /* ---------- Drag chat ---------- */
 dragElement(chatModal);
