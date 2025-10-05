@@ -20,11 +20,11 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 .online { background:green; } .offline { background:red; }
 .badge { background:red; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
 
-.user-row.new-message { border-left:4px solid red; animation: flashRed 1s infinite; } /* Continuous flashing */
+.user-row.new-message { border-left:4px solid red; animation: flashRed 1s infinite; }
 
 @keyframes flashRed {
-  0%, 50%, 100% { border-color: red; }
-  25%, 75% { border-color: transparent; }
+  0%,50%,100% { border-color:red; }
+  25%,75% { border-color:transparent; }
 }
 
 #chatModal { position:fixed; bottom:0; right:20px; width:360px; max-height:70vh; border:1px solid #ccc; background:#fff; border-radius:10px 10px 0 0; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); resize:both; overflow:hidden; z-index:1000; }
@@ -95,7 +95,6 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-// ===== UI Refs =====
 const nav = document.getElementById("navLinks");
 const userList = document.getElementById("userList");
 const chatModal = document.getElementById("chatModal");
@@ -108,32 +107,16 @@ const chatFileInput = document.getElementById("chatFileInput");
 const typingIndicator = document.getElementById("typingIndicator");
 const previewStrip = document.getElementById("previewStrip");
 
-let currentUserUid = "";
-let currentChatFriendUid = "";
-let currentChatListener = null;
-const unreadCounters = {};
-const lastChatTimestamps = {};
-const localPreviewMap = {};
+let currentUserUid="", currentChatFriendUid="", currentChatListener=null;
+const unreadCounters = {}, lastChatTimestamps={}, localPreviewMap={};
 let typingTimeout;
 
-// ===== Auth & Presence =====
+// ===== Auth =====
 auth.onAuthStateChanged(user=>{
   if(user && user.emailVerified){
     currentUserUid = user.uid;
-    nav.innerHTML = `
-      <a href="index.html">Home</a>
-      <a href="friends.html">Friends</a>
-      <a href="stories.html">Stories</a>
-      <a href="events.html">Events</a>
-      <a href="safety.html">Safety</a>
-      <a href="profile.html">Profile</a>
-      <a href="#" id="logoutBtn">Logout</a>`;
-    document.getElementById("logoutBtn").addEventListener("click",()=>{
-      db.ref('users/'+currentUserUid+'/public/online').set(false);
-      localStorage.removeItem("lastChatFriendUid");
-      localStorage.removeItem("lastChatFriendName");
-      auth.signOut().then(()=>window.location.href="login.html");
-    });
+    nav.innerHTML = `<a href="index.html">Home</a><a href="friends.html">Friends</a><a href="stories.html">Stories</a><a href="events.html">Events</a><a href="safety.html">Safety</a><a href="profile.html">Profile</a><a href="#" id="logoutBtn">Logout</a>`;
+    document.getElementById("logoutBtn").addEventListener("click",()=>{ db.ref('users/'+currentUserUid+'/public/online').set(false); localStorage.removeItem("lastChatFriendUid"); localStorage.removeItem("lastChatFriendName"); auth.signOut().then(()=>window.location.href="login.html"); });
     setupOnlineStatus();
     loadUsersRealtime();
     const lastUid = localStorage.getItem("lastChatFriendUid");
@@ -145,61 +128,36 @@ auth.onAuthStateChanged(user=>{
   }
 });
 
-function setupOnlineStatus(){
-  const userStatusRef = db.ref('users/'+currentUserUid+'/public/online');
-  db.ref('.info/connected').on('value',snap=>{
-    if(snap.val()===true){
-      userStatusRef.set(true);
-      userStatusRef.onDisconnect().set(false);
-    }
-  });
-}
+// ===== Other functions =====
+// Keep all your previous chat code exactly as before: openChat(), sendMessage(), addOrUpdateMessageToChat(), handleFiles(), compressImageToDataURL(), dragElement(), etc.
 
-// ===== Load Users & Badges =====
-function loadUsersRealtime(){
-  db.ref('users').on('value', snapshot=>{
-    const usersData = snapshot.val()||{};
-    const friends = Object.keys(usersData).filter(uid=>uid!==currentUserUid).map(uid=>{
-      const u = usersData[uid].public||{};
-      return { uid, name:u.name||"Unknown", gender:u.gender||"N/A", online:u.online||false };
-    }).sort((a,b)=>{
-      const tA = lastChatTimestamps[a.uid]||0;
-      const tB = lastChatTimestamps[b.uid]||0;
-      return tB-tA || a.name.localeCompare(b.name);
-    });
-    userList.innerHTML='';
-    friends.forEach(f=>{
-      const row=document.createElement('div');
-      row.className='user-row';
-      row.dataset.uid=f.uid;
-      row.dataset.name=f.name;
-      row.innerHTML=`<div><span class="status-dot ${f.online?'online':'offline'}"></span>${f.name} (${f.gender})</div>`;
-      row.addEventListener('click',()=>openChat(f.uid,f.name));
-      userList.appendChild(row);
-    });
-    updateFriendListBadges();
-  });
-}
-
-// ===== Update badges & flashing red border =====
+// ===== Update badges =====
 function updateFriendListBadges(){
   document.querySelectorAll('.user-row').forEach(row=>{
     const uid=row.dataset.uid;
     const badge=row.querySelector('.badge');
     if(unreadCounters[uid]){
-      if(badge) badge.textContent=unreadCounters[uid];
-      else { const span=document.createElement('span'); span.className='badge'; span.textContent=unreadCounters[uid]; row.querySelector('div').appendChild(span); }
-      row.classList.add('new-message'); // Add flashing red border
+      if(!badge){ const span=document.createElement('span'); span.className='badge'; span.textContent=unreadCounters[uid]; row.querySelector('div').appendChild(span); }
+      else badge.textContent=unreadCounters[uid];
+      row.classList.add('new-message'); // flashing red border
     } else {
       if(badge) badge.remove();
-      row.classList.remove('new-message'); // Remove border when read
+      row.classList.remove('new-message');
     }
   });
 }
 
-// ===== Chat & Messaging =====
-// ... [Keep all your existing chat functions: openChat, addOrUpdateMessageToChat, sendMessage, typing, file upload, drag chat, etc., unchanged]
-
+// ===== Real-time unread listener =====
+db.ref('chats').on('child_added',snap=>{
+  snap.ref.child('messages').on('child_added',msgSnap=>{
+    const msg = msgSnap.val();
+    if(msg?.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
+      unreadCounters[msg.sender] = (unreadCounters[msg.sender]||0)+1;
+      lastChatTimestamps[msg.sender] = msg.timestamp;
+      updateFriendListBadges();
+    }
+  });
+});
 </script>
 </body>
 </html>
