@@ -14,16 +14,12 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 .user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
 .user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #eee; cursor:pointer; transition:0.2s; position:relative; }
 .user-row:hover, .user-row.active { background:#fffbcc; }
-.status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; animation: pulse 2s infinite; }
-.online { background:green; }
-.busy { background:orange; }
-.away { background:yellow; }
-.offline { background:red; }
-@keyframes pulse { 0% { transform: scale(1);} 50% { transform: scale(1.3);} 100% { transform: scale(1);} }
-.badge { background:red; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; position:absolute; right:6px; top:6px; }
+.status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
+.online { background:green; } .offline { background:red; } .away { background:orange; } .busy { background:purple; }
+.badge { background:red; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
 #chatModal { position:fixed; bottom:0; right:20px; width:360px; max-height:70vh; border:1px solid #ccc; background:#fff; border-radius:10px 10px 0 0; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); resize:both; overflow:hidden; z-index:1000; }
 #chatHeader { background:#ffcb2b; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; border-radius:10px 10px 0 0; cursor:move; }
-#chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:#fefefe; scroll-behavior:smooth; }
+#chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:#fefefe; scroll-behavior:smooth; position:relative; }
 #typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
 .message { max-width:80%; padding:8px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
 .message.self { background:#059669; color:white; align-self:flex-end; }
@@ -46,8 +42,8 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
 .progress-bar { width:60px; height:4px; background:#eee; border-radius:3px; margin-top:4px; }
 .progress-fill { height:100%; width:0%; background:#059669; border-radius:3px; transition:width 0.3s ease; }
 .small-muted { font-size:11px; color:#666; }
-.emoji-floating { position:absolute; font-size:18px; animation: floatUp 1.2s ease-out forwards; pointer-events:none; }
-@keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity:1; } 100% { transform: translateY(-30px) scale(1.3); opacity:0; } }
+.floating-emoji { position:absolute; font-size:20px; animation:floating 1s ease forwards; pointer-events:none; }
+@keyframes floating { 0% { opacity:1; transform:translateY(0px) scale(1); } 100% { opacity:0; transform:translateY(-50px) scale(1.3); } }
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -84,7 +80,7 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
 
 <script>
 // ===== Firebase Config =====
-const firebaseConfig = { /* your config */ };
+const firebaseConfig = { apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs", authDomain:"bumbble-c061f.firebaseapp.com", databaseURL:"https://bumbble-c061f-default-rtdb.firebaseio.com", projectId:"bumbble-c061f", storageBucket:"bumbble-c061f.appspot.com", messagingSenderId:"213165886981", appId:"1:213165886981:web:c18652003444869b1bd66c" };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
@@ -155,7 +151,7 @@ function loadUsersRealtime(){
     const usersData = snapshot.val()||{};
     const friends = Object.keys(usersData).filter(uid=>uid!==currentUserUid).map(uid=>{
       const u = usersData[uid].public||{};
-      return { uid, name:u.name||"Unknown", gender:u.gender||"N/A", online:u.online||false, mood:u.mood||'online' };
+      return { uid, name:u.name||"Unknown", gender:u.gender||"N/A", online:u.online||false, status:u.status||"online" };
     }).sort((a,b)=>{
       const tA = lastChatTimestamps[a.uid]||0;
       const tB = lastChatTimestamps[b.uid]||0;
@@ -167,7 +163,7 @@ function loadUsersRealtime(){
       row.className='user-row';
       row.dataset.uid=f.uid;
       row.dataset.name=f.name;
-      row.innerHTML=`<div><span class="status-dot ${f.mood}"></span>${f.name} (${f.gender})</div>`;
+      row.innerHTML=`<div><span class="status-dot ${f.status}"></span>${f.name} (${f.gender})</div>`;
       row.addEventListener('click',()=>openChat(f.uid,f.name));
       userList.appendChild(row);
     });
@@ -181,7 +177,7 @@ function updateFriendListBadges(){
     const badge=row.querySelector('.badge');
     if(unreadCounters[uid]){
       if(badge) badge.textContent=unreadCounters[uid];
-      else { const span=document.createElement('span'); span.className='badge'; span.textContent=unreadCounters[uid]; row.appendChild(span); }
+      else { const span=document.createElement('span'); span.className='badge'; span.textContent=unreadCounters[uid]; row.querySelector('div').appendChild(span); }
     } else if(badge) badge.remove();
   });
 }
@@ -224,9 +220,7 @@ function openChat(friendUid, friendName){
     const msg = snap.val(); msg._key = snap.key;
     addOrUpdateMessageToChat(msg);
     lastChatTimestamps[friendUid] = msg.timestamp;
-    if(msg.sender !== currentUserUid && msg.receiver === currentUserUid){
-      showFloatingEmoji(chatMessages, '❤️'); // Example emoji effect
-    }
+    if(msg.sender!==currentUserUid) showFloatingEmoji(msg);
   });
   currentChatListener.on('child_changed', snap=>{
     const msg = snap.val(); msg._key = snap.key;
@@ -234,19 +228,173 @@ function openChat(friendUid, friendName){
   });
 }
 
-// ===== Emoji Floating =====
-function showFloatingEmoji(container, emoji){
-  const span=document.createElement('span'); span.textContent=emoji;
-  span.className='emoji-floating';
-  container.appendChild(span);
-  const rect = container.getBoundingClientRect();
-  span.style.left = (rect.width/2) + 'px';
-  span.style.top = (rect.height-20)+'px';
-  setTimeout(()=>span.remove(), 1200);
+// ===== Message Rendering =====
+function addOrUpdateMessageToChat(msg){
+  if(!msg || !msg._key) return;
+  const id='msg-'+msg._key;
+  let el=document.getElementById(id);
+  const isSelf = msg.sender===currentUserUid;
+  if(!el){ el=document.createElement('div'); el.id=id; el.className='message '+(isSelf?'self':'friend'); chatMessages.appendChild(el); }
+
+  if(msg.fileData){
+    if(msg.fileType?.startsWith('image/')||msg.fileName?.match(/\.(jpg|jpeg|png|gif)$/i)){
+      el.innerHTML=`<img class="chat-image" src="${msg.fileData}" alt="${msg.fileName||'image'}"/><a class="file-link" href="${msg.fileData}" download="${msg.fileName||'image'}"></a><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
+    } else el.innerHTML=`<div class="small-muted">${msg.fileName||'File'}</div><a class="file-link" href="${msg.fileData}" download="${msg.fileName||'file'}"></a><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
+    const thumb=document.querySelector(`[data-temp="${msg._key}"]`); if(thumb) thumb.remove();
+    if(previewStrip.children.length===0) previewStrip.style.display='none';
+    if(localPreviewMap[msg._key]?.startsWith('blob:')) try{URL.revokeObjectURL(localPreviewMap[msg._key]);}catch(e){}
+    delete localPreviewMap[msg._key];
+  } else if(msg.uploading){
+    const local=localPreviewMap[msg._key];
+    if(local && (msg.fileType||msg.fileName||'').match(/image\/|jpg|jpeg|png|gif/i)){
+      el.innerHTML=`<img class="chat-image" src="${local}" alt="preview"/><span class="uploading-badge">Sending...</span><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
+    } else el.innerHTML=`<div class="small-muted">${msg.fileName||'Sending file...'}</div><span class="uploading-badge">Sending...</span><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
+  } else if(msg.text) el.innerHTML=`${escapeHtml(msg.text)}<div class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</div>`;
+  else el.innerHTML=`<div class="small-muted">Unknown message</div>`;
+  chatMessages.scrollTop=chatMessages.scrollHeight;
 }
 
-// ===== Message Rendering, Typing, Send, Close etc =====
-// ... keep your existing addOrUpdateMessageToChat, sendMessage, closeChat, typing, file upload, drag logic here exactly as in previous code ...
+// ===== Floating Emoji =====
+function showFloatingEmoji(msg){
+  const emojis = ['💌','✨','💬','❤️','🔥','🎉'];
+  const emoji = emojis[Math.floor(Math.random()*emojis.length)];
+  const el = document.createElement('div');
+  el.className='floating-emoji';
+  el.style.top=(Math.random()*30+20)+'px';
+  el.style.left=(Math.random()*200+50)+'px';
+  el.textContent = emoji;
+  chatMessages.appendChild(el);
+  setTimeout(()=>el.remove(),1000);
+}
+
+// ===== Typing =====
+chatInput.addEventListener('input',()=>{
+  if(!currentChatFriendUid) return;
+  db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).set(true);
+  clearTimeout(typingTimeout);
+  typingTimeout=setTimeout(()=>db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove(),1000);
+});
+
+function listenTyping(friendUid){
+  db.ref('typing/'+currentUserUid+'/'+friendUid).on('value',snap=>{
+    typingIndicator.textContent=snap.exists()?`${chatWith.textContent} is typing...`:'';
+  });
+}
+
+// ===== Send Message =====
+function sendMessage(){
+  const text=chatInput.value.trim(); if(!text || !currentChatFriendUid) return;
+  const chatId=getChatId(currentUserUid,currentChatFriendUid);
+  const msgObj={ sender:currentUserUid, receiver:currentChatFriendUid, text, timestamp:Date.now() };
+  db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [currentChatFriendUid]:true });
+  db.ref('chats/'+chatId+'/messages').push(msgObj);
+  chatInput.value='';
+  lastChatTimestamps[currentChatFriendUid]=msgObj.timestamp;
+}
+chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); }});
+sendBtn.addEventListener('click',sendMessage);
+
+// ===== Close Chat =====
+function closeChat(){
+  if(currentChatFriendUid) db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove();
+  chatModal.style.display='none';
+  currentChatFriendUid='';
+  typingIndicator.textContent='';
+  previewStrip.innerHTML='';
+  previewStrip.style.display='none';
+}
+
+// ===== Helpers =====
+function getChatId(uid1,uid2){ return uid1<uid2?uid1+'_'+uid2:uid2+'_'+uid1; }
+function escapeHtml(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
+
+// ===== Unread Counters =====
+db.ref('chats').on('child_added',snap=>{
+  snap.ref.child('messages').on('child_added',msgSnap=>{
+    const msg=msgSnap.val();
+    if(msg?.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
+      unreadCounters[msg.sender]=(unreadCounters[msg.sender]||0)+1;
+      lastChatTimestamps[msg.sender]=msg.timestamp;
+      updateFriendListBadges();
+    }
+  });
+});
+
+// ===== Drag Chat =====
+dragElement(chatModal);
+function dragElement(el){
+  let pos1=0,pos2=0,pos3=0,pos4=0;
+  const header=document.getElementById("chatHeader");
+  if(header) header.onmousedown=dragMouseDown; else el.onmousedown=dragMouseDown;
+  function dragMouseDown(e){ e.preventDefault(); pos3=e.clientX; pos4=e.clientY; document.onmouseup=closeDragElement; document.onmousemove=elementDrag; }
+  function elementDrag(e){ e.preventDefault(); pos1=pos3-e.clientX; pos2=pos4-e.clientY; pos3=e.clientX; pos4=e.clientY; 
+    const newTop=elmntTop(el.offsetTop-pos2); const newLeft=elmntLeft(el.offsetLeft-pos1);
+    el.style.top=newTop+'px'; el.style.left=newLeft+'px'; 
+  }
+  function closeDragElement(){ document.onmouseup=null; document.onmousemove=null; }
+  function elmntTop(top){ return Math.max(0, Math.min(window.innerHeight-el.offsetHeight, top)); }
+  function elmntLeft(left){ return Math.max(0, Math.min(window.innerWidth-el.offsetWidth, left)); }
+}
+
+// ===== File Upload =====
+fileBtn.addEventListener('click',()=>chatFileInput.click());
+chatFileInput.addEventListener('change',handleFiles);
+function handleFiles(){
+  const files = Array.from(chatFileInput.files||[]);
+  if(files.length===0 || !currentChatFriendUid){ chatFileInput.value=''; return; }
+  previewStrip.innerHTML=''; previewStrip.style.display='flex';
+  const chatId = getChatId(currentUserUid,currentChatFriendUid);
+  db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [currentChatFriendUid]:true });
+  files.forEach(file=>{
+    const msgRef = db.ref('chats/'+chatId+'/messages').push();
+    const key = msgRef.key;
+    const placeholder={ sender:currentUserUid, receiver:currentChatFriendUid, timestamp:Date.now(), fileName:file.name, fileType:file.type||'', uploading:true };
+    msgRef.set(placeholder).then(()=>{
+      if(file.type.startsWith('image/')){
+        const objUrl=URL.createObjectURL(file); localPreviewMap[key]=objUrl; addPreviewThumb(key,objUrl,file.name);
+        compressImageToDataURL(file,64*1024,dataUrl=>{ db.ref('chats/'+chatId+'/messages/'+key).update({ fileData:dataUrl, uploading:false }); });
+      } else {
+        addPreviewThumb(key,null,file.name);
+        const reader=new FileReader();
+        reader.onload=e=>db.ref('chats/'+chatId+'/messages/'+key).update({ fileData:e.target.result, uploading:false });
+        reader.readAsDataURL(file);
+      }
+    });
+  });
+  chatFileInput.value='';
+}
+function addPreviewThumb(key, url, name){
+  const container=document.createElement('div'); container.dataset.temp=key; container.style.display='flex'; container.style.flexDirection='column'; container.style.alignItems='center'; container.style.width='70px';
+  if(url){ const img=document.createElement('img'); img.src=url; img.className='preview-thumb'; container.appendChild(img); }
+  else { const box=document.createElement('div'); box.className='preview-thumb'; box.style.display='flex'; box.style.alignItems='center'; box.style.justifyContent='center'; box.textContent=name.split('.')[0]; box.style.fontSize='11px'; container.appendChild(box); }
+  const progressBar=document.createElement('div'); progressBar.className='progress-bar'; progressBar.innerHTML='<div class="progress-fill" style="width:30%"></div>'; container.appendChild(progressBar);
+  previewStrip.appendChild(container);
+}
+
+// ===== Image Compression =====
+function compressImageToDataURL(file,maxBytes,callback){
+  if(file.size<=maxBytes){ const r=new FileReader(); r.onload=e=>callback(e.target.result); r.readAsDataURL(file); return; }
+  const reader=new FileReader(); reader.onload=e=>{
+    const img=new Image(); img.onload=()=>{
+      let scale=Math.sqrt(maxBytes/file.size); scale=Math.min(1,Math.max(0.1,scale)); let quality=0.9;
+      const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d');
+      (function attempt(){
+        canvas.width=Math.max(1,Math.round(img.width*scale)); canvas.height=Math.max(1,Math.round(img.height*scale));
+        ctx.clearRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        try {
+          const dataUrl=canvas.toDataURL(file.type||'image/jpeg',quality);
+          const approxBytes=Math.round((dataUrl.split(',')[1]||'').length*3/4);
+          if(approxBytes<=maxBytes||(quality<=0.35&&scale<=0.25)) callback(dataUrl);
+          else{ if(quality>0.4) quality=Math.max(0.35,quality-0.15); else scale=Math.max(0.2,scale*0.8); setTimeout(attempt,10); }
+        } catch(e){ const r2=new FileReader(); r2.onload=ev=>callback(ev.target.result); r2.readAsDataURL(file); }
+      })();
+    };
+    img.src=e.target.result;
+  }; reader.readAsDataURL(file);
+}
+
+// ===== Revoke URLs on unload =====
+window.addEventListener('beforeunload',()=>{ Object.values(localPreviewMap).forEach(url=>{ try{ if(url.startsWith('blob:')) URL.revokeObjectURL(url); }catch(e){} }); });
 </script>
 </body>
 </html>
