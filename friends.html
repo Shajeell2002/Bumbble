@@ -179,13 +179,23 @@ function loadUsersRealtime(){
       row.classList.add("user-row");
       row.dataset.uid = f.uid;
       row.dataset.name = f.name;
+
+      // Add badge if unread exists
       let badgeHtml = unreadCounters[f.uid]? `<span class="badge">${unreadCounters[f.uid]}</span>`:"";
       row.innerHTML = `<div><span class="status-dot ${f.online?'online':'offline'}"></span>${f.name} (${f.gender}) ${badgeHtml}</div>`;
-      row.addEventListener('click',()=>openChat(f.uid,f.name));
+
+      row.addEventListener('click',()=>{
+        // Reset unread count when opening chat
+        unreadCounters[f.uid] = 0;
+        updateFriendListBadges();
+        openChat(f.uid,f.name);
+      });
+
       userList.appendChild(row);
     });
   });
 }
+
 
 /* ---------- Open chat ---------- */
 function openChat(friendUid, friendName){
