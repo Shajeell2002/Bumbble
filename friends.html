@@ -42,23 +42,6 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
 .progress-bar { width:60px; height:4px; background:#eee; border-radius:3px; margin-top:4px; }
 .progress-fill { height:100%; width:0%; background:#059669; border-radius:3px; }
 .small-muted { font-size:11px; color:#666; }
-
-.user-row .new-dot {
-  width:8px; height:8px; border-radius:50%;
-  background:#2b8cff; margin-left:6px;
-  display:inline-block; opacity:0; transform:scale(0.7);
-  transition:opacity 0.3s, transform 0.3s;
-}
-.user-row.has-new .new-dot {
-  opacity:1; transform:scale(1);
-  animation: pulse 1.4s infinite;
-}
-@keyframes pulse {
-  0% { transform:scale(0.8); opacity:1; }
-  50% { transform:scale(1.3); opacity:0.6; }
-  100% { transform:scale(0.8); opacity:1; }
-}
-
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -176,15 +159,7 @@ function setupOnlineStatus(){
 
 /* ---------- Users list ---------- */
 function loadUsersRealtime(){
-let badgeHtml = unreadCounters[f.uid] ? `<span class="badge">${unreadCounters[f.uid]}</span>` : "";
-row.innerHTML = `<div>
-  <span class="status-dot ${f.online?'online':'offline'}"></span>
-  ${f.name} (${f.gender}) 
-  ${badgeHtml}
-  <span class="new-dot"></span>
-</div>`;
-  
-db.ref('users').on('value', snapshot => {
+  db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
     const friends = [];
     Object.keys(usersData).forEach(uid => {
@@ -228,28 +203,6 @@ function openChat(friendUid, friendName){
   typingIndicator.textContent = "";
   unreadCounters[friendUid]=0;
   updateFriendListBadges();
-
-function updateFriendListBadges(){
-  document.querySelectorAll('.user-row').forEach(row=>{
-    const uid=row.dataset.uid;
-    const badge=row.querySelector('.badge');
-    const dot=row.querySelector('.new-dot');
-    if(unreadCounters[uid]){
-      if(badge) badge.textContent=unreadCounters[uid];
-      else {
-        const span=document.createElement('span');
-        span.className='badge'; 
-        span.textContent=unreadCounters[uid];
-        row.querySelector('div').appendChild(span);
-      }
-      if(dot) row.classList.add('has-new');
-    } else {
-      if(badge) badge.remove();
-      if(dot) row.classList.remove('has-new');
-    }
-  });
-}
-
 
   listenTyping(friendUid);
   const chatId = getChatId(currentUserUid, friendUid);
