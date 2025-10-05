@@ -93,21 +93,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-auth.onAuthStateChanged(user => { ... });
-auth.onAuthStateChanged(user => {
-  if(user && user.emailVerified){
-    currentUserUid = user.uid;
 
-    // Your existing nav setup, online status, etc.
-    nav.innerHTML = `
-      <a href="index.html">Home</a>
-      <a href="friends.html">Friends</a>
-      <a href="stories.html">Stories</a>
-      <a href="events.html">Events</a>
-      <a href="safety.html">Safety</a>
-      <a href="profile.html">Profile</a>
-      <a href="#" id="logoutBtn">Logout</a>
-    `;
     document.getElementById("logoutBtn").addEventListener("click", ()=>{ 
       db.ref('users/' + currentUserUid + '/public/online').set(false); 
       localStorage.removeItem("lastChatFriendUid");
