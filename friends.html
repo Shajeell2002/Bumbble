@@ -103,6 +103,14 @@ let typingTimeout;
 const unreadCounters = {};
 const lastChatTimestamps = {};
 
+// ===== NEW PREVIEW CONTAINER =====
+const previewContainer = document.createElement('div');
+previewContainer.style.display = 'flex';
+previewContainer.style.flexWrap = 'wrap';
+previewContainer.style.padding = '5px 10px';
+previewContainer.style.gap = '6px';
+chatModal.insertBefore(previewContainer, document.getElementById("chatInputContainer"));
+
 auth.onAuthStateChanged(user => {
   if(user && user.emailVerified){
     currentUserUid = user.uid;
@@ -161,11 +169,7 @@ function loadUsersRealtime(){
       friends.push({ uid, name, gender, online });
     });
 
-    friends.sort((a,b) => {
-      const nameA = a.name.toLowerCase();
-      const nameB = b.name.toLowerCase();
-      return nameA < nameB ? 1 : (nameA > nameB ? -1 : 0);
-    });
+    friends.sort((a,b) => a.name.localeCompare(b.name));
 
     userList.innerHTML = '';
     friends.forEach(f=>{
@@ -276,6 +280,7 @@ function closeChat(){
   chatModal.style.display='none';
   currentChatFriendUid='';
   typingIndicator.textContent="";
+  previewContainer.innerHTML = '';
 }
 
 function getChatId(uid1,uid2){ return uid1<uid2? uid1+'_'+uid2:uid2+'_'+uid1; }
@@ -315,12 +320,55 @@ function dragElement(elmnt){
   function closeDragElement(){ document.onmouseup=null; document.onmousemove=null; }
 }
 
-// File upload icon
+// File upload + preview
 fileBtn.addEventListener('click',()=> chatFileInput.click());
 chatFileInput.addEventListener('change', handleFiles);
 
 function handleFiles(){
   const files = Array.from(chatFileInput.files);
+  previewContainer.innerHTML = '';
+
+  files.forEach((file, index)=>{
+    const preview = document.createElement('div');
+    preview.style.position = 'relative';
+
+    if(file.type.startsWith('image/')){
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      img.style.width = '60px';
+      img.style.height = '60px';
+      img.style.borderRadius = '8px';
+      img.style.objectFit = 'cover';
+      img.style.border = '1px solid #ccc';
+      img.style.cursor = 'pointer';
+      preview.appendChild(img);
+    } else {
+      preview.textContent = file.name;
+      preview.style.background = '#eee';
+      preview.style.padding = '5px 8px';
+      preview.style.borderRadius = '5px';
+    }
+
+    const removeBtn = document.createElement('span');
+    removeBtn.textContent = '✕';
+    removeBtn.style.position = 'absolute';
+    removeBtn.style.top = '-5px';
+    removeBtn.style.right = '-5px';
+    removeBtn.style.background = 'red';
+    removeBtn.style.color = 'white';
+    removeBtn.style.borderRadius = '50%';
+    removeBtn.style.fontSize = '10px';
+    removeBtn.style.cursor = 'pointer';
+    removeBtn.style.padding = '2px 4px';
+    removeBtn.onclick = () => {
+      files.splice(index, 1);
+      preview.remove();
+    };
+    preview.appendChild(removeBtn);
+    previewContainer.appendChild(preview);
+  });
+
+  // After preview, start compression + upload
   const compressedFiles = [];
   files.forEach(file=>{
     if(file.type.startsWith('image/')){
@@ -372,8 +420,10 @@ function sendFiles(files){
       });
   });
   chatFileInput.value='';
+  previewContainer.innerHTML = '';
 }
 </script>
+
 
 </body>
 </html>
