@@ -217,11 +217,15 @@ function openChat(friendUid, friendName){
     const msg = snap.val(); msg._key = snap.key;
     addOrUpdateMessageToChat(msg);
     lastChatTimestamps[friendUid]=msg.timestamp;
-    // Reset badge if chat is open
-    if(msg.sender === currentChatFriendUid) {
-      unreadCounters[msg.sender]=0;
-      updateFriendListBadges();
+
+    // 🔥 New: update unread count
+    if(msg.sender !== currentUserUid && msg.sender !== currentChatFriendUid){
+      if(!unreadCounters[msg.sender]) unreadCounters[msg.sender] = 0;
+      unreadCounters[msg.sender]++;
+    } else if(msg.sender === currentChatFriendUid){
+      unreadCounters[msg.sender] = 0;
     }
+    updateFriendListBadges();
   });
   currentChatListener.on('child_changed', snap=>{
     const msg = snap.val(); msg._key = snap.key;
@@ -319,8 +323,8 @@ function updateFriendListBadges(){
   document.querySelectorAll('.user-row').forEach(row=>{
     const uid=row.dataset.uid;
     const badge=row.querySelector('.badge');
-    if(unreadCounters[uid]){
-      if(badge) badge.textContent=unreadCounters[uid];
+    if(unreadCounters[uid] && unreadCounters[uid]>0){
+      if(badge) badge.textContent = unreadCounters[uid];
       else { const span=document.createElement('span'); span.className='badge'; span.textContent=unreadCounters[uid]; row.querySelector('div').appendChild(span); }
     } else if(badge) badge.remove();
   });
