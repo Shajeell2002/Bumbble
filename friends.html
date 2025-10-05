@@ -421,7 +421,7 @@ function compressImageToDataURL(file,maxBytes,callback){
 
 /* ---------- Revoke URLs ---------- */
 window.addEventListener('beforeunload', ()=>{ Object.values(localPreviewMap).forEach(url=>{ try{ if(url&&url.startsWith('blob:')) URL.revokeObjectURL(url); }catch(e){} }); });
-</script>
+
 /* ---------- Realtime new message updates for all chats ---------- */
 function listenGlobalMessages() {
   db.ref('chats').on('child_added', chatSnap => {
