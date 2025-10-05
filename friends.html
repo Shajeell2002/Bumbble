@@ -42,8 +42,6 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
 .progress-bar { width:60px; height:4px; background:#eee; border-radius:3px; margin-top:4px; }
 .progress-fill { height:100%; width:0%; background:#059669; border-radius:3px; }
 .small-muted { font-size:11px; color:#666; }
-
-/* Highlight for new messages */
 .user-row.new-message {
   animation: blink-highlight 1s ease-in-out 0s 3;
 }
@@ -52,7 +50,6 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
   50% { background: #fff2a8; }
 }
 </style>
-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -74,7 +71,6 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
       <span id="chatWith">Friend</span>
       <button onclick="closeChat()">X</button>
     </div>
-
     <div id="previewStrip" class="preview-strip" style="display:none;"></div>
     <div id="chatMessages"></div>
     <div id="typingIndicator"></div>
@@ -169,21 +165,29 @@ function loadUsersRealtime(){
     Object.keys(usersData).forEach(uid => {
       if(uid === currentUserUid) return;
       const user = usersData[uid].public || {};
-      friends.push({ uid, name:user.name||"Unknown", gender:user.gender||"N/A", online:user.online||false });
+      friends.push({ 
+        uid, 
+        name: user.name || "Unknown", 
+        gender: user.gender || "N/A", 
+        online: user.online || false 
+      });
     });
+
     friends.sort((a,b)=>{
       const tA = lastChatTimestamps[a.uid] || 0;
       const tB = lastChatTimestamps[b.uid] || 0;
-      if(tA!==tB) return tB-tA;
-      return a.name.localeCompare(b.name);
+      if(tA !== tB) return tB - tA; // recent first
+      if(a.online !== b.online) return b.online - a.online; // online first
+      return a.name.localeCompare(b.name); // alphabetical fallback
     });
+
     userList.innerHTML = '';
     friends.forEach(f=>{
       const row = document.createElement('div');
       row.classList.add("user-row");
       row.dataset.uid = f.uid;
       row.dataset.name = f.name;
-      let badgeHtml = unreadCounters[f.uid]? `<span class="badge">${unreadCounters[f.uid]}</span>`:"";
+      let badgeHtml = unreadCounters[f.uid] ? `<span class="badge">${unreadCounters[f.uid]}</span>` : "";
       row.innerHTML = `<div><span class="status-dot ${f.online?'online':'offline'}"></span>${f.name} (${f.gender}) ${badgeHtml}</div>`;
       row.addEventListener('click',()=>openChat(f.uid,f.name));
       userList.appendChild(row);
@@ -227,15 +231,15 @@ function openChat(friendUid, friendName){
     addOrUpdateMessageToChat(msg);
     lastChatTimestamps[friendUid]=msg.timestamp;
 
-    // 🔥 Unread counter & highlight
-    if(msg.sender !== currentUserUid && msg.sender !== currentChatFriendUid){
-      if(!unreadCounters[msg.sender]) unreadCounters[msg.sender] = 0;
-      unreadCounters[msg.sender]++;
+    // Move friend to top & handle unread badge
+    if(msg.sender !== currentUserUid){
       const row = document.querySelector(`.user-row[data-uid="${msg.sender}"]`);
-      if(row){
+      if(row && row.parentNode){
+        row.parentNode.prepend(row);
         row.classList.add('new-message');
         setTimeout(()=>{ row.classList.remove('new-message'); }, 3000);
       }
+      unreadCounters[msg.sender] = (unreadCounters[msg.sender]||0) + 1;
     } else if(msg.sender === currentChatFriendUid){
       unreadCounters[msg.sender] = 0;
     }
