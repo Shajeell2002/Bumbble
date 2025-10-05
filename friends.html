@@ -338,7 +338,6 @@ db.ref('chats').on('child_added',snap=>{
 function updateFriendListBadges(){
   document.querySelectorAll('.user-row').forEach(row=>{
     const uid=row.dataset.uid;
-const div = row.querySelector('div');   
 let badge = div.querySelector('.badge');
 
 
@@ -432,3 +431,4 @@ window.addEventListener('beforeunload', ()=>{ Object.values(localPreviewMap).for
 </script>
 </body>
 </html>
+
