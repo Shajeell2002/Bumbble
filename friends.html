@@ -78,7 +78,15 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
 
 <script>
 // ===== Firebase Config =====
-const firebaseConfig = { apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs", authDomain:"bumbble-c061f.firebaseapp.com", databaseURL:"https://bumbble-c061f-default-rtdb.firebaseio.com", projectId:"bumbble-c061f", storageBucket:"bumbble-c061f.appspot.com", messagingSenderId:"213165886981", appId:"1:213165886981:web:c18652003444869b1bd66c" };
+const firebaseConfig = {
+  apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+  authDomain:"bumbble-c061f.firebaseapp.com",
+  databaseURL:"https://bumbble-c061f-default-rtdb.firebaseio.com",
+  projectId:"bumbble-c061f",
+  storageBucket:"bumbble-c061f.appspot.com",
+  messagingSenderId:"213165886981",
+  appId:"1:213165886981:web:c18652003444869b1bd66c"
+};
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
@@ -195,61 +203,67 @@ function openChat(friendUid, friendName){
   unreadCounters[friendUid]=0;
   updateFriendListBadges();
   listenTyping(friendUid);
+
   const chatId = getChatId(currentUserUid, friendUid);
   if(currentChatListener) currentChatListener.off();
-  const chatRef=db.ref('chats/'+chatId);
+  const chatRef = db.ref('chats/'+chatId);
   chatRef.child('members').update({ [currentUserUid]:true, [friendUid]:true });
-  chatRef.child('messages').once('value',snap=>{
+
+  // Load messages & mark as read
+  chatRef.child('messages').once('value', snap=>{
     const msgs = snap.val()||{};
-    Object.keys(msgs).sort((a,b)=>msgs[a].timestamp-msgs[b].timestamp).forEach(k=>addOrUpdateMessageToChat({...msgs[k], _key:k}));
+    Object.keys(msgs).sort((a,b)=>msgs[a].timestamp-msgs[b].timestamp).forEach(k=>{
+      const msg = msgs[k];
+      addOrUpdateMessageToChat({...msg, _key:k});
+      if(msg.receiver === currentUserUid && !msg.read){
+        chatRef.child('messages/' + k).update({ read: true });
+      }
+    });
     chatMessages.scrollTop=chatMessages.scrollHeight;
   });
+
+  // Listen to new messages & updates
   currentChatListener = chatRef.child('messages');
-  currentChatListener.on('child_added',snap=>{
-    const msg=snap.val(); msg._key=snap.key;
-    addOrUpdateMessageToChat(msg);
-    lastChatTimestamps[friendUid]=msg.timestamp;
-  });
-  currentChatListener.on('child_changed',snap=>{
-    const msg=snap.val(); msg._key=snap.key;
-    addOrUpdateMessageToChat(msg);
-  });
+  currentChatListener.on('child_added', snap=>addOrUpdateMessageToChat({...snap.val(), _key: snap.key}));
+  currentChatListener.on('child_changed', snap=>addOrUpdateMessageToChat({...snap.val(), _key: snap.key}));
 }
 
+// ===== Add or update chat message =====
 function addOrUpdateMessageToChat(msg){
   if(!msg || !msg._key) return;
   const id='msg-'+msg._key;
   let el=document.getElementById(id);
   const isSelf = msg.sender===currentUserUid;
   if(!el){ el=document.createElement('div'); el.id=id; el.className='message '+(isSelf?'self':'friend'); chatMessages.appendChild(el); }
+
+  let readIndicator = '';
+  if(isSelf && msg.read) readIndicator = ' ✅';
+
   if(msg.fileData){
     if(msg.fileType?.startsWith('image/')||msg.fileName?.match(/\.(jpg|jpeg|png|gif)$/i)){
-      el.innerHTML=`<img class="chat-image" src="${msg.fileData}" alt="${msg.fileName||'image'}"/><a class="file-link" href="${msg.fileData}" download="${msg.fileName||'image'}"></a><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
-    } else el.innerHTML=`<div class="small-muted">${msg.fileName||'File'}</div><a class="file-link" href="${msg.fileData}" download="${msg.fileName||'file'}"></a><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
-    const thumb=document.querySelector(`[data-temp="${msg._key}"]`); if(thumb) thumb.remove();
-    if(previewStrip.children.length===0) previewStrip.style.display='none';
-    if(localPreviewMap[msg._key]?.startsWith('blob:')) try{URL.revokeObjectURL(localPreviewMap[msg._key]);}catch(e){}
-    delete localPreviewMap[msg._key];
+      el.innerHTML=`<img class="chat-image" src="${msg.fileData}" alt="${msg.fileName||'image'}"/><a class="file-link" href="${msg.fileData}" download="${msg.fileName||'image'}"></a><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}${readIndicator}</span>`;
+    } else el.innerHTML=`<div class="small-muted">${msg.fileName||'File'}</div><a class="file-link" href="${msg.fileData}" download="${msg.fileName||'file'}"></a><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}${readIndicator}</span>`;
   } else if(msg.uploading){
     const local=localPreviewMap[msg._key];
     if(local && (msg.fileType||msg.fileName||'').match(/image\/|jpg|jpeg|png|gif/i)){
       el.innerHTML=`<img class="chat-image" src="${local}" alt="preview"/><span class="uploading-badge">Sending...</span><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
     } else el.innerHTML=`<div class="small-muted">${msg.fileName||'Sending file...'}</div><span class="uploading-badge">Sending...</span><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
-  } else if(msg.text) el.innerHTML=`${escapeHtml(msg.text)}<div class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</div>`;
+  } else if(msg.text) el.innerHTML=`${escapeHtml(msg.text)}<div class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}${readIndicator}</div>`;
   else el.innerHTML=`<div class="small-muted">Unknown message</div>`;
+  
   chatMessages.scrollTop=chatMessages.scrollHeight;
 }
 
 // ===== Typing =====
-chatInput.addEventListener('input',()=>{
+chatInput.addEventListener('input', ()=>{
   if(!currentChatFriendUid) return;
   db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).set(true);
   clearTimeout(typingTimeout);
   typingTimeout=setTimeout(()=>db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove(),1000);
 });
 function listenTyping(friendUid){
-  db.ref('typing/'+currentUserUid+'/'+friendUid).on('value',snap=>{
-    typingIndicator.textContent=snap.exists()?`${chatWith.textContent} is typing...`:'';
+  db.ref('typing/'+currentUserUid+'/'+friendUid).on('value', snap=>{
+    typingIndicator.textContent = snap.exists()?`${chatWith.textContent} is typing...`:'';
   });
 }
 
@@ -257,7 +271,7 @@ function listenTyping(friendUid){
 function sendMessage(){
   const text=chatInput.value.trim(); if(!text || !currentChatFriendUid) return;
   const chatId=getChatId(currentUserUid,currentChatFriendUid);
-  const msgObj={ sender:currentUserUid, receiver:currentChatFriendUid, text, timestamp:Date.now() };
+  const msgObj={ sender:currentUserUid, receiver:currentChatFriendUid, text, timestamp:Date.now(), read:false };
   db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [currentChatFriendUid]:true });
   db.ref('chats/'+chatId+'/messages').push(msgObj);
   chatInput.value='';
@@ -278,95 +292,8 @@ function closeChat(){
 
 // ===== Helpers =====
 function getChatId(uid1,uid2){ return uid1<uid2?uid1+'_'+uid2:uid2+'_'+uid1; }
-function escapeHtml(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
-
-// ===== Unread Counters =====
-db.ref('chats').on('child_added',snap=>{
-  snap.ref.child('messages').on('child_added',msgSnap=>{
-    const msg=msgSnap.val();
-    if(msg?.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
-      unreadCounters[msg.sender]=(unreadCounters[msg.sender]||0)+1;
-      lastChatTimestamps[msg.sender]=msg.timestamp;
-      updateFriendListBadges();
-    }
-  });
-});
-
-// ===== Drag Chat =====
-dragElement(chatModal);
-function dragElement(el){
-  let pos1=0,pos2=0,pos3=0,pos4=0;
-  const header=document.getElementById("chatHeader");
-  if(header) header.onmousedown=dragMouseDown; else el.onmousedown=dragMouseDown;
-  function dragMouseDown(e){ e.preventDefault(); pos3=e.clientX; pos4=e.clientY; document.onmouseup=closeDragElement; document.onmousemove=elementDrag; }
-  function elementDrag(e){ e.preventDefault(); pos1=pos3-e.clientX; pos2=pos4-e.clientY; pos3=e.clientX; pos4=e.clientY; 
-    const newTop=elmntTop(el.offsetTop-pos2); const newLeft=elmntLeft(el.offsetLeft-pos1);
-    el.style.top=newTop+'px'; el.style.left=newLeft+'px'; 
-  }
-  function closeDragElement(){ document.onmouseup=null; document.onmousemove=null; }
-  function elmntTop(top){ return Math.max(0, Math.min(window.innerHeight-el.offsetHeight, top)); }
-  function elmntLeft(left){ return Math.max(0, Math.min(window.innerWidth-el.offsetWidth, left)); }
-}
-
-// ===== File Upload =====
-fileBtn.addEventListener('click',()=>chatFileInput.click());
-chatFileInput.addEventListener('change',handleFiles);
-function handleFiles(){
-  const files = Array.from(chatFileInput.files||[]);
-  if(files.length===0 || !currentChatFriendUid){ chatFileInput.value=''; return; }
-  previewStrip.innerHTML=''; previewStrip.style.display='flex';
-  const chatId = getChatId(currentUserUid,currentChatFriendUid);
-  db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [currentChatFriendUid]:true });
-  files.forEach(file=>{
-    const msgRef = db.ref('chats/'+chatId+'/messages').push();
-    const key = msgRef.key;
-    const placeholder={ sender:currentUserUid, receiver:currentChatFriendUid, timestamp:Date.now(), fileName:file.name, fileType:file.type||'', uploading:true };
-    msgRef.set(placeholder).then(()=>{
-      if(file.type.startsWith('image/')){
-        const objUrl=URL.createObjectURL(file); localPreviewMap[key]=objUrl; addPreviewThumb(key,objUrl,file.name);
-        compressImageToDataURL(file,64*1024,dataUrl=>{ db.ref('chats/'+chatId+'/messages/'+key).update({ fileData:dataUrl, uploading:false }); });
-      } else {
-        addPreviewThumb(key,null,file.name);
-        const reader=new FileReader();
-        reader.onload=e=>db.ref('chats/'+chatId+'/messages/'+key).update({ fileData:e.target.result, uploading:false });
-        reader.readAsDataURL(file);
-      }
-    });
-  });
-  chatFileInput.value='';
-}
-function addPreviewThumb(key, url, name){
-  const container=document.createElement('div'); container.dataset.temp=key; container.style.display='flex'; container.style.flexDirection='column'; container.style.alignItems='center'; container.style.width='70px';
-  if(url){ const img=document.createElement('img'); img.src=url; img.className='preview-thumb'; container.appendChild(img); }
-  else { const box=document.createElement('div'); box.className='preview-thumb'; box.style.display='flex'; box.style.alignItems='center'; box.style.justifyContent='center'; box.textContent=name.split('.')[0]; box.style.fontSize='11px'; container.appendChild(box); }
-  const progressBar=document.createElement('div'); progressBar.className='progress-bar'; progressBar.innerHTML='<div class="progress-fill" style="width:30%"></div>'; container.appendChild(progressBar);
-  previewStrip.appendChild(container);
-}
-
-// ===== Image Compression =====
-function compressImageToDataURL(file,maxBytes,callback){
-  if(file.size<=maxBytes){ const r=new FileReader(); r.onload=e=>callback(e.target.result); r.readAsDataURL(file); return; }
-  const reader=new FileReader(); reader.onload=e=>{
-    const img=new Image(); img.onload=()=>{
-      let scale=Math.sqrt(maxBytes/file.size); scale=Math.min(1,Math.max(0.1,scale)); let quality=0.9;
-      const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d');
-      (function attempt(){
-        canvas.width=Math.max(1,Math.round(img.width*scale)); canvas.height=Math.max(1,Math.round(img.height*scale));
-        ctx.clearRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0,canvas.width,canvas.height);
-        try {
-          const dataUrl=canvas.toDataURL(file.type||'image/jpeg',quality);
-          const approxBytes=Math.round((dataUrl.split(',')[1]||'').length*3/4);
-          if(approxBytes<=maxBytes||(quality<=0.35&&scale<=0.25)) callback(dataUrl);
-          else{ if(quality>0.4) quality=Math.max(0.35,quality-0.15); else scale=Math.max(0.2,scale*0.8); setTimeout(attempt,10); }
-        } catch(e){ const r2=new FileReader(); r2.onload=ev=>callback(ev.target.result); r2.readAsDataURL(file); }
-      })();
-    };
-    img.src=e.target.result;
-  }; reader.readAsDataURL(file);
-}
-
-// ===== Revoke URLs on unload =====
-window.addEventListener('beforeunload',()=>{ Object.values(localPreviewMap).forEach(url=>{ try{ if(url.startsWith('blob:')) URL.revokeObjectURL(url); }catch(e){} }); });
+function escapeHtml(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 </script>
+
 </body>
 </html>
