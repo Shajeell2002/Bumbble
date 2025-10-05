@@ -42,6 +42,15 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
 .progress-bar { width:60px; height:4px; background:#eee; border-radius:3px; margin-top:4px; }
 .progress-fill { height:100%; width:0%; background:#059669; border-radius:3px; }
 .small-muted { font-size:11px; color:#666; }
+
+/* Highlight for new messages */
+.user-row.new-message {
+  animation: blink-highlight 1s ease-in-out 0s 3;
+}
+@keyframes blink-highlight {
+  0%, 100% { background: #fffbcc; }
+  50% { background: #fff2a8; }
+}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -218,15 +227,21 @@ function openChat(friendUid, friendName){
     addOrUpdateMessageToChat(msg);
     lastChatTimestamps[friendUid]=msg.timestamp;
 
-    // 🔥 New: update unread count
+    // 🔥 Unread counter & highlight
     if(msg.sender !== currentUserUid && msg.sender !== currentChatFriendUid){
       if(!unreadCounters[msg.sender]) unreadCounters[msg.sender] = 0;
       unreadCounters[msg.sender]++;
+      const row = document.querySelector(`.user-row[data-uid="${msg.sender}"]`);
+      if(row){
+        row.classList.add('new-message');
+        setTimeout(()=>{ row.classList.remove('new-message'); }, 3000);
+      }
     } else if(msg.sender === currentChatFriendUid){
       unreadCounters[msg.sender] = 0;
     }
     updateFriendListBadges();
   });
+
   currentChatListener.on('child_changed', snap=>{
     const msg = snap.val(); msg._key = snap.key;
     addOrUpdateMessageToChat(msg);
@@ -323,8 +338,8 @@ function updateFriendListBadges(){
   document.querySelectorAll('.user-row').forEach(row=>{
     const uid=row.dataset.uid;
     const badge=row.querySelector('.badge');
-    if(unreadCounters[uid] && unreadCounters[uid]>0){
-      if(badge) badge.textContent = unreadCounters[uid];
+    if(unreadCounters[uid]){
+      if(badge) badge.textContent=unreadCounters[uid];
       else { const span=document.createElement('span'); span.className='badge'; span.textContent=unreadCounters[uid]; row.querySelector('div').appendChild(span); }
     } else if(badge) badge.remove();
   });
