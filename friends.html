@@ -338,16 +338,28 @@ db.ref('chats').on('child_added',snap=>{
 function updateFriendListBadges(){
   document.querySelectorAll('.user-row').forEach(row=>{
     const uid=row.dataset.uid;
-let badge = div.querySelector('.badge');
-
-
+const div = row.querySelector('div');   
  const badge=row.querySelector('.badge');
+let badge = div.querySelector('.badge');
 
     if(unreadCounters[uid]){
       if(badge){ badge.textContent=unreadCounters[uid];
-      } else { const span=document.createElement('span'); span.className='badge'; span.textContent=unreadCounters[uid]; row.querySelector('div').appendChild(span); }
-    } else if(badge) badge.remove();
+ } else {
+        badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.textContent = unreadCounters[uid];
+        // Insert badge **right after the name**
+        const nameTextNode = div.childNodes[1]; // assumes first child after status-dot is name text
+        div.insertBefore(badge, nameTextNode.nextSibling);
+      }
+    } else if(badge) {
+      badge.remove();
+    }
   });
+}
+
+      } else { const span=document.createElement('span'); span.className='badge'; span.textContent=unreadCounters[uid]; row.querySelector('div').appendChild(span); }
+
 }
 
 /* ---------- Drag chat ---------- */
@@ -431,4 +443,3 @@ window.addEventListener('beforeunload', ()=>{ Object.values(localPreviewMap).for
 </script>
 </body>
 </html>
-
