@@ -176,10 +176,12 @@ function setupOnlineStatus(){
 
 /* ---------- Users list ---------- */
 function loadUsersRealtime(){
-let badgeHtml = unreadCounters[f.uid] ? ` <span class="badge">${unreadCounters[f.uid]}</span>` : "";
+let badgeHtml = unreadCounters[f.uid] ? `<span class="badge">${unreadCounters[f.uid]}</span>` : "";
 row.innerHTML = `<div>
   <span class="status-dot ${f.online?'online':'offline'}"></span>
-  ${f.name}${badgeHtml} (${f.gender})
+  ${f.name} (${f.gender}) 
+  ${badgeHtml}
+  <span class="new-dot"></span>
 </div>`;
   
 db.ref('users').on('value', snapshot => {
