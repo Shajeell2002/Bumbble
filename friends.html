@@ -179,8 +179,11 @@ function loadUsersRealtime(){
       row.classList.add("user-row");
       row.dataset.uid = f.uid;
       row.dataset.name = f.name;
-      let badgeHtml = unreadCounters[f.uid]? `<span class="badge">${unreadCounters[f.uid]}</span>`:"";
-      row.innerHTML = `<div><span class="status-dot ${f.online?'online':'offline'}"></span>${f.name} (${f.gender}) ${badgeHtml}</div>`;
+      let badgeHtml = unreadCounters[f.uid] ? ` <span class="badge">${unreadCounters[f.uid]}</span>` : "";
+row.innerHTML = `<div>
+  <span class="status-dot ${f.online?'online':'offline'}"></span>
+  ${f.name}${badgeHtml} (${f.gender})
+</div>`;
       row.addEventListener('click',()=>openChat(f.uid,f.name));
       userList.appendChild(row);
     });
