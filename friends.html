@@ -1,3 +1,4 @@
+<script>
 /* ========== Firebase config ========== */
 const firebaseConfig = {
     apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
@@ -32,7 +33,7 @@ let typingTimeout;
 const unreadCounters = {};
 const lastChatTimestamps = {};
 const localPreviewMap = {};
-let lastReadListeners = {}; // NEW: To store listeners for last read status
+let lastReadListeners = {}; 
 
 /* ---------- Auth ---------- */
 auth.onAuthStateChanged(user => {
@@ -55,7 +56,7 @@ auth.onAuthStateChanged(user => {
         });
         setupOnlineStatus();
         loadUsersRealtime();
-        setupUnreadMessageListeners(); // NEW: Setup listeners for all chats
+        setupUnreadMessageListeners();
         setTimeout(() => {
             const lastUid = localStorage.getItem("lastChatFriendUid");
             const lastName = localStorage.getItem("lastChatFriendName");
@@ -123,7 +124,7 @@ function openChat(friendUid, friendName){
     chatMessages.innerHTML = '';
     typingIndicator.textContent = "";
 
-    // NEW: Mark the chat as read by updating lastRead for the current user
+    // Mark the chat as read by updating lastRead for the current user
     const chatId = getChatId(currentUserUid, friendUid);
     const now = Date.now();
     db.ref(`chats/${chatId}/lastRead/${currentUserUid}`).set(now);
@@ -151,7 +152,7 @@ function openChat(friendUid, friendName){
         const msg = snap.val(); msg._key = snap.key;
         addOrUpdateMessageToChat(msg);
         lastChatTimestamps[friendUid]=msg.timestamp;
-        // NEW: If a new message comes while chat is open, update lastRead immediately
+        // If a new message comes while chat is open, update lastRead immediately
         if (msg.sender === friendUid) {
             db.ref(`chats/${chatId}/lastRead/${currentUserUid}`).set(Date.now());
         }
@@ -389,3 +390,7 @@ function compressImageToDataURL(file,maxBytes,callback){
     };
     reader.readAsDataURL(file);
 }
+
+/* ---------- Revoke URLs ---------- */
+window.addEventListener('beforeunload', ()=>{ Object.values(localPreviewMap).forEach(url=>{ try{ if(url&&url.startsWith('blob:')) URL.revokeObjectURL(url); }catch(e){} }); });
+</script>
