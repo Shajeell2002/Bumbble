@@ -9,7 +9,6 @@ body { font-family: Arial, sans-serif; margin:0; background:#fefefe; color:#333;
 header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#ffcb2b; box-shadow:0 3px 6px rgba(0,0,0,0.1); position:fixed; top:0; left:0; right:0; z-index:500; }
 header h1{ font-size:24px; margin:0; }
 nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
-nav a:hover{ text-decoration:underline; }
 .friends-container { width:250px; background:#fffbe6; border-right:1px solid #eee; padding:10px; overflow-y:auto; position:fixed; top:60px; bottom:0; left:0; }
 .main-content { flex:1; margin-left:250px; padding:80px 20px 20px 20px; }
 .user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
@@ -47,7 +46,6 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 </head>
 <body>
 
@@ -67,7 +65,7 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
       <button onclick="closeChat()">X</button>
     </div>
 
-    <!-- preview strip (for local immediate thumbnails while uploading) -->
+    <!-- preview strip (for local immediate thumbnails while DB update in progress) -->
     <div id="previewStrip" class="preview-strip" style="display:none;"></div>
 
     <div id="chatMessages"></div>
@@ -82,9 +80,7 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
 </div>
 
 <script>
-/* ============================
-   Firebase config - keep same
-   ============================ */
+/* ========== Firebase config ========== */
 const firebaseConfig = { 
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs", 
   authDomain:"bumbble-c061f.firebaseapp.com", 
@@ -97,9 +93,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
-const storage = firebase.storage();
 
-/* UI references */
+/* ========== UI refs ========== */
 const nav = document.getElementById("navLinks");
 const userList = document.getElementById("userList");
 let currentUserUid = "";
@@ -118,10 +113,9 @@ const previewStrip = document.getElementById("previewStrip");
 let typingTimeout;
 const unreadCounters = {};
 const lastChatTimestamps = {};
-// Map of local object URLs by messageKey so we can update/revoke when final URL arrives
-const localPreviewMap = {};
+const localPreviewMap = {}; // map DB message key -> local object URL or data URL
 
-/* ---------- Auth / init ---------- */
+/* ---------- Auth ---------- */
 auth.onAuthStateChanged(user => {
   if(user && user.emailVerified){
     currentUserUid = user.uid;
@@ -149,7 +143,7 @@ auth.onAuthStateChanged(user => {
       if(lastUid && lastName){
         openChat(lastUid, lastName);
       }
-    }, 1000);
+    }, 800);
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
     document.querySelector(".friends-container").innerHTML = "<p>Please login to view users.</p>";
@@ -167,7 +161,7 @@ function setupOnlineStatus(){
   });
 }
 
-/* ---------- Users list (sorted) ---------- */
+/* ---------- Users list ---------- */
 function loadUsersRealtime(){
   db.ref('users').on('value', snapshot => {
     const usersData = snapshot.val() || {};
@@ -182,7 +176,6 @@ function loadUsersRealtime(){
       friends.push({ uid, name, gender, online });
     });
 
-    // Put users with recent lastChat timestamp at top, otherwise alphabetical
     friends.sort((a,b)=>{
       const tA = lastChatTimestamps[a.uid] || 0;
       const tB = lastChatTimestamps[b.uid] || 0;
@@ -204,7 +197,7 @@ function loadUsersRealtime(){
   });
 }
 
-/* ---------- Chat open / listen ---------- */
+/* ---------- Open chat ---------- */
 function openChat(friendUid, friendName){
   document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
   const activeRow=document.querySelector(`.user-row[data-uid="${friendUid}"]`);
@@ -228,15 +221,13 @@ function openChat(friendUid, friendName){
   const chatRef = db.ref('chats/'+chatId);
   chatRef.child('members').update({ [currentUserUid]: true, [friendUid]: true });
 
-  // load existing messages once
   chatRef.child('messages').once('value', snap=>{
     const msgs = snap.val()||{};
-    const sorted = Object.values(msgs).sort((a,b)=>a.timestamp-b.timestamp);
+    const sorted = Object.keys(msgs).map(k => ({...msgs[k], _key:k})).sort((a,b)=>a.timestamp-b.timestamp);
     sorted.forEach(msg=>addOrUpdateMessageToChat(msg));
     chatMessages.scrollTop=chatMessages.scrollHeight;
   });
 
-  // listen for new messages and updates
   currentChatListener = chatRef.child('messages');
   currentChatListener.on('child_added', snap=>{
     const msg = snap.val();
@@ -251,71 +242,68 @@ function openChat(friendUid, friendName){
   });
 }
 
-/* ---------- Render messages (add or update) ---------- */
+/* ---------- Add or update message ---------- */
 function addOrUpdateMessageToChat(msg){
-  // Each message DOM element uses id = msg-<key>
   if(!msg || !msg._key) return;
   const id = 'msg-' + msg._key;
-  let existing = document.getElementById(id);
-
+  let el = document.getElementById(id);
   const isSelf = msg.sender === currentUserUid;
-  if(!existing){
-    // create
-    const div = document.createElement('div');
-    div.id = id;
-    div.classList.add('message', isSelf ? 'self' : 'friend');
-    div.dataset.ts = msg.timestamp || Date.now();
-    chatMessages.appendChild(div);
-    existing = div;
+
+  if(!el){
+    el = document.createElement('div');
+    el.id = id;
+    el.classList.add('message', isSelf ? 'self' : 'friend');
+    el.dataset.ts = msg.timestamp || Date.now();
+    chatMessages.appendChild(el);
   }
 
-  // Build inner markup based on msg content / state
-  if(msg.fileUrl){
-    // final file exists
-    if(msg.fileUrl.match(/\.(jpeg|jpg|png|gif)$/i)){
-      // image
-      existing.innerHTML = `<img class="chat-image" src="${msg.fileUrl}" alt="${msg.fileName || 'image'}" />` +
-                           `<a class="small-muted file-link" href="${msg.fileUrl}" download>Download</a>` +
-                           `<span class="timestamp ${isSelf ? '' : 'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
+  // If fileData present (base64/data URL)
+  if(msg.fileData){
+    // image?
+    if((msg.fileType||'').startsWith('image/') || msg.fileName && msg.fileName.match(/\.(jpg|jpeg|png|gif)$/i)){
+      el.innerHTML = `<img class="chat-image" src="${msg.fileData}" alt="${msg.fileName || 'image'}" />` +
+                     `<a class="file-link" href="${msg.fileData}" download="${msg.fileName || 'image'}">Download</a>` +
+                     `<span class="timestamp ${isSelf ? '' : 'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
     } else {
-      // non-image file — show file link with download attr
-      existing.innerHTML = `<a class="file-link" href="${msg.fileUrl}" download>${msg.fileName || 'File'}</a>` +
-                           `<span class="timestamp ${isSelf ? '' : 'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
+      // other file types: show file icon / link
+      el.innerHTML = `<div class="small-muted">${msg.fileName || 'File'}</div>` +
+                     `<a class="file-link" href="${msg.fileData}" download="${msg.fileName || 'file'}">Download</a>` +
+                     `<span class="timestamp ${isSelf ? '' : 'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
     }
 
-    // revoke local preview if exists
-    if(localPreviewMap[msg._key]){
+    // remove preview strip thumbnail if exists
+    const thumb = document.querySelector(`[data-temp="${msg._key}"]`);
+    if(thumb) thumb.remove();
+    if(previewStrip.children.length === 0) previewStrip.style.display = 'none';
+
+    // revoke local object URL if used
+    if(localPreviewMap[msg._key] && localPreviewMap[msg._key].startsWith('blob:')){
       try{ URL.revokeObjectURL(localPreviewMap[msg._key]); }catch(e){}
-      delete localPreviewMap[msg._key];
-      // Also remove preview strip thumbnail for that key
-      const thumb = document.querySelector(`[data-temp="${msg._key}"]`);
-      if(thumb) thumb.remove();
-      if(previewStrip.children.length === 0) previewStrip.style.display = 'none';
     }
-  } else if(msg.uploading){
-    // uploading placeholder
-    // If sender: show local preview if present, else show filename + uploading badge
-    const localUrl = localPreviewMap[msg._key];
-    if(localUrl && (msg.fileName||'').match(/\.(jpeg|jpg|png|gif)$/i)){
-      existing.innerHTML = `<img class="chat-image" src="${localUrl}" alt="preview" />` +
-                           `<span class="uploading-badge">Uploading...</span>` +
-                           `<span class="timestamp ${isSelf ? '' : 'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
+    delete localPreviewMap[msg._key];
+
+  } else if(msg.uploading) {
+    // uploading placeholder: show local preview (if any) else name + uploading badge
+    const local = localPreviewMap[msg._key];
+    if(local && (msg.fileType || msg.fileName || '').match(/image\/|jpg|jpeg|png|gif/i)){
+      el.innerHTML = `<img class="chat-image" src="${local}" alt="preview" />` +
+                     `<span class="uploading-badge">Sending...</span>` +
+                     `<span class="timestamp ${isSelf ? '' : 'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
     } else {
-      existing.innerHTML = `<div class="small-muted">${msg.fileName || 'Sending file...'}</div>` +
-                           `<span class="uploading-badge">Uploading...</span>` +
-                           `<span class="timestamp ${isSelf ? '' : 'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
+      el.innerHTML = `<div class="small-muted">${msg.fileName || 'Sending file...'}</div>` +
+                     `<span class="uploading-badge">Sending...</span>` +
+                     `<span class="timestamp ${isSelf ? '' : 'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
     }
   } else if(msg.text){
-    // plain text
-    existing.innerHTML = `${escapeHtml(msg.text)}<div class="timestamp ${isSelf ? '' : 'friend'}">${new Date(msg.timestamp).toLocaleString()}</div>`;
+    el.innerHTML = `${escapeHtml(msg.text)}<div class="timestamp ${isSelf ? '' : 'friend'}">${new Date(msg.timestamp).toLocaleString()}</div>`;
   } else {
-    existing.innerHTML = `<div class="small-muted">Unknown message</div>`;
+    el.innerHTML = `<div class="small-muted">Unknown message</div>`;
   }
 
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-/* ---------- Typing indicator ---------- */
+/* ---------- Typing ---------- */
 chatInput.addEventListener("input",()=>{
   if(!currentChatFriendUid) return;
   db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).set(true);
@@ -329,7 +317,7 @@ function listenTyping(friendUid){
   });
 }
 
-/* ---------- Send text message ---------- */
+/* ---------- Text send ---------- */
 function sendMessage(){
   const text = chatInput.value.trim();
   if(!text || !currentChatFriendUid) return;
@@ -364,7 +352,7 @@ function escapeHtml(unsafe) {
        .replace(/'/g, "&#039;");
 }
 
-/* ---------- Unread counters (existing logic) ---------- */
+/* ---------- Unread counters ---------- */
 db.ref('chats').on('child_added',snap=>{
   snap.ref.child('messages').on('child_added',msgSnap=>{
     const msg = msgSnap.val();
@@ -376,7 +364,6 @@ db.ref('chats').on('child_added',snap=>{
     }
   });
 });
-
 function updateFriendListBadges(){
   document.querySelectorAll('.user-row').forEach(row=>{
     const uid=row.dataset.uid;
@@ -388,7 +375,7 @@ function updateFriendListBadges(){
   });
 }
 
-/* ---------- Drag chat window ---------- */
+/* ---------- Drag chat ---------- */
 dragElement(chatModal);
 function dragElement(elmnt){
   let pos1=0,pos2=0,pos3=0,pos4=0;
@@ -399,7 +386,7 @@ function dragElement(elmnt){
   function closeDragElement(){ document.onmouseup=null; document.onmousemove=null; }
 }
 
-/* ---------- File input & auto-send (real-time) ---------- */
+/* ---------- File input & immediate send (base64/data URL in Realtime DB) ---------- */
 fileBtn.addEventListener('click', ()=> chatFileInput.click());
 chatFileInput.addEventListener('change', handleFiles);
 
@@ -407,51 +394,66 @@ function handleFiles(){
   const files = Array.from(chatFileInput.files || []);
   if(files.length === 0 || !currentChatFriendUid) { chatFileInput.value=''; return; }
 
-  // Show preview strip thumbnails immediately for sender
   previewStrip.innerHTML = '';
   previewStrip.style.display = 'flex';
 
-  // For each file: push an uploading message to DB, show local preview, then compress+upload and update the same message
   const chatId = getChatId(currentUserUid, currentChatFriendUid);
   db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [currentChatFriendUid]:true });
 
   files.forEach(file => {
-    const timestampNow = Date.now();
-    // create placeholder message in DB with uploading flag
+    // 1) create placeholder DB message with uploading:true immediately
     const msgRef = db.ref('chats/' + chatId + '/messages').push();
-    const msgKey = msgRef.key;
-    const placeholder = { sender: currentUserUid, receiver: currentChatFriendUid, timestamp: timestampNow, fileName: file.name, uploading: true };
+    const key = msgRef.key;
+    const placeholder = {
+      sender: currentUserUid,
+      receiver: currentChatFriendUid,
+      timestamp: Date.now(),
+      fileName: file.name,
+      fileType: file.type || '',
+      uploading: true
+    };
     msgRef.set(placeholder).then(()=> {
-      // create local preview for sender and map it to msgKey
+      // 2) show preview immediately in previewStrip and message area (local quickly)
       if(file.type.startsWith('image/')){
-        const localUrl = URL.createObjectURL(file);
-        localPreviewMap[msgKey] = localUrl;
-        addPreviewThumbToStrip(msgKey, localUrl, file.name);
+        const objUrl = URL.createObjectURL(file);
+        localPreviewMap[key] = objUrl; // used by rendering until DB updated with fileData
+        addPreviewThumbToStrip(key, objUrl, file.name);
       } else {
-        addPreviewThumbToStrip(msgKey, null, file.name);
+        // other file: show generic thumb
+        addPreviewThumbToStrip(key, null, file.name);
       }
 
-      // compress (if image) then upload
+      // 3) prepare Base64/data URL: compress if image, else read as dataURL
       if(file.type.startsWith('image/')){
-        compressImage(file, 64*1024, compressedFile => {
-          uploadFileAndFinalize(chatId, msgKey, compressedFile);
+        compressImageToDataURL(file, 64 * 1024, dataUrl => {
+          // update DB message with fileData (base64/data URL) and clear uploading flag
+          db.ref('chats/'+chatId+'/messages/'+key).update({ fileData: dataUrl, uploading:false, fileName: file.name, fileType: file.type || '' });
         });
       } else {
-        // Non-image — upload as-is
-        uploadFileAndFinalize(chatId, msgKey, file);
+        // read other files as dataURL (may be large depending on file). This is what you asked: base64 in DB
+        const reader = new FileReader();
+        reader.onload = e => {
+          const dataUrl = e.target.result; // base64 data URL
+          db.ref('chats/'+chatId+'/messages/'+key).update({ fileData: dataUrl, uploading:false, fileName: file.name, fileType: file.type || '' });
+        };
+        reader.onerror = err => {
+          console.error('File read error', err);
+          db.ref('chats/'+chatId+'/messages/'+key).update({ uploading:false, uploadFailed:true });
+        };
+        reader.readAsDataURL(file);
       }
-    }).catch(err => {
-      console.error('Error creating placeholder message', err);
+    }).catch(err=>{
+      console.error('DB placeholder error', err);
     });
   });
 
   chatFileInput.value = '';
 }
 
-/* ---------- Add small thumb to the preview strip ---------- */
-function addPreviewThumbToStrip(msgKey, localUrl, filename){
+/* ---------- Add preview thumb to preview strip ---------- */
+function addPreviewThumbToStrip(key, localUrl, filename){
   const container = document.createElement('div');
-  container.dataset.temp = msgKey;
+  container.dataset.temp = key;
   container.style.display = 'flex';
   container.style.flexDirection = 'column';
   container.style.alignItems = 'center';
@@ -473,41 +475,22 @@ function addPreviewThumbToStrip(msgKey, localUrl, filename){
     container.appendChild(box);
   }
 
-  // progress bar
+  // progress fill placeholder (visually shows "in progress")
   const progressBar = document.createElement('div');
   progressBar.className = 'progress-bar';
-  progressBar.innerHTML = '<div class="progress-fill" style="width:0%"></div>';
+  progressBar.innerHTML = '<div class="progress-fill" style="width:30%"></div>'; // static small motion until completed
   container.appendChild(progressBar);
 
   previewStrip.appendChild(container);
 }
 
-/* ---------- Upload + finalize DB message ---------- */
-function uploadFileAndFinalize(chatId, msgKey, file){
-  const storageRef = storage.ref('chat_files/' + chatId + '/' + Date.now() + '_' + file.name);
-  const uploadTask = storageRef.put(file);
-
-  // update progress bar in preview strip
-  uploadTask.on('state_changed', snapshot => {
-    const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-    const el = document.querySelector(`[data-temp="${msgKey}"] .progress-fill`);
-    if(el) el.style.width = pct + '%';
-  }, err => {
-    console.error('Upload error', err);
-    db.ref('chats/'+chatId+'/messages/'+msgKey).update({ uploading:false, uploadFailed:true });
-  }, () => {
-    // success
-    uploadTask.snapshot.ref.getDownloadURL().then(url => {
-      db.ref('chats/'+chatId+'/messages/'+msgKey).update({ fileUrl: url, uploading:false });
-    });
-  });
-}
-
-/* ---------- Image compression (keeps ≤ maxSize as best effort) ---------- */
-function compressImage(file, maxSize, callback){
-  // If already small, don't compress
-  if(file.size <= maxSize){
-    callback(file);
+/* ---------- Image compression to Data URL (fast iterative) ---------- */
+function compressImageToDataURL(file, maxBytes, callback){
+  // If file already small, just read as dataURL
+  if(file.size <= maxBytes){
+    const r = new FileReader();
+    r.onload = e => callback(e.target.result);
+    r.readAsDataURL(file);
     return;
   }
 
@@ -515,52 +498,61 @@ function compressImage(file, maxSize, callback){
   reader.onload = e => {
     const img = new Image();
     img.onload = () => {
-      // iterative quality reduction loop to hit maxSize
+      // strategy: progressively reduce dimensions (scale factor) and quality until target size reached
+      let scale = Math.sqrt(maxBytes / file.size); // initial scale estimate
+      scale = Math.min(1, Math.max(0.1, scale)); // clamp
+      let quality = 0.9;
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
 
-      // scale down if needed (reduce by sqrt ratio)
-      const ratio = Math.sqrt(maxSize / file.size);
-      canvas.width = Math.max(1, Math.round(img.width * ratio));
-      canvas.height = Math.max(1, Math.round(img.height * ratio));
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      // limit loops so we don't block too long
+      (function attempt(){
+        // set canvas size
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      // try several quality steps
-      (function tryCompress(quality){
-        canvas.toBlob(blob => {
-          if(!blob) {
-            // fallback: return original
-            callback(file);
-            return;
-          }
-          if(blob.size <= maxSize || quality <= 0.3){
+        // produce dataURL at current quality
+        try {
+          const dataUrl = canvas.toDataURL(file.type || 'image/jpeg', quality);
+          // roughly estimate byte size
+          const base64Str = dataUrl.split(',')[1] || '';
+          const approxBytes = Math.round(base64Str.length * 3 / 4);
+
+          if(approxBytes <= maxBytes || (quality <= 0.35 && scale <= 0.25)){
             // done
-            const newFile = new File([blob], file.name, { type: file.type });
-            callback(newFile);
+            callback(dataUrl);
           } else {
-            // reduce quality and retry
-            tryCompress(quality - 0.15);
+            // reduce quality first, then scale more if necessary
+            if(quality > 0.4){
+              quality = Math.max(0.35, quality - 0.15);
+            } else {
+              scale = Math.max(0.2, scale * 0.8);
+            }
+            // yield back to event loop briefly to keep UI responsive
+            setTimeout(attempt, 10);
           }
-        }, file.type || 'image/jpeg', quality);
-      })(0.9);
+        } catch(err){
+          // fallback: send original as dataURL (may be big)
+          console.warn('compress toDataURL failed, sending original', err);
+          const r2 = new FileReader();
+          r2.onload = ev => callback(ev.target.result);
+          r2.readAsDataURL(file);
+        }
+      })();
     };
     img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
 
-/* ---------- Utility: ensure new messages from DB are shown even if uploading placeholder created earlier ---------- */
-/* We already listen for child_added and child_changed. When the DB placeholder is created (uploading:true), it triggers child_added and renders uploading state.
-   When upload finishes we update the DB message with fileUrl; child_changed will then update the same element to show the final image/link. */
-
-/* ---------- Small escape: revoke all leftover object URLs on unload ---------- */
+/* ---------- Revoke local URLs on unload ---------- */
 window.addEventListener('beforeunload', ()=>{
   Object.values(localPreviewMap).forEach(url => {
-    try{ URL.revokeObjectURL(url); }catch(e){}
+    try{ if(url && url.startsWith('blob:')) URL.revokeObjectURL(url); }catch(e){}
   });
 });
-
-/* ---------- End script ---------- */
 </script>
 
 </body>
