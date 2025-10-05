@@ -16,32 +16,18 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 .user-row:hover, .user-row.active { background:#fffbcc; }
 .status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
 .online { background:green; } .offline { background:red; }
-.badge { background:red; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
-#chatModal { position:fixed; bottom:0; right:20px; width:360px; max-height:70vh; border:1px solid #ccc; background:#fff; border-radius:10px 10px 0 0; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); resize:both; overflow:hidden; z-index:1000; }
-#chatHeader { background:#ffcb2b; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; border-radius:10px 10px 0 0; cursor:move; }
+.badge { background:red; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; display:none; }
+#chatModal { position:fixed; bottom:0; right:20px; width:360px; max-height:70vh; border:1px solid #ccc; background:#fff; border-radius:10px 10px 0 0; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); overflow:hidden; z-index:1000; }
+#chatHeader { background:#ffcb2b; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; border-radius:10px 10px 0 0; }
 #chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:#fefefe; }
-#typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
-.message { max-width:80%; padding:8px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
+.message { max-width:80%; padding:8px 10px; border-radius:10px; word-wrap:break-word; }
 .message.self { background:#059669; color:white; align-self:flex-end; }
 .message.friend { background:#e9e9e9; color:#111; align-self:flex-start; }
-.timestamp { font-size:10px; color:#eee; margin-top:6px; text-align:right; display:block; }
-.timestamp.friend { color:#666; }
-.uploading-badge { font-size:11px; color:#444; margin-top:6px; display:inline-block; background:#fff3cd; padding:3px 6px; border-radius:6px; border:1px solid #ffeeba; }
+.timestamp { font-size:10px; color:#555; margin-top:4px; text-align:right; display:block; }
 #chatInputContainer { display:flex; border-top:1px solid #ddd; align-items:center; gap:6px; padding:8px; }
 #chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:8px; background:#fafafa; }
 #sendBtn, #fileBtn { padding:8px 12px; border:none; background:#ffcb2b; cursor:pointer; border-radius:8px; }
 #sendBtn:hover, #fileBtn:hover { background:#f1b800; }
-.friends-container::-webkit-scrollbar { width:6px; }
-.friends-container::-webkit-scrollbar-thumb { background:#ffcb2b; border-radius:3px; }
-.friends-container::-webkit-scrollbar-track { background:#f1f1f1; }
-img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:pointer; display:block; margin-bottom:6px; }
-.file-link { display:inline-block; padding:6px 8px; background:#fff; border-radius:6px; border:1px solid #ddd; text-decoration:none; color:#333; margin-bottom:6px; font-size:14px; }
-.file-link::before { content: '⤓ '; }
-.preview-strip { display:flex; gap:8px; padding:8px; overflow:auto; border-bottom:1px solid #eee; background:#fff; }
-.preview-thumb { width:60px; height:60px; border-radius:6px; object-fit:cover; border:1px solid #ddd; position:relative; }
-.progress-bar { width:60px; height:4px; background:#eee; border-radius:3px; margin-top:4px; }
-.progress-fill { height:100%; width:0%; background:#059669; border-radius:3px; }
-.small-muted { font-size:11px; color:#666; }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -66,12 +52,10 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
       <button onclick="closeChat()">X</button>
     </div>
     <div id="chatMessages"></div>
-    <div id="typingIndicator"></div>
     <div id="chatInputContainer">
       <button id="fileBtn">📎</button>
       <input type="text" id="chatInput" placeholder="Type a message">
       <button id="sendBtn">Send</button>
-      <input type="file" id="chatFileInput" style="display:none;" multiple>
     </div>
   </div>
 </div>
@@ -92,18 +76,17 @@ const db = firebase.database();
 
 const nav = document.getElementById("navLinks");
 const userList = document.getElementById("userList");
-let currentUserUid = "";
-let currentChatFriendUid = "";
-let currentChatListener = null;
 const chatModal = document.getElementById("chatModal");
 const chatMessages = document.getElementById("chatMessages");
 const chatWith = document.getElementById("chatWith");
 const chatInput = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
 
-const unreadCounters = {}; // store unread counts
+let currentUserUid = "";
+let currentChatFriendUid = "";
+let currentChatListener = null;
+const unreadCounters = {};
 
-/* ====== Auth ====== */
 auth.onAuthStateChanged(user => {
   if(user && user.emailVerified){
     currentUserUid = user.uid;
@@ -120,7 +103,6 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-/* ====== Online presence ====== */
 function setupOnlineStatus(){
   const ref = db.ref('users/'+currentUserUid+'/public/online');
   db.ref('.info/connected').on('value', s=>{
@@ -128,7 +110,6 @@ function setupOnlineStatus(){
   });
 }
 
-/* ====== Load users list ====== */
 function loadUsersRealtime(){
   db.ref('users').on('value', snapshot=>{
     const data = snapshot.val()||{};
@@ -144,15 +125,15 @@ function loadUsersRealtime(){
         <div>
           <span class="status-dot ${user.online?'online':'offline'}"></span>
           ${user.name||'Unknown'}
-          <span class="badge" style="display:none;"></span>
+          <span class="badge"></span>
         </div>`;
       row.onclick=()=>openChat(uid,user.name||'Unknown');
       userList.appendChild(row);
     });
+    updateFriendListBadges();
   });
 }
 
-/* ====== Listen for new messages ====== */
 function listenForIncomingMessages(){
   db.ref('chats').on('child_added', chatSnap=>{
     chatSnap.ref.child('messages').on('child_added', msgSnap=>{
@@ -166,22 +147,18 @@ function listenForIncomingMessages(){
   });
 }
 
-/* ====== Update friend list badges ====== */
 function updateFriendListBadges(){
   document.querySelectorAll('.user-row').forEach(row=>{
     const uid=row.dataset.uid;
     const badge=row.querySelector('.badge');
     const count=unreadCounters[uid]||0;
-    if(count>0){
-      badge.textContent=count;
-      badge.style.display='inline-block';
-    } else {
-      badge.style.display='none';
-    }
+    badge.textContent=count>0?count:'';
+    badge.style.display=count>0?'inline-block':'none';
   });
 }
 
-/* ====== Open chat ====== */
+function getChatId(u1,u2){ return u1<u2 ? u1+'_'+u2 : u2+'_'+u1; }
+
 function openChat(friendUid, friendName){
   document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
   const active=document.querySelector(`.user-row[data-uid="${friendUid}"]`);
@@ -191,12 +168,35 @@ function openChat(friendUid, friendName){
   chatModal.style.display='flex';
   chatMessages.innerHTML='';
 
-  // reset unread count for this friend
+  // reset unread counter
   unreadCounters[friendUid]=0;
   updateFriendListBadges();
+
+  if(currentChatListener) currentChatListener.off();
+  const chatId=getChatId(currentUserUid,friendUid);
+  const chatRef=db.ref('chats/'+chatId+'/messages');
+
+  chatRef.once('value',snap=>{
+    const msgs=snap.val()||{};
+    const sorted=Object.keys(msgs).map(k=>({...msgs[k],_key:k})).sort((a,b)=>a.timestamp-b.timestamp);
+    sorted.forEach(m=>addOrUpdateMessageToChat(m));
+  });
+
+  currentChatListener=chatRef;
+  currentChatListener.on('child_added',snap=>{
+    const m=snap.val(); if(!m) return;
+    addOrUpdateMessageToChat({...m,_key:snap.key});
+  });
 }
 
-/* ====== Send message ====== */
+function addOrUpdateMessageToChat(msg){
+  const div=document.createElement('div');
+  div.className='message '+(msg.sender===currentUserUid?'self':'friend');
+  div.innerHTML=`${msg.text}<span class="timestamp">${new Date(msg.timestamp).toLocaleTimeString()}</span>`;
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop=chatMessages.scrollHeight;
+}
+
 sendBtn.onclick=()=>{
   const text=chatInput.value.trim();
   if(!text||!currentChatFriendUid) return;
@@ -209,9 +209,7 @@ sendBtn.onclick=()=>{
   });
   chatInput.value='';
 };
-function getChatId(u1,u2){ return u1<u2 ? u1+'_'+u2 : u2+'_'+u1; }
 
-/* ====== Close chat ====== */
 function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=''; }
 </script>
 </body>
