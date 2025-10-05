@@ -180,6 +180,20 @@ function updateFriendListBadges(){
   });
 }
 
+// ===== Flash New Messages =====
+function flashUserRow(uid){
+  const row = document.querySelector(`.user-row[data-uid="${uid}"]`);
+  if(!row) return;
+  let flashes = 0;
+  const maxFlashes = 3;
+  const interval = setInterval(() => {
+    if (flashes % 2 === 0) row.style.borderLeft = '4px solid red';
+    else row.style.borderLeft = '';
+    flashes++;
+    if(flashes > maxFlashes*2) clearInterval(interval);
+  }, 300);
+}
+
 // ===== Chat Functions =====
 function openChat(friendUid, friendName){
   document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
@@ -261,7 +275,7 @@ chatInput.addEventListener('input',()=>{
 
 function listenTyping(friendUid){
   db.ref('typing/'+currentUserUid+'/'+friendUid).on('value',snap=>{
-    typingIndicator.textContent=snap.exists()?`${chatWith.textContent} is typing...`:'';
+    typingIndicator.textContent=snap.exists()?`${chatWith.textContent} is typing...`:''; 
   });
 }
 
@@ -292,7 +306,7 @@ function closeChat(){
 function getChatId(uid1,uid2){ return uid1<uid2?uid1+'_'+uid2:uid2+'_'+uid1; }
 function escapeHtml(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
 
-// ===== Unread Counters =====
+// ===== Unread Counters & Flash =====
 db.ref('chats').on('child_added',snap=>{
   snap.ref.child('messages').on('child_added',msgSnap=>{
     const msg=msgSnap.val();
@@ -300,6 +314,7 @@ db.ref('chats').on('child_added',snap=>{
       unreadCounters[msg.sender]=(unreadCounters[msg.sender]||0)+1;
       lastChatTimestamps[msg.sender]=msg.timestamp;
       updateFriendListBadges();
+      flashUserRow(msg.sender); // flash red border for new message
     }
   });
 });
@@ -312,15 +327,14 @@ function dragElement(el){
   if(header) header.onmousedown=dragMouseDown; else el.onmousedown=dragMouseDown;
   function dragMouseDown(e){ e.preventDefault(); pos3=e.clientX; pos4=e.clientY; document.onmouseup=closeDragElement; document.onmousemove=elementDrag; }
   function elementDrag(e){ e.preventDefault(); pos1=pos3-e.clientX; pos2=pos4-e.clientY; pos3=e.clientX; pos4=e.clientY; 
-    const newTop=elmntTop(el.offsetTop-pos2); const newLeft=elmntLeft(el.offsetLeft-pos1);
+    const newTop=Math.max(0, Math.min(window.innerHeight-el.offsetHeight, el.offsetTop-pos2));
+    const newLeft=Math.max(0, Math.min(window.innerWidth-el.offsetWidth, el.offsetLeft-pos1));
     el.style.top=newTop+'px'; el.style.left=newLeft+'px'; 
   }
   function closeDragElement(){ document.onmouseup=null; document.onmousemove=null; }
-  function elmntTop(top){ return Math.max(0, Math.min(window.innerHeight-el.offsetHeight, top)); }
-  function elmntLeft(left){ return Math.max(0, Math.min(window.innerWidth-el.offsetWidth, left)); }
 }
 
-// ===== File Upload =====
+// ===== File Upload & Preview =====
 fileBtn.addEventListener('click',()=>chatFileInput.click());
 chatFileInput.addEventListener('change',handleFiles);
 function handleFiles(){
