@@ -36,7 +36,7 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 .friends-container::-webkit-scrollbar-track { background:#f1f1f1; }
 img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:pointer; display:block; margin-bottom:6px; }
 .file-link { display:inline-block; padding:6px 8px; background:#fff; border-radius:6px; border:1px solid #ddd; text-decoration:none; color:#333; margin-bottom:6px; font-size:14px; }
-.file-link::before { content: '⤓ '; } /* download icon */
+.file-link::before { content: '⤓ '; }
 .preview-strip { display:flex; gap:8px; padding:8px; overflow:auto; border-bottom:1px solid #eee; background:#fff; }
 .preview-thumb { width:60px; height:60px; border-radius:6px; object-fit:cover; border:1px solid #ddd; position:relative; }
 .progress-bar { width:60px; height:4px; background:#eee; border-radius:3px; margin-top:4px; }
@@ -65,8 +65,6 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
       <span id="chatWith">Friend</span>
       <button onclick="closeChat()">X</button>
     </div>
-
-    <div id="previewStrip" class="preview-strip" style="display:none;"></div>
     <div id="chatMessages"></div>
     <div id="typingIndicator"></div>
     <div id="chatInputContainer">
@@ -79,7 +77,6 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
 </div>
 
 <script>
-/* ========== Firebase config ========== */
 const firebaseConfig = { 
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs", 
   authDomain:"bumbble-c061f.firebaseapp.com", 
@@ -93,7 +90,6 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-/* ========== UI refs ========== */
 const nav = document.getElementById("navLinks");
 const userList = document.getElementById("userList");
 let currentUserUid = "";
@@ -104,169 +100,119 @@ const chatMessages = document.getElementById("chatMessages");
 const chatWith = document.getElementById("chatWith");
 const chatInput = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
-const fileBtn = document.getElementById("fileBtn");
-const chatFileInput = document.getElementById("chatFileInput");
-const typingIndicator = document.getElementById("typingIndicator");
-const previewStrip = document.getElementById("previewStrip");
 
-let typingTimeout;
-const unreadCounters = {};
-const lastChatTimestamps = {};
-const localPreviewMap = {}; 
+const unreadCounters = {}; // store unread counts
 
-/* ---------- Auth ---------- */
+/* ====== Auth ====== */
 auth.onAuthStateChanged(user => {
   if(user && user.emailVerified){
     currentUserUid = user.uid;
-    nav.innerHTML = `
-      <a href="index.html">Home</a>
-      <a href="friends.html">Friends</a>
-      <a href="stories.html">Stories</a>
-      <a href="events.html">Events</a>
-      <a href="safety.html">Safety</a>
-      <a href="profile.html">Profile</a>
-      <a href="#" id="logoutBtn">Logout</a>
-    `;
+    nav.innerHTML = `<a href="index.html">Home</a><a href="friends.html">Friends</a><a href="profile.html">Profile</a><a href="#" id="logoutBtn">Logout</a>`;
     document.getElementById("logoutBtn").addEventListener("click", ()=>{ 
-      db.ref('users/' + currentUserUid + '/public/online').set(false); 
-      localStorage.removeItem("lastChatFriendUid");
-      localStorage.removeItem("lastChatFriendName");
-      auth.signOut().then(()=> window.location.href="login.html"); 
+      db.ref('users/'+currentUserUid+'/public/online').set(false); 
+      auth.signOut().then(()=>window.location.href="login.html"); 
     });
     setupOnlineStatus();
     loadUsersRealtime();
-    setupUnreadMessageListener(); // ← NEW
-    setTimeout(() => {
-      const lastUid = localStorage.getItem("lastChatFriendUid");
-      const lastName = localStorage.getItem("lastChatFriendName");
-      if(lastUid && lastName) openChat(lastUid, lastName);
-    }, 800);
+    listenForIncomingMessages();
   } else {
-    nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
-    document.querySelector(".friends-container").innerHTML = "<p>Please login to view users.</p>";
+    nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a>`;
   }
 });
 
-/* ---------- Presence ---------- */
+/* ====== Online presence ====== */
 function setupOnlineStatus(){
-  const userStatusRef = db.ref('users/' + currentUserUid + '/public/online');
-  db.ref('.info/connected').on('value', snap => {
-    if(snap.val() === true){
-      userStatusRef.set(true);
-      userStatusRef.onDisconnect().set(false);
-    }
+  const ref = db.ref('users/'+currentUserUid+'/public/online');
+  db.ref('.info/connected').on('value', s=>{
+    if(s.val()===true){ ref.set(true); ref.onDisconnect().set(false); }
   });
 }
 
-/* ---------- Users list ---------- */
+/* ====== Load users list ====== */
 function loadUsersRealtime(){
-  db.ref('users').on('value', snapshot => {
-    const usersData = snapshot.val() || {};
-    const friends = [];
-    Object.keys(usersData).forEach(uid => {
-      if(uid === currentUserUid) return;
-      const user = usersData[uid].public || {};
-      friends.push({ uid, name:user.name||"Unknown", gender:user.gender||"N/A", online:user.online||false });
-    });
-    friends.sort((a,b)=>{
-      const tA = lastChatTimestamps[a.uid] || 0;
-      const tB = lastChatTimestamps[b.uid] || 0;
-      if(tA!==tB) return tB-tA;
-      return a.name.localeCompare(b.name);
-    });
-    userList.innerHTML = '';
-    friends.forEach(f=>{
-      const row = document.createElement('div');
-      row.classList.add("user-row");
-      row.dataset.uid = f.uid;
-      row.dataset.name = f.name;
-      let badgeHtml = unreadCounters[f.uid]? `<span class="badge">${unreadCounters[f.uid]}</span>`:"";
-      row.innerHTML = `<div><span class="status-dot ${f.online?'online':'offline'}"></span>${f.name} (${f.gender}) ${badgeHtml}</div>`;
-      row.addEventListener('click',()=>openChat(f.uid,f.name));
+  db.ref('users').on('value', snapshot=>{
+    const data = snapshot.val()||{};
+    userList.innerHTML='';
+    Object.keys(data).forEach(uid=>{
+      if(uid===currentUserUid) return;
+      const user=data[uid].public||{};
+      const row=document.createElement('div');
+      row.className='user-row';
+      row.dataset.uid=uid;
+      row.dataset.name=user.name||'Unknown';
+      row.innerHTML=`
+        <div>
+          <span class="status-dot ${user.online?'online':'offline'}"></span>
+          ${user.name||'Unknown'}
+          <span class="badge" style="display:none;"></span>
+        </div>`;
+      row.onclick=()=>openChat(uid,user.name||'Unknown');
       userList.appendChild(row);
     });
   });
 }
 
-/* ---------- Unread messages listener ---------- */
-function setupUnreadMessageListener(){
-  db.ref('chats').on('child_added', chatSnap => {
-    const messagesRef = chatSnap.ref.child('messages');
-    messagesRef.on('child_added', msgSnap => {
-      const msg = msgSnap.val();
-      if(!msg || !msg.sender || !msg.receiver) return;
-
-      // Only count if message is for me AND not the currently open chat
-      if(msg.receiver === currentUserUid && msg.sender !== currentChatFriendUid){
-        unreadCounters[msg.sender] = (unreadCounters[msg.sender]||0)+1;
-        lastChatTimestamps[msg.sender] = msg.timestamp;
+/* ====== Listen for new messages ====== */
+function listenForIncomingMessages(){
+  db.ref('chats').on('child_added', chatSnap=>{
+    chatSnap.ref.child('messages').on('child_added', msgSnap=>{
+      const msg=msgSnap.val();
+      if(!msg) return;
+      if(msg.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
+        unreadCounters[msg.sender]=(unreadCounters[msg.sender]||0)+1;
         updateFriendListBadges();
       }
     });
   });
 }
 
-/* ---------- Open chat ---------- */
-function openChat(friendUid, friendName){
-  document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
-  const activeRow=document.querySelector(`.user-row[data-uid="${friendUid}"]`);
-  if(activeRow) activeRow.classList.add('active');
-
-  currentChatFriendUid = friendUid;
-  chatWith.textContent = friendName;
-  localStorage.setItem("lastChatFriendUid", friendUid);
-  localStorage.setItem("lastChatFriendName", friendName);
-
-  chatModal.style.display = "flex";
-  chatMessages.innerHTML = '';
-  typingIndicator.textContent = "";
-
-  // Reset unread for this friend
-  unreadCounters[friendUid] = 0;
-  updateFriendListBadges();
-
-  listenTyping(friendUid);
-  const chatId = getChatId(currentUserUid, friendUid);
-  if(currentChatListener) currentChatListener.off();
-
-  const chatRef = db.ref('chats/'+chatId);
-  chatRef.child('members').update({ [currentUserUid]: true, [friendUid]: true });
-
-  chatRef.child('messages').once('value', snap=>{
-    const msgs = snap.val()||{};
-    const sorted = Object.keys(msgs).map(k => ({...msgs[k], _key:k})).sort((a,b)=>a.timestamp-b.timestamp);
-    sorted.forEach(msg=>addOrUpdateMessageToChat(msg));
-    chatMessages.scrollTop=chatMessages.scrollHeight;
-  });
-
-  currentChatListener = chatRef.child('messages');
-  currentChatListener.on('child_added', snap=>{
-    const msg = snap.val(); msg._key = snap.key;
-    addOrUpdateMessageToChat(msg);
-    lastChatTimestamps[friendUid]=msg.timestamp;
-  });
-  currentChatListener.on('child_changed', snap=>{
-    const msg = snap.val(); msg._key = snap.key;
-    addOrUpdateMessageToChat(msg);
-  });
-}
-
-/* ---------- Badge updater ---------- */
+/* ====== Update friend list badges ====== */
 function updateFriendListBadges(){
   document.querySelectorAll('.user-row').forEach(row=>{
     const uid=row.dataset.uid;
-    let badge=row.querySelector('.badge');
-    if(unreadCounters[uid] && unreadCounters[uid]>0){
-      if(badge) badge.textContent=unreadCounters[uid];
-      else { const span=document.createElement('span'); span.className='badge'; span.textContent=unreadCounters[uid]; row.querySelector('div').appendChild(span); }
-    } else if(badge) badge.remove();
+    const badge=row.querySelector('.badge');
+    const count=unreadCounters[uid]||0;
+    if(count>0){
+      badge.textContent=count;
+      badge.style.display='inline-block';
+    } else {
+      badge.style.display='none';
+    }
   });
 }
 
-/* ---------- Other chat functions remain unchanged ---------- */
-// (Add your addOrUpdateMessageToChat, typing, sendMessage, closeChat, file upload, drag, etc. functions here)
-// You can reuse your existing code for these parts; the unread fix is fully integrated above.
+/* ====== Open chat ====== */
+function openChat(friendUid, friendName){
+  document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
+  const active=document.querySelector(`.user-row[data-uid="${friendUid}"]`);
+  if(active) active.classList.add('active');
+  currentChatFriendUid=friendUid;
+  chatWith.textContent=friendName;
+  chatModal.style.display='flex';
+  chatMessages.innerHTML='';
 
+  // reset unread count for this friend
+  unreadCounters[friendUid]=0;
+  updateFriendListBadges();
+}
+
+/* ====== Send message ====== */
+sendBtn.onclick=()=>{
+  const text=chatInput.value.trim();
+  if(!text||!currentChatFriendUid) return;
+  const chatId=getChatId(currentUserUid,currentChatFriendUid);
+  db.ref('chats/'+chatId+'/messages').push({
+    sender:currentUserUid,
+    receiver:currentChatFriendUid,
+    text,
+    timestamp:Date.now()
+  });
+  chatInput.value='';
+};
+function getChatId(u1,u2){ return u1<u2 ? u1+'_'+u2 : u2+'_'+u1; }
+
+/* ====== Close chat ====== */
+function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=''; }
 </script>
 </body>
 </html>
