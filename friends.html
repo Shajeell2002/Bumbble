@@ -45,11 +45,9 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
 .progress-fill { height:100%; width:0%; background:#059669; border-radius:3px; transition:width 0.3s ease; }
 .small-muted { font-size:11px; color:#666; }
 </style>
-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
 </head>
 <body>
 
@@ -127,11 +125,9 @@ auth.onAuthStateChanged(user=>{
     setupOnlineStatus();
     loadUsersRealtime();
     setupUnreadListener();
-
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
     if(lastUid && lastName) openChat(lastUid,lastName);
-
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
     document.querySelector(".friends-container").innerHTML="<p>Please login to view users.</p>";
@@ -177,11 +173,9 @@ function loadUsersRealtime(){
 
 // ===== Unread Listener =====
 function setupUnreadListener(){
-  db.ref('unread/'+currentUserUid).on('value', snap=>{
+  db.ref('unread/' + currentUserUid).on('value', snap=>{
     const data = snap.val() || {};
-    Object.keys(data).forEach(senderUid=>{
-      unreadCounters[senderUid] = data[senderUid];
-    });
+    for(let uid in data) unreadCounters[uid] = data[uid];
     updateFriendListBadges();
   });
 }
@@ -191,8 +185,12 @@ function updateFriendListBadges(){
   document.querySelectorAll('.user-row').forEach(row=>{
     const uid = row.dataset.uid;
     let badge = row.querySelector('.badge');
-    if(unreadCounters[uid]){
-      if(!badge){ badge=document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge); }
+    if(unreadCounters[uid] && unreadCounters[uid]>0){
+      if(!badge){
+        badge=document.createElement('span');
+        badge.className='badge';
+        row.querySelector('div').appendChild(badge);
+      }
       badge.textContent = unreadCounters[uid];
     } else if(badge) badge.remove();
   });
@@ -222,9 +220,11 @@ function openChat(friendUid,friendName){
   typingIndicator.textContent='';
 
   // Clear unread for this friend
-  db.ref('unread/'+currentUserUid+'/'+friendUid).remove();
-  unreadCounters[friendUid]=0;
+  db.ref('unread/' + currentUserUid + '/' + friendUid).remove();
+  unreadCounters[friendUid] = 0;
   updateFriendListBadges();
+
+  listenTyping(friendUid);
 
   const chatId = getChatId(currentUserUid, friendUid);
   if(currentChatListener) currentChatListener.off();
@@ -244,19 +244,11 @@ function openChat(friendUid,friendName){
     addOrUpdateMessageToChat(msg);
     lastChatTimestamps[friendUid] = msg.timestamp;
 
-    // Only handle unread if current user is receiver
-    if(msg.receiver === currentUserUid && msg.sender !== currentUserUid){
-      const unreadRef = db.ref('unread/'+currentUserUid+'/'+msg.sender);
-      unreadRef.transaction(current => (current || 0) + 1);
+    if(msg.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
+      db.ref('unread/'+currentUserUid+'/'+msg.sender).transaction(v=>(v||0)+1);
       flashUserRow(msg.sender);
     }
   });
-  currentChatListener.on('child_changed', snap=>{
-    const msg = snap.val(); msg._key = snap.key;
-    addOrUpdateMessageToChat(msg);
-  });
-
-  listenTyping(friendUid);
 }
 
 // ===== Render Messages =====
@@ -285,7 +277,6 @@ chatInput.addEventListener('input',()=>{
   clearTimeout(typingTimeout);
   typingTimeout=setTimeout(()=>db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove(),1000);
 });
-
 function listenTyping(friendUid){
   db.ref('typing/'+currentUserUid+'/'+friendUid).on('value',snap=>{
     typingIndicator.textContent = snap.exists()?`${chatWith.textContent} is typing...`:''; 
@@ -306,29 +297,35 @@ chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(
 sendBtn.addEventListener('click',sendMessage);
 
 // ===== Close Chat =====
-function closeChat(){ chatModal.style.display='none'; if(currentChatListener) currentChatListener.off(); currentChatFriendUid=''; }
-
-// ===== File Upload =====
-fileBtn.addEventListener('click',()=>chatFileInput.click());
-chatFileInput.addEventListener('change', async e=>{
-  if(!currentChatFriendUid) return;
-  const files=Array.from(e.target.files);
-  const chatId=getChatId(currentUserUid,currentChatFriendUid);
-  files.forEach(file=>{
-    const reader=new FileReader();
-    reader.onload=(ev)=>{
-      const msgObj={ sender:currentUserUid, receiver:currentChatFriendUid, fileData:ev.target.result, fileName:file.name, fileType:file.type, timestamp:Date.now() };
-      db.ref('chats/'+chatId+'/messages').push(msgObj);
-    };
-    reader.readAsDataURL(file);
-  });
-  chatFileInput.value='';
-});
+function closeChat(){
+  if(currentChatFriendUid) db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove();
+  chatModal.style.display='none';
+  currentChatFriendUid='';
+  typingIndicator.textContent='';
+  previewStrip.innerHTML='';
+  previewStrip.style.display='none';
+}
 
 // ===== Helpers =====
 function getChatId(uid1,uid2){ return uid1<uid2?uid1+'_'+uid2:uid2+'_'+uid1; }
-function escapeHtml(text){ return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-</script>
+function escapeHtml(str){ return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+fileBtn.addEventListener('click',()=>chatFileInput.click());
+chatFileInput.addEventListener('change',handleFileSelect);
 
+function handleFileSelect(e){
+  const files=Array.from(e.target.files);
+  files.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=function(evt){
+      const chatId=getChatId(currentUserUid,currentChatFriendUid);
+      const msgObj={ sender:currentUserUid, receiver:currentChatFriendUid, timestamp:Date.now(), fileData:evt.target.result, fileName:file.name, fileType:file.type, uploading:true };
+      db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [currentChatFriendUid]:true });
+      db.ref('chats/'+chatId+'/messages').push(msgObj);
+    }
+    reader.readAsDataURL(file);
+  });
+  chatFileInput.value='';
+}
+</script>
 </body>
 </html>
