@@ -318,6 +318,50 @@ function listenUnreadMessages() {
 // Initialize unread listener
 listenUnreadMessages();
 
+function listenUnreadMessages() {
+  db.ref('chats').on('child_added', snap => {
+    const chatRef = snap.ref.child('messages');
+    chatRef.on('child_added', msgSnap => {
+      const msg = msgSnap.val();
+      if (!msg || !msg.sender || !msg.receiver) return;
+
+      if (msg.receiver === currentUserUid && msg.sender !== currentChatFriendUid) {
+        // Increment unread
+        unreadCounters[msg.sender] = (unreadCounters[msg.sender] || 0) + 1;
+        lastChatTimestamps[msg.sender] = msg.timestamp;
+
+        // Update badge safely
+        const row = document.querySelector(`.user-row[data-uid="${msg.sender}"]`);
+        if (row) {
+          let badge = row.querySelector('.badge');
+          if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'badge';
+            row.querySelector('div').appendChild(badge);
+          }
+          badge.textContent = unreadCounters[msg.sender];
+          flashUserRow(msg.sender);
+        }
+
+        // Reorder friend list manually
+        reorderFriendList();
+      }
+    });
+  });
+}
+
+function reorderFriendList() {
+  const container = userList;
+  const rows = Array.from(container.children);
+  rows.sort((a, b) => {
+    const tA = lastChatTimestamps[a.dataset.uid] || 0;
+    const tB = lastChatTimestamps[b.dataset.uid] || 0;
+    return tB - tA || a.dataset.name.localeCompare(b.dataset.name);
+  });
+  rows.forEach(r => container.appendChild(r));
+}
+
+
 
 // ===== Drag Chat =====
 dragElement(chatModal);
