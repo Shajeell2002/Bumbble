@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -366,8 +367,8 @@ db.ref('chats').on('child_added',snap=>{
     // Only update counters when this client is the receiver and chat is not currently open with that sender
     if(!msg) return;
     if(msg.receiver === currentUserUid && msg.sender !== currentChatFriendUid){
-      unreadCounters[msg.sender] = (unreadCounters[msg.sender]||0) + 1;
-      lastChatTimestamps[msg.sender] = msg.timestamp;
+      unreadCounters[msg.receiver] = (unreadCounters[msg.sender]||0) + 1;
+      lastChatTimestamps[msg.receiver] = msg.timestamp;
       updateFriendListBadges();
     }
   });
