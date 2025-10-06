@@ -184,18 +184,13 @@ function loadUsersRealtime(){
 function updateFriendListBadges(){
   document.querySelectorAll('.user-row').forEach(row=>{
     const uid = row.dataset.uid;
-    const badge = row.querySelector('.badge');
-    if(badge){
-      if(unreadCounters[uid]){
-        badge.style.display = 'inline-block';
-        badge.textContent = unreadCounters[uid];
-      } else {
-        badge.style.display = 'none';
-      }
-    }
+    let badge = row.querySelector('.badge');
+    if(unreadCounters[uid]){
+      if(!badge){ badge=document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge); }
+      badge.textContent = unreadCounters[uid];
+    } else if(badge) badge.remove();
   });
 }
-
 
 function flashUserRow(uid){
   const row = document.querySelector(`.user-row[data-uid="${uid}"]`);
