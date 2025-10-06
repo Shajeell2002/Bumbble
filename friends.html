@@ -279,31 +279,6 @@ function sendMessage(){
 chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); }});
 sendBtn.addEventListener('click',sendMessage);
 
-// ====== Listen for Messages ======
-const unreadCounters = {};
-db.ref('messages').on('child_added', snapshot => {
-  const msg = snapshot.val();
-  if(msg.to === currentUser) {
-    // Update unread count if not currently chatting with sender
-    const currentChatUser = "B"; // example: currently chatting with B
-    if(msg.from !== currentChatUser) {
-      unreadCounters[msg.from] = (unreadCounters[msg.from] || 0) + 1;
-    } else {
-      showMessage(msg.from, msg.text);
-    }
-    renderFriendsList(unreadCounters);
-  }
-});
-
-// ====== Show Message in Chat Window ======
-function showMessage(sender, text) {
-  const div = document.getElementById('chatWindow');
-  const p = document.createElement('p');
-  p.textContent = `${sender}: ${text}`;
-  div.appendChild(p);
-  div.scrollTop = div.scrollHeight;
-}
-
 // ===== Close Chat =====
 function closeChat(){
   if(currentChatFriendUid) db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove();
