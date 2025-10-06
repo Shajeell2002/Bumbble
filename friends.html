@@ -18,7 +18,7 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 @keyframes flashRed { 0%{background:#ffcccc;} 100%{background:#fffbcc;} }
 .status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
 .online { background:green; } .offline { background:red; }
-.badge { background:red; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
+.badge { background:red; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; display:none; }
 #chatModal { position:fixed; bottom:0; right:20px; width:360px; max-height:70vh; border:1px solid #ccc; background:#fff; border-radius:10px 10px 0 0; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); resize:both; overflow:hidden; z-index:1000; }
 #chatHeader { background:#ffcb2b; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; border-radius:10px 10px 0 0; cursor:move; }
 #chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:#fefefe; scroll-behavior:smooth; }
@@ -40,7 +40,7 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
 .file-link { display:inline-block; padding:6px 8px; background:#fff; border-radius:6px; border:1px solid #ddd; text-decoration:none; color:#333; margin-bottom:6px; font-size:14px; }
 .file-link::before { content: '⤓ '; }
 .preview-strip { display:flex; gap:8px; padding:8px; overflow:auto; border-bottom:1px solid #eee; background:#fff; }
-.preview-thumb { width:60px; height:60px; border-radius:6px; object-fit:cover; border:1px solid #ddd; position:relative; }
+.preview-thumb { width:60px; height:60px; border-radius:6px; object-fit:cover; border:1px solid #ddd; position:relative; display:flex; align-items:center; justify-content:center; font-size:11px; text-align:center; }
 .progress-bar { width:60px; height:4px; background:#eee; border-radius:3px; margin-top:4px; }
 .progress-fill { height:100%; width:0%; background:#059669; border-radius:3px; transition:width 0.3s ease; }
 .small-muted { font-size:11px; color:#666; }
@@ -79,7 +79,15 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
 </div>
 
 <script>
-const firebaseConfig = { apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs", authDomain:"bumbble-c061f.firebaseapp.com", databaseURL:"https://bumbble-c061f-default-rtdb.firebaseio.com", projectId:"bumbble-c061f", storageBucket:"bumbble-c061f.appspot.com", messagingSenderId:"213165886981", appId:"1:213165886981:web:c18652003444869b1bd66c" };
+const firebaseConfig = {
+  apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+  authDomain:"bumbble-c061f.firebaseapp.com",
+  databaseURL:"https://bumbble-c061f-default-rtdb.firebaseio.com",
+  projectId:"bumbble-c061f",
+  storageBucket:"bumbble-c061f.appspot.com",
+  messagingSenderId:"213165886981",
+  appId:"1:213165886981:web:c18652003444869b1bd66c"
+};
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
@@ -156,14 +164,19 @@ function loadUsersRealtime(){
       const tB = lastChatTimestamps[b.uid]||0;
       return tB-tA || a.name.localeCompare(b.name);
     });
-    row.innerHTML = `
-  <div>
-    <span class="status-dot ${f.online ? 'online' : 'offline'}"></span>
-    <span class="friend-name">${f.name}</span>
-    <span class="badge" style="display: none;"></span>
-    <span class="small-muted">(${f.gender})</span>
-  </div>`;
 
+    userList.innerHTML = '';
+    friends.forEach(f=>{
+      const row = document.createElement('div');
+      row.className='user-row';
+      row.dataset.uid = f.uid;
+      row.innerHTML = `
+        <div>
+          <span class="status-dot ${f.online ? 'online' : 'offline'}"></span>
+          <span class="friend-name">${f.name}</span>
+          <span class="badge"></span>
+          <span class="small-muted">(${f.gender})</span>
+        </div>`;
       row.addEventListener('click',()=>openChat(f.uid,f.name));
       userList.appendChild(row);
     });
@@ -176,12 +189,15 @@ function updateFriendListBadges(){
   document.querySelectorAll('.user-row').forEach(row=>{
     const uid = row.dataset.uid;
     let badge = row.querySelector('.badge');
-    
-if(unreadCounters[uid]){
-badge.style.display = 'inline-block';
-      if(!badge){ badge=document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge); }
+    if(!badge){
+      badge = document.createElement('span');
+      badge.className = 'badge';
+      row.querySelector('div').appendChild(badge);
+    }
+    if(unreadCounters[uid]){
+      badge.style.display='inline-block';
       badge.textContent = unreadCounters[uid];
-    } else if(badge) badge.remove();
+    } else badge.style.display='none';
   });
 }
 
@@ -265,7 +281,7 @@ chatInput.addEventListener('input',()=>{
 
 function listenTyping(friendUid){
   db.ref('typing/'+currentUserUid+'/'+friendUid).on('value',snap=>{
-    typingIndicator.textContent = snap.exists()?`${chatWith.textContent} is typing...`:'';
+    typingIndicator.textContent = snap.exists()?`${chatWith.textContent} is typing...`:'';  
   });
 }
 
@@ -294,96 +310,51 @@ function closeChat(){
 
 // ===== Helpers =====
 function getChatId(uid1,uid2){ return uid1<uid2?uid1+'_'+uid2:uid2+'_'+uid1; }
-function escapeHtml(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
+function escapeHtml(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 
-// ===== Unread Counters & Flash =====
-db.ref('chats').on('child_added',snap=>{
-  snap.ref.child('messages').on('child_added',msgSnap=>{
-    const msg=msgSnap.val();
-    if(msg?.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
-      unreadCounters[msg.sender]=(unreadCounters[msg.sender]||0)+1;
-      lastChatTimestamps[msg.sender]=msg.timestamp;
-      updateFriendListBadges();
-      flashUserRow(msg.sender);
-      loadUsersRealtime(); // reorder
-    }
-  });
+// ===== Draggable Chat =====
+let offsetX=0, offsetY=0, dragging=false;
+const header = document.getElementById("chatHeader");
+header.addEventListener('mousedown',e=>{
+  dragging=true; offsetX=e.clientX-chatModal.offsetLeft; offsetY=e.clientY-chatModal.offsetTop;
+});
+document.addEventListener('mouseup',()=>dragging=false);
+document.addEventListener('mousemove',e=>{
+  if(!dragging) return;
+  let left=e.clientX-offsetX, top=e.clientY-offsetY;
+  left=Math.max(0, Math.min(left, window.innerWidth-chatModal.offsetWidth));
+  top=Math.max(60, Math.min(top, window.innerHeight-chatModal.offsetHeight));
+  chatModal.style.left=left+'px';
+  chatModal.style.top=top+'px';
 });
 
-// ===== Drag Chat =====
-dragElement(chatModal);
-function dragElement(el){
-  let pos1=0,pos2=0,pos3=0,pos4=0;
-  const header=document.getElementById("chatHeader");
-  if(header) header.onmousedown=dragMouseDown; else el.onmousedown=dragMouseDown;
-  function dragMouseDown(e){ e.preventDefault(); pos3=e.clientX; pos4=e.clientY; document.onmouseup=closeDragElement; document.onmousemove=elementDrag; }
-  function elementDrag(e){ e.preventDefault(); pos1=pos3-e.clientX; pos2=pos4-e.clientY; pos3=e.clientX; pos4=e.clientY; 
-    const newTop=Math.max(0, Math.min(window.innerHeight-el.offsetHeight, el.offsetTop-pos2));
-    const newLeft=Math.max(0, Math.min(window.innerWidth-el.offsetWidth, el.offsetLeft-pos1));
-    el.style.top=newTop+'px'; el.style.left=newLeft+'px'; 
-  }
-  function closeDragElement(){ document.onmouseup=null; document.onmousemove=null; }
-}
-
-// ===== File Upload & Preview =====
+// ===== File Upload =====
 fileBtn.addEventListener('click',()=>chatFileInput.click());
-chatFileInput.addEventListener('change',handleFiles);
-function handleFiles(){
-  const files = Array.from(chatFileInput.files||[]);
-  if(files.length===0 || !currentChatFriendUid){ chatFileInput.value=''; return; }
-  previewStrip.innerHTML=''; previewStrip.style.display='flex';
-  const chatId = getChatId(currentUserUid,currentChatFriendUid);
-  db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [currentChatFriendUid]:true });
-  files.forEach(file=>{
-    const msgRef = db.ref('chats/'+chatId+'/messages').push();
-    const key = msgRef.key;
-    const placeholder={ sender:currentUserUid, receiver:currentChatFriendUid, timestamp:Date.now(), fileName:file.name, fileType:file.type||'', uploading:true };
-    msgRef.set(placeholder).then(()=>{
-      if(file.type.startsWith('image/')){
-        const objUrl=URL.createObjectURL(file); localPreviewMap[key]=objUrl; addPreviewThumb(key,objUrl,file.name);
-        compressImageToDataURL(file,64*1024,dataUrl=>{ db.ref('chats/'+chatId+'/messages/'+key).update({ fileData:dataUrl, uploading:false }); });
-      } else {
-        addPreviewThumb(key,null,file.name);
-        const reader=new FileReader();
-        reader.onload=e=>db.ref('chats/'+chatId+'/messages/'+key).update({ fileData:e.target.result, uploading:false });
-        reader.readAsDataURL(file);
-      }
-    });
-  });
-  chatFileInput.value='';
-}
-function addPreviewThumb(key, url, name){
-  const container=document.createElement('div'); container.dataset.temp=key; container.style.display='flex'; container.style.flexDirection='column'; container.style.alignItems='center'; container.style.width='70px';
-  if(url){ const img=document.createElement('img'); img.src=url; img.className='preview-thumb'; container.appendChild(img); }
-  else { const box=document.createElement('div'); box.className='preview-thumb'; box.style.display='flex'; box.style.alignItems='center'; box.style.justifyContent='center'; box.textContent=name.split('.')[0]; box.style.fontSize='11px'; container.appendChild(box); }
-  const progressBar=document.createElement('div'); progressBar.className='progress-bar'; progressBar.innerHTML='<div class="progress-fill" style="width:30%"></div>'; container.appendChild(progressBar);
-  previewStrip.appendChild(container);
+chatFileInput.addEventListener('change',()=>{ const files=[...chatFileInput.files]; files.forEach(f=>handleFileUpload(f)); chatFileInput.value=''; });
+
+function handleFileUpload(file){
+  const reader = new FileReader();
+  reader.onload = e=>{
+    const dataURL=e.target.result;
+    const chatId=getChatId(currentUserUid,currentChatFriendUid);
+    const msgObj={ sender:currentUserUid, receiver:currentChatFriendUid, fileData:dataURL, fileName:file.name, fileType:file.type, timestamp:Date.now() };
+    db.ref('chats/'+chatId+'/messages').push(msgObj);
+  };
+  if(file.type.startsWith('image/')) compressImageToDataURL(file,0.6, reader);
+  else reader.readAsDataURL(file);
 }
 
-// ===== Image Compression =====
-function compressImageToDataURL(file,maxBytes,callback){
-  if(file.size<=maxBytes){ const r=new FileReader(); r.onload=e=>callback(e.target.result); r.readAsDataURL(file); return; }
-  const reader=new FileReader(); reader.onload=e=>{
-    const img=new Image(); img.onload=()=>{
-      let scale=Math.sqrt(maxBytes/file.size); scale=Math.min(1,Math.max(0.1,scale)); let quality=0.9;
-      const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d');
-      (function attempt(){
-        canvas.width=Math.max(1,Math.round(img.width*scale)); canvas.height=Math.max(1,Math.round(img.height*scale));
-        ctx.clearRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0,canvas.width,canvas.height);
-        try {
-          const dataUrl=canvas.toDataURL(file.type||'image/jpeg',quality);
-          const approxBytes=Math.round((dataUrl.split(',')[1]||'').length*3/4);
-          if(approxBytes<=maxBytes||(quality<=0.35&&scale<=0.25)) callback(dataUrl);
-          else{ if(quality>0.4) quality=Math.max(0.35,quality-0.15); else scale=Math.max(0.2,scale*0.8); setTimeout(attempt,10); }
-        } catch(e){ const r2=new FileReader(); r2.onload=ev=>callback(ev.target.result); r2.readAsDataURL(file); }
-      })();
-    };
-    img.src=e.target.result;
-  }; reader.readAsDataURL(file);
+function compressImageToDataURL(file, quality, reader){
+  const img=new Image();
+  const canvas=document.createElement('canvas');
+  img.onload=()=>{
+    const scale=Math.min(1,Math.sqrt(1e6/file.size));
+    canvas.width=img.width*scale; canvas.height=img.height*scale;
+    canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+    reader.readAsDataURL(canvas.toDataURL('image/jpeg',quality));
+  };
+  img.src=URL.createObjectURL(file);
 }
-
-// ===== Revoke URLs =====
-window.addEventListener('beforeunload',()=>{ Object.values(localPreviewMap).forEach(url=>{ try{ if(url.startsWith('blob:')) URL.revokeObjectURL(url); }catch(e){} }); });
 </script>
 </body>
 </html>
