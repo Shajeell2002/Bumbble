@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Friends & Chat</title>
 <style>
+/* ===== Existing styles ===== */
 body { font-family: Arial, sans-serif; margin:0; background:#fefefe; color:#333; display:flex; min-height:100vh; flex-direction: column; }
 header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#ffcb2b; box-shadow:0 3px 6px rgba(0,0,0,0.1); position:fixed; top:0; left:0; right:0; z-index:500; }
 header h1{ font-size:24px; margin:0; }
@@ -29,10 +30,10 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 .timestamp { font-size:10px; color:#eee; margin-top:6px; text-align:right; display:block; }
 .timestamp.friend { color:#666; }
 .uploading-badge { font-size:11px; color:#444; margin-top:6px; display:inline-block; background:#fff3cd; padding:3px 6px; border-radius:6px; border:1px solid #ffeeba; }
-#chatInputContainer { display:flex; border-top:1px solid #ddd; align-items:center; gap:6px; padding:8px; }
+#chatInputContainer { display:flex; border-top:1px solid #ddd; align-items:center; gap:6px; padding:8px; position:relative; }
 #chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:8px; background:#fafafa; }
-#sendBtn, #fileBtn { padding:8px 12px; border:none; background:#ffcb2b; cursor:pointer; border-radius:8px; }
-#sendBtn:hover, #fileBtn:hover { background:#f1b800; }
+#sendBtn, #fileBtn, #emojiBtn { padding:8px 12px; border:none; background:#ffcb2b; cursor:pointer; border-radius:8px; }
+#sendBtn:hover, #fileBtn:hover, #emojiBtn:hover { background:#f1b800; }
 .friends-container::-webkit-scrollbar { width:6px; }
 .friends-container::-webkit-scrollbar-thumb { background:#ffcb2b; border-radius:3px; }
 .friends-container::-webkit-scrollbar-track { background:#f1f1f1; }
@@ -44,7 +45,13 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
 .progress-bar { width:60px; height:4px; background:#eee; border-radius:3px; margin-top:4px; }
 .progress-fill { height:100%; width:0%; background:#059669; border-radius:3px; transition:width 0.3s ease; }
 .small-muted { font-size:11px; color:#666; }
+
+/* ===== Emoji Picker ===== */
+#emojiPicker { position:absolute; bottom:50px; right:0; width:260px; max-height:300px; background:#fff; border:1px solid #ddd; border-radius:10px; display:none; flex-direction:column; overflow:auto; padding:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:2000; }
+.emoji { cursor:pointer; font-size:20px; padding:4px; transition:0.2s; }
+.emoji:hover { background:#fffbcc; border-radius:6px; }
 </style>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -70,10 +77,12 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
     <div id="chatMessages"></div>
     <div id="typingIndicator"></div>
     <div id="chatInputContainer">
+      <button id="emojiBtn">😊</button>
       <button id="fileBtn">📎</button>
       <input type="text" id="chatInput" placeholder="Type a message" autocomplete="off">
       <button id="sendBtn">Send</button>
       <input type="file" id="chatFileInput" style="display:none;" multiple>
+      <div id="emojiPicker"></div>
     </div>
   </div>
 </div>
@@ -97,6 +106,8 @@ const fileBtn = document.getElementById("fileBtn");
 const chatFileInput = document.getElementById("chatFileInput");
 const typingIndicator = document.getElementById("typingIndicator");
 const previewStrip = document.getElementById("previewStrip");
+const emojiBtn = document.getElementById("emojiBtn");
+const emojiPicker = document.getElementById("emojiPicker");
 
 let currentUserUid = "";
 let currentChatFriendUid = "";
@@ -106,7 +117,7 @@ const lastChatTimestamps = {};
 const localPreviewMap = {};
 let typingTimeout;
 
-// ===== Auth =====
+// ===== Auth & User List =====
 auth.onAuthStateChanged(user=>{
   if(user && user.emailVerified){
     currentUserUid = user.uid;
@@ -236,7 +247,7 @@ function openChat(friendUid,friendName){
   });
 }
 
-// ===== Render Messages (with emoji support) =====
+// ===== Render Messages =====
 function addOrUpdateMessageToChat(msg){
   if(!msg || !msg._key) return;
   const id='msg-'+msg._key;
@@ -245,7 +256,6 @@ function addOrUpdateMessageToChat(msg){
   if(!el){ el=document.createElement('div'); el.id=id; el.className='message '+(isSelf?'self':'friend'); chatMessages.appendChild(el); }
 
   function renderText(text){
-    // Convert emoji unicode characters into visible emojis (basic support)
     return text.replace(/:\)/g,'😊').replace(/:\(/g,'😞').replace(/:D/g,'😃').replace(/:P/g,'😜').replace(/<3/g,'❤️');
   }
 
@@ -295,6 +305,7 @@ function closeChat(){
   typingIndicator.textContent='';
   previewStrip.innerHTML='';
   previewStrip.style.display='none';
+  emojiPicker.style.display='none';
 }
 
 // ===== Helpers =====
@@ -390,6 +401,15 @@ function compressImageToDataURL(file,maxBytes,callback){
 // ===== Revoke URLs =====
 window.addEventListener('beforeunload',()=>{ Object.values(localPreviewMap).forEach(url=>{ try{ if(url.startsWith('blob:')) URL.revokeObjectURL(url); }catch(e){} }); });
 
+// ===== Emoji Picker =====
+const emojiList = ["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🥳","🤗","🤡","😏","😒","😞","😔","😟","😕","🙁","☹️","😣","😖","😫","😩","🥺","😢","😭","😤","😠","😡"];
+function renderEmojiPicker(){ emojiPicker.innerHTML=''; emojiList.forEach(e=>{ const span=document.createElement('span'); span.className='emoji'; span.textContent=e; span.addEventListener('click',()=>{ chatInput.value+=e; chatInput.focus(); }); emojiPicker.appendChild(span); }); }
+emojiBtn.addEventListener('click',()=>{
+  if(emojiPicker.style.display==='flex'){ emojiPicker.style.display='none'; }
+  else{ renderEmojiPicker(); emojiPicker.style.display='flex'; }
+});
+document.addEventListener('click',e=>{ if(!emojiPicker.contains(e.target) && e.target!==emojiBtn) emojiPicker.style.display='none'; });
 </script>
+
 </body>
 </html>
