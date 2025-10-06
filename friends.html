@@ -156,13 +156,7 @@ function loadUsersRealtime(){
       const tB = lastChatTimestamps[b.uid]||0;
       return tB-tA || a.name.localeCompare(b.name);
     });
-    userList.innerHTML='';
-    friends.forEach(f=>{
-      const row = document.createElement('div');
-      row.className='user-row';
-      row.dataset.uid=f.uid;
-      row.dataset.name=f.name;
-      row.innerHTML = `
+    row.innerHTML = `
   <div>
     <span class="status-dot ${f.online ? 'online' : 'offline'}"></span>
     <span class="friend-name">${f.name}</span>
