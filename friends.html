@@ -49,6 +49,23 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
 .small-muted { font-size:11px; color:#666; }
 .floating-emoji { position:absolute; font-size:20px; animation:floating 1s ease forwards; pointer-events:none; }
 @keyframes floating { 0% { opacity:1; transform:translateY(0px) scale(1); } 100% { opacity:0; transform:translateY(-50px) scale(1.3); } }
+
+/* Emoji floating animation */
+.emoji-float {
+  position: absolute;
+  font-size: 22px;
+  animation: floatUp 2s ease-out;
+  pointer-events: none;
+  user-select: none;
+  z-index: 9999;
+}
+
+@keyframes floatUp {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
+}
+
+
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -267,7 +284,10 @@ function openChat(friendUid, friendName){
     const msg = snap.val(); msg._key = snap.key;
     addOrUpdateMessageToChat(msg);
     lastChatTimestamps[friendUid] = msg.timestamp;
-    if(msg.sender !== currentUserUid){
+    if (msg.sender !== currentUserUid) {
+  triggerEmojiOnNewMessage(msgSnap.key); // small floating heart animation
+}
+
       // If the message is not from me, it's new — but since user opened chat we cleared unread
       // Optionally produce floating emoji
       showFloatingEmoji(msg);
@@ -279,7 +299,7 @@ function openChat(friendUid, friendName){
   });
 }
 
-function addOrUpdateMessageToChat(msg){
+function UpdateMessageToChat(msg){
   if(!msg || !msg._key) return;
   const id='msg-'+msg._key;
   let el=document.getElementById(id);
@@ -452,6 +472,27 @@ function compressImageToDataURL(file,maxBytes,callback){
 
 // ===== Revoke URLs on unload =====
 window.addEventListener('beforeunload',()=>{ Object.values(localPreviewMap).forEach(url=>{ try{ if(url.startsWith('blob:')) URL.revokeObjectURL(url); }catch(e){} }); });
+
+// ===== Emoji Reaction Animation =====
+function showReactionEffect(targetElement, emoji = '💬') {
+  if (!targetElement) return;
+  
+  const emojiElem = document.createElement('div');
+  emojiElem.textContent = emoji;
+  emojiElem.className = 'emoji-float';
+  
+  targetElement.appendChild(emojiElem);
+  
+  // Remove after animation
+  setTimeout(() => emojiElem.remove(), 2000);
+}
+
+// Trigger emoji effect when a new message arrives (in addOrUpdateMessageToChat)
+function triggerEmojiOnNewMessage(messageId) {
+  const msgElem = document.querySelector(`[data-mid="${messageId}"]`);
+  if (msgElem) showReactionEffect(msgElem, '💖');
+}
+
 
 </script>
 </body>
