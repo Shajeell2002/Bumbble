@@ -14,6 +14,8 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 .user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
 .user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #eee; cursor:pointer; transition:0.2s; }
 .user-row:hover, .user-row.active { background:#fffbcc; }
+.user-row.flash { animation:flashRed 0.5s; }
+@keyframes flashRed { 0%{background:#ffcccc;} 100%{background:#fffbcc;} }
 .status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
 .online { background:green; } .offline { background:red; }
 .badge { background:red; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
@@ -29,6 +31,9 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 #chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:8px; background:#fafafa; }
 #sendBtn { padding:8px 12px; border:none; background:#ffcb2b; cursor:pointer; border-radius:8px; }
 #sendBtn:hover { background:#f1b800; }
+.friends-container::-webkit-scrollbar { width:6px; }
+.friends-container::-webkit-scrollbar-thumb { background:#ffcb2b; border-radius:3px; }
+.friends-container::-webkit-scrollbar-track { background:#f1f1f1; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -60,7 +65,15 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 </div>
 
 <script>
-const firebaseConfig = { apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs", authDomain:"bumbble-c061f.firebaseapp.com", databaseURL:"https://bumbble-c061f-default-rtdb.firebaseio.com", projectId:"bumbble-c061f", storageBucket:"bumbble-c061f.appspot.com", messagingSenderId:"213165886981", appId:"1:213165886981:web:c18652003444869b1bd66c" };
+const firebaseConfig = {
+  apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+  authDomain:"bumbble-c061f.firebaseapp.com",
+  databaseURL:"https://bumbble-c061f-default-rtdb.firebaseio.com",
+  projectId:"bumbble-c061f",
+  storageBucket:"bumbble-c061f.appspot.com",
+  messagingSenderId:"213165886981",
+  appId:"1:213165886981:web:c18652003444869b1bd66c"
+};
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
@@ -81,108 +94,137 @@ let currentChatListener = null;
 auth.onAuthStateChanged(user=>{
   if(user && user.emailVerified){
     currentUserUid = user.uid;
-    nav.innerHTML = `<a href="index.html">Home</a>
+    nav.innerHTML = `
+      <a href="index.html">Home</a>
       <a href="friends.html">Friends</a>
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>`;
     document.getElementById("logoutBtn").addEventListener("click",()=>{
       auth.signOut().then(()=>window.location.href="login.html");
     });
-    loadUsersRealtime();
+    setupOnlineStatus();
+    loadUsers();
+    listenUnreadCounts();
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
-    userList.innerHTML = "<p>Please login to view users.</p>";
+    document.querySelector(".friends-container").innerHTML="<p>Please login to view users.</p>";
   }
 });
 
-// ===== Load Users & Unread Count =====
-function loadUsersRealtime(){
-  db.ref('users').on('value', snap=>{
-    const usersData = snap.val()||{};
-    userList.innerHTML = '';
-    Object.keys(usersData).forEach(uid=>{
-      if(uid===currentUserUid) return;
-      const u = usersData[uid].public||{};
-      const row = document.createElement('div');
-      row.className = 'user-row';
-      row.dataset.uid = uid;
-      row.innerHTML = `<div><span class="status-dot ${u.online?'online':'offline'}"></span>${u.name||'Unknown'}</div>`;
-      row.addEventListener('click',()=>openChat(uid, u.name||'Unknown'));
-      userList.appendChild(row);
-
-      // Listen unread messages for this user
-      db.ref('unread/'+currentUserUid+'/'+uid).on('value', snap=>{
-        let badge = row.querySelector('.badge');
-        if(snap.exists() && snap.val()>0){
-          if(!badge){ badge = document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge); }
-          badge.textContent = snap.val();
-        } else if(badge) badge.remove();
-      });
-    });
+// ===== Online Status =====
+function setupOnlineStatus(){
+  const statusRef = db.ref('users/'+currentUserUid+'/public/online');
+  db.ref('.info/connected').on('value',snap=>{
+    if(snap.val()===true){
+      statusRef.set(true);
+      statusRef.onDisconnect().set(false);
+    }
   });
 }
 
-// ===== Open Chat =====
-function openChat(friendUid, friendName){
+// ===== Load Friends =====
+function loadUsers(){
+  db.ref('users').on('value',snapshot=>{
+    const usersData = snapshot.val()||{};
+    const friends = Object.keys(usersData)
+      .filter(uid=>uid!==currentUserUid)
+      .map(uid=>{
+        const u = usersData[uid].public||{};
+        return { uid, name:u.name||"Unknown", online:u.online||false };
+      });
+    userList.innerHTML='';
+    friends.forEach(f=>{
+      const row=document.createElement('div');
+      row.className='user-row';
+      row.dataset.uid=f.uid;
+      row.innerHTML=`<div><span class="status-dot ${f.online?'online':'offline'}"></span>${f.name}</div>`;
+      row.addEventListener('click',()=>openChat(f.uid,f.name));
+      userList.appendChild(row);
+    });
+    updateUnreadBadges();
+  });
+}
+
+// ===== Unread =====
+const unreadMap = {};
+function listenUnreadCounts(){
+  db.ref('unread/'+currentUserUid).on('value',snap=>{
+    Object.assign(unreadMap, snap.val()||{});
+    updateUnreadBadges();
+  });
+}
+
+function updateUnreadBadges(){
+  document.querySelectorAll('.user-row').forEach(row=>{
+    const uid=row.dataset.uid;
+    let badge=row.querySelector('.badge');
+    if(unreadMap[uid]>0){
+      if(!badge){
+        badge=document.createElement('span'); badge.className='badge';
+        row.querySelector('div').appendChild(badge);
+      }
+      badge.textContent = unreadMap[uid];
+    } else if(badge) badge.remove();
+  });
+}
+
+// ===== Chat =====
+function openChat(friendUid,friendName){
+  document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
+  const activeRow=document.querySelector(`.user-row[data-uid="${friendUid}"]`);
+  if(activeRow) activeRow.classList.add('active');
+
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
-  document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
-  const row = document.querySelector(`.user-row[data-uid="${friendUid}"]`);
-  if(row) row.classList.add('active');
+  chatModal.style.display='flex';
+  chatMessages.innerHTML='';
 
-  chatModal.style.display = 'flex';
-  chatMessages.innerHTML = '';
-
-  // Clear unread
+  // Reset unread
   db.ref('unread/'+currentUserUid+'/'+friendUid).set(0);
 
-  // Load chat messages
-  const chatId = getChatId(currentUserUid, friendUid);
+  const chatId = getChatId(currentUserUid,friendUid);
   if(currentChatListener) currentChatListener.off();
-  const chatRef = db.ref('chats/'+chatId+'/messages');
-  chatRef.off();
-  chatRef.on('child_added', snap=>{
+  currentChatListener = db.ref('chats/'+chatId+'/messages');
+  currentChatListener.on('child_added',snap=>{
     const msg = snap.val();
-    const isSelf = msg.sender===currentUserUid;
-    const div = document.createElement('div');
-    div.className = 'message '+(isSelf?'self':'friend');
-    div.textContent = msg.text||'';
-    const ts = document.createElement('div');
-    ts.className = 'timestamp '+(isSelf?'':'friend');
-    ts.textContent = new Date(msg.timestamp).toLocaleString();
-    div.appendChild(ts);
-    chatMessages.appendChild(div);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    if(!msg) return;
+    addMessage(msg);
   });
+}
+
+function addMessage(msg){
+  const isSelf = msg.sender===currentUserUid;
+  const div = document.createElement('div');
+  div.className = 'message '+(isSelf?'self':'friend');
+  div.textContent = msg.text || '';
+  const ts = document.createElement('span');
+  ts.className = 'timestamp '+(isSelf?'':'friend');
+  ts.textContent = new Date(msg.timestamp).toLocaleString();
+  div.appendChild(ts);
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
 // ===== Send Message =====
 function sendMessage(){
   const text = chatInput.value.trim();
   if(!text || !currentChatFriendUid) return;
-  const chatId = getChatId(currentUserUid, currentChatFriendUid);
-  const msgObj = { sender: currentUserUid, receiver: currentChatFriendUid, text, timestamp: Date.now() };
-  db.ref('chats/'+chatId+'/members').update({ [currentUserUid]: true, [currentChatFriendUid]: true });
-  db.ref('chats/'+chatId+'/messages').push(msgObj).then(()=>{
-    // Increment unread count for receiver
-    const unreadRef = db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid);
-    unreadRef.transaction(current=> (current||0)+1 );
-  });
+  const chatId = getChatId(currentUserUid,currentChatFriendUid);
+  const msgObj = { sender:currentUserUid, receiver:currentChatFriendUid, text, timestamp:Date.now() };
+  db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [currentChatFriendUid]:true });
+  db.ref('chats/'+chatId+'/messages').push(msgObj);
+
+  // Update unread for receiver
+  db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid).transaction(count=>(count||0)+1);
+
   chatInput.value='';
 }
-chatInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); }});
-sendBtn.addEventListener('click', sendMessage);
-
-// ===== Close Chat =====
-function closeChat(){
-  chatModal.style.display='none';
-  currentChatFriendUid='';
-  chatMessages.innerHTML='';
-}
+sendBtn.addEventListener('click',sendMessage);
+chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); }});
 
 // ===== Helpers =====
-function getChatId(uid1, uid2){ return uid1<uid2?uid1+'_'+uid2:uid2+'_'+uid1; }
+function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=''; chatMessages.innerHTML=''; }
+function getChatId(a,b){ return a<b?a+'_'+b:b+'_'+a; }
 </script>
-
 </body>
 </html>
