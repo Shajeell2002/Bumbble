@@ -80,7 +80,15 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
 
 <script>
 // ===== Firebase Init =====
-const firebaseConfig = { apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs", authDomain:"bumbble-c061f.firebaseapp.com", databaseURL:"https://bumbble-c061f-default-rtdb.firebaseio.com", projectId:"bumbble-c061f", storageBucket:"bumbble-c061f.appspot.com", messagingSenderId:"213165886981", appId:"1:213165886981:web:c18652003444869b1bd66c" };
+const firebaseConfig = { 
+  apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+  authDomain:"bumbble-c061f.firebaseapp.com",
+  databaseURL:"https://bumbble-c061f-default-rtdb.firebaseio.com",
+  projectId:"bumbble-c061f",
+  storageBucket:"bumbble-c061f.appspot.com",
+  messagingSenderId:"213165886981",
+  appId:"1:213165886981:web:c18652003444869b1bd66c"
+};
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
@@ -107,7 +115,7 @@ const localPreviewMap = {};
 let typingTimeout;
 
 // ===== Auth =====
-auth.onAuthStateChanged(user=>{
+auth.onAuthStateChanged(user => {
   if(user && user.emailVerified){
     currentUserUid = user.uid;
     nav.innerHTML = `
@@ -126,6 +134,7 @@ auth.onAuthStateChanged(user=>{
     });
     setupOnlineStatus();
     loadUsersRealtime();
+
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
     if(lastUid && lastName) openChat(lastUid,lastName);
@@ -146,19 +155,23 @@ function setupOnlineStatus(){
   });
 }
 
-// ===== Load Users =====
+// ===== Load Users & Keep Unread Badges =====
 function loadUsersRealtime(){
   db.ref('users').on('value', snapshot=>{
-    const usersData = snapshot.val()||{};
-    const friends = Object.keys(usersData).filter(uid=>uid!==currentUserUid).map(uid=>{
-      const u = usersData[uid].public||{};
-      return { uid, name:u.name||"Unknown", gender:u.gender||"N/A", online:u.online||false };
-    });
+    const usersData = snapshot.val() || {};
+    const friends = Object.keys(usersData)
+      .filter(uid => uid !== currentUserUid)
+      .map(uid => {
+        const u = usersData[uid].public || {};
+        return { uid, name: u.name || "Unknown", gender: u.gender || "N/A", online: u.online || false };
+      });
+
     friends.sort((a,b)=>{
       const tA = lastChatTimestamps[a.uid]||0;
       const tB = lastChatTimestamps[b.uid]||0;
       return tB-tA || a.name.localeCompare(b.name);
     });
+
     userList.innerHTML='';
     friends.forEach(f=>{
       const row = document.createElement('div');
@@ -168,19 +181,24 @@ function loadUsersRealtime(){
       row.innerHTML=`<div><span class="status-dot ${f.online?'online':'offline'}"></span>${f.name} (${f.gender})</div>`;
       row.addEventListener('click',()=>openChat(f.uid,f.name));
       userList.appendChild(row);
-      // Update badge if any
+
       if(unreadCounters[f.uid]) updateFriendBadge(f.uid, unreadCounters[f.uid]);
     });
   });
 }
 
 // ===== Friend Badge =====
-function updateFriendBadge(uid, count) {
+function updateFriendBadge(uid,count){
   const row = document.querySelector(`.user-row[data-uid="${uid}"]`);
   if(!row) return;
-  let badge = row.querySelector('.badge');
-  if(count > 0){
-    if(!badge){ badge = document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge); }
+  const innerDiv = row.querySelector('div') || row;
+  let badge = innerDiv.querySelector('.badge');
+  if(count>0){
+    if(!badge){
+      badge = document.createElement('span');
+      badge.className='badge';
+      innerDiv.appendChild(badge);
+    }
     badge.textContent = count;
   } else if(badge){ badge.remove(); }
 }
@@ -188,7 +206,10 @@ function updateFriendBadge(uid, count) {
 // ===== Flash Friend Row =====
 function flashUserRow(uid){
   const row = document.querySelector(`.user-row[data-uid="${uid}"]`);
-  if(row){ row.classList.add('flash'); setTimeout(()=>row.classList.remove('flash'),800); }
+  if(row){
+    row.classList.add('flash');
+    setTimeout(()=>row.classList.remove('flash'),800);
+  }
 }
 
 // ===== Open Chat =====
@@ -205,13 +226,14 @@ function openChat(friendUid,friendName){
   chatModal.style.display='flex';
   chatMessages.innerHTML='';
   typingIndicator.textContent='';
+  previewStrip.innerHTML=''; previewStrip.style.display='none';
 
   unreadCounters[friendUid] = 0;
   updateFriendBadge(friendUid,0);
 
   listenTyping(friendUid);
 
-  const chatId = getChatId(currentUserUid, friendUid);
+  const chatId = getChatId(currentUserUid,friendUid);
   if(currentChatListener) currentChatListener.off();
 
   const chatRef = db.ref('chats/' + chatId);
@@ -219,7 +241,8 @@ function openChat(friendUid,friendName){
 
   chatRef.child('messages').once('value', snap=>{
     const msgs = snap.val()||{};
-    Object.keys(msgs).sort((a,b)=> msgs[a].timestamp - msgs[b].timestamp).forEach(k=>addOrUpdateMessageToChat({...msgs[k], _key:k}));
+    Object.keys(msgs).sort((a,b)=> msgs[a].timestamp - msgs[b].timestamp)
+      .forEach(k=>addOrUpdateMessageToChat({...msgs[k], _key:k}));
     chatMessages.scrollTop = chatMessages.scrollHeight;
   });
 
@@ -235,7 +258,7 @@ function openChat(friendUid,friendName){
   });
 }
 
-// ===== Render Messages with Emoji =====
+// ===== Render Messages =====
 function addOrUpdateMessageToChat(msg){
   if(!msg || !msg._key) return;
   const id='msg-'+msg._key;
@@ -278,8 +301,7 @@ function sendMessage(){
   const msgObj={ sender:currentUserUid, receiver:currentChatFriendUid, text, timestamp:Date.now() };
   db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [currentChatFriendUid]:true });
   db.ref('chats/'+chatId+'/messages').push(msgObj);
-  chatInput.value='';
-  lastChatTimestamps[currentChatFriendUid]=msgObj.timestamp;
+  chatInput.value=''; lastChatTimestamps[currentChatFriendUid]=msgObj.timestamp;
 }
 chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); }});
 sendBtn.addEventListener('click',sendMessage);
@@ -290,8 +312,7 @@ function closeChat(){
   chatModal.style.display='none';
   currentChatFriendUid='';
   typingIndicator.textContent='';
-  previewStrip.innerHTML='';
-  previewStrip.style.display='none';
+  previewStrip.innerHTML=''; previewStrip.style.display='none';
 }
 
 // ===== Helpers =====
@@ -372,7 +393,7 @@ function compressImageToDataURL(file,maxBytes,callback){
       let scale=Math.sqrt(maxBytes/file.size); scale=Math.min(1,Math.max(0.1,scale)); let quality=0.9;
       const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d');
       (function attempt(){
-        canvas.width=Math.max(1,Math.round(img.width*scale)); canvas.height=Math.max(1,Math.round(img.height*scale));
+        canvas.width=Math.max(1, Math.round(img.width*scale)); canvas.height=Math.max(1, Math.round(img.height*scale));
         ctx.clearRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0,canvas.width,canvas.height);
         try {
           const dataUrl=canvas.toDataURL(file.type||'image/jpeg',quality);
@@ -389,6 +410,6 @@ function compressImageToDataURL(file,maxBytes,callback){
 // ===== Revoke URLs =====
 window.addEventListener('beforeunload',()=>{ Object.values(localPreviewMap).forEach(url=>{ try{ if(url.startsWith('blob:')) URL.revokeObjectURL(url); }catch(e){} }); });
 </script>
-
 </body>
 </html>
+
