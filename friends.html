@@ -408,14 +408,6 @@ function compressImageToDataURL(file,maxBytes,callback){
 // ===== Revoke URLs =====
 window.addEventListener('beforeunload',()=>{ Object.values(localPreviewMap).forEach(url=>{ try{ if(url.startsWith('blob:')) URL.revokeObjectURL(url); }catch(e){} }); });
 
-// ===== Emoji Picker =====
-const emojiList = ["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🥳","🤗","🤡","😏","😒","😞","😔","😟","😕","🙁","☹️","😣","😖","😫","😩","🥺","😢","😭","😤","😠","😡"];
-function renderEmojiPicker(){ emojiPicker.innerHTML=''; emojiList.forEach(e=>{ const span=document.createElement('span'); span.className='emoji'; span.textContent=e; span.addEventListener('click',()=>{ chatInput.value+=e; chatInput.focus(); }); emojiPicker.appendChild(span); }); }
-emojiBtn.addEventListener('click',()=>{
-  if(emojiPicker.style.display==='flex'){ emojiPicker.style.display='none'; }
-  else{ renderEmojiPicker(); emojiPicker.style.display='flex'; }
-});
-document.addEventListener('click',e=>{ if(!emojiPicker.contains(e.target) && e.target!==emojiBtn) emojiPicker.style.display='none'; });
 </script>
 
 </body>
