@@ -165,7 +165,14 @@ function loadUsersRealtime(){
       row.className='user-row';
       row.dataset.uid=f.uid;
       row.dataset.name=f.name;
-      row.innerHTML=`<div><span class="status-dot ${f.online?'online':'offline'}"></span>${f.name} (${f.gender})</div>`;
+      row.innerHTML = `
+  <div>
+    <span class="status-dot ${f.online ? 'online' : 'offline'}"></span>
+    <span class="friend-name">${f.name}</span>
+    <span class="badge" style="display: none;"></span>
+    <span class="small-muted">(${f.gender})</span>
+  </div>`;
+`;
       row.addEventListener('click',()=>openChat(f.uid,f.name));
       userList.appendChild(row);
     });
@@ -177,13 +184,18 @@ function loadUsersRealtime(){
 function updateFriendListBadges(){
   document.querySelectorAll('.user-row').forEach(row=>{
     const uid = row.dataset.uid;
-    let badge = row.querySelector('.badge');
-    if(unreadCounters[uid]){
-      if(!badge){ badge=document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge); }
-      badge.textContent = unreadCounters[uid];
-    } else if(badge) badge.remove();
+    const badge = row.querySelector('.badge');
+    if(badge){
+      if(unreadCounters[uid]){
+        badge.style.display = 'inline-block';
+        badge.textContent = unreadCounters[uid];
+      } else {
+        badge.style.display = 'none';
+      }
+    }
   });
 }
+
 
 function flashUserRow(uid){
   const row = document.querySelector(`.user-row[data-uid="${uid}"]`);
