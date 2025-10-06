@@ -1,193 +1,318 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Friends & Chat</title>
 <style>
-body { font-family: Arial, sans-serif; margin:0; background:#fefefe; color:#333; display:flex; min-height:100vh; flex-direction:column; }
-header { display:flex; justify-content:space-between; align-items:center; background:#ffcc70; color:#222; padding:10px 15px; font-weight:bold; }
-#friends { flex:1; overflow-y:auto; padding:10px; }
-.user-row { display:flex; align-items:center; justify-content:space-between; background:#fff; padding:8px 10px; margin-bottom:5px; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,0.1); cursor:pointer; transition:background 0.3s; }
-.user-row:hover { background:#f5f5f5; }
-.user-row.flash { background:#ffe6e6 !important; transition: background 0.4s ease; }
-.badge { background:red; color:#fff; border-radius:50%; padding:3px 8px; font-size:12px; font-weight:bold; margin-left:6px; }
-#chatBox { display:none; flex-direction:column; flex:1; }
-#chatHeader { background:#ffcc70; padding:10px; font-weight:bold; }
-#messages { flex:1; overflow-y:auto; padding:10px; }
-.message { margin-bottom:10px; padding:8px 12px; border-radius:8px; display:inline-block; max-width:70%; }
-.sent { background:#dcf8c6; align-self:flex-end; }
-.received { background:#f1f0f0; align-self:flex-start; }
-#inputArea { display:flex; padding:10px; background:#fff; border-top:1px solid #ddd; }
-#msgInput { flex:1; padding:8px; border:1px solid #ccc; border-radius:6px; }
-button { margin-left:8px; padding:8px 12px; border:none; background:#ffcc70; border-radius:6px; cursor:pointer; }
-button:hover { background:#ffb347; }
+body { font-family: Arial, sans-serif; margin:0; background:#fefefe; color:#333; display:flex; min-height:100vh; flex-direction: column; }
+header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#ffcb2b; box-shadow:0 3px 6px rgba(0,0,0,0.1); position:fixed; top:0; left:0; right:0; z-index:500; }
+header h1{ font-size:24px; margin:0; }
+nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
+.friends-container { width:250px; background:#fffbe6; border-right:1px solid #eee; padding:10px; overflow-y:auto; position:fixed; top:60px; bottom:0; left:0; }
+.main-content { flex:1; margin-left:250px; padding:80px 20px 20px 20px; }
+.user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
+.user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #eee; cursor:pointer; transition:0.2s; }
+.user-row:hover, .user-row.active { background:#fffbcc; }
+.user-row.flash { animation:flashRed 0.5s; }
+@keyframes flashRed { 0%{background:#ffcccc;} 100%{background:#fffbcc;} }
+.status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
+.online { background:green; } .offline { background:red; }
+.badge { background:red; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
+#chatModal { position:fixed; bottom:0; right:20px; width:360px; max-height:70vh; border:1px solid #ccc; background:#fff; border-radius:10px 10px 0 0; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); resize:both; overflow:hidden; z-index:1000; }
+#chatHeader { background:#ffcb2b; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; border-radius:10px 10px 0 0; cursor:move; }
+#chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:#fefefe; scroll-behavior:smooth; }
+#typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
+.message { max-width:80%; padding:8px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
+.message.self { background:#059669; color:white; align-self:flex-end; }
+.message.friend { background:#e9e9e9; color:#111; align-self:flex-start; }
+.timestamp { font-size:10px; color:#eee; margin-top:6px; text-align:right; display:block; }
+.timestamp.friend { color:#666; }
+.uploading-badge { font-size:11px; color:#444; margin-top:6px; display:inline-block; background:#fff3cd; padding:3px 6px; border-radius:6px; border:1px solid #ffeeba; }
+#chatInputContainer { display:flex; border-top:1px solid #ddd; align-items:center; gap:6px; padding:8px; }
+#chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:8px; background:#fafafa; }
+#sendBtn, #fileBtn { padding:8px 12px; border:none; background:#ffcb2b; cursor:pointer; border-radius:8px; }
+#sendBtn:hover, #fileBtn:hover { background:#f1b800; }
+.friends-container::-webkit-scrollbar { width:6px; }
+.friends-container::-webkit-scrollbar-thumb { background:#ffcb2b; border-radius:3px; }
+.friends-container::-webkit-scrollbar-track { background:#f1f1f1; }
+img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:pointer; display:block; margin-bottom:6px; }
+.file-link { display:inline-block; padding:6px 8px; background:#fff; border-radius:6px; border:1px solid #ddd; text-decoration:none; color:#333; margin-bottom:6px; font-size:14px; }
+.file-link::before { content: '⤓ '; }
+.preview-strip { display:flex; gap:8px; padding:8px; overflow:auto; border-bottom:1px solid #eee; background:#fff; }
+.preview-thumb { width:60px; height:60px; border-radius:6px; object-fit:cover; border:1px solid #ddd; position:relative; }
+.progress-bar { width:60px; height:4px; background:#eee; border-radius:3px; margin-top:4px; }
+.progress-fill { height:100%; width:0%; background:#059669; border-radius:3px; transition:width 0.3s ease; }
+.small-muted { font-size:11px; color:#666; }
 </style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
+
 <header>
-  <div>Bumbble - Friends</div>
-  <button id="logoutBtn">Logout</button>
+  <h1>Bumbble</h1>
+  <nav id="navLinks"></nav>
 </header>
 
-<div id="friends"></div>
+<div class="friends-container">
+  <div class="user-list" id="userList"></div>
+</div>
 
-<div id="chatBox">
-  <div id="chatHeader"></div>
-  <div id="messages"></div>
-  <div id="inputArea">
-    <input id="msgInput" placeholder="Type a message..." />
-    <button id="sendBtn">Send</button>
+<div class="main-content">
+  <div id="chatModal">
+    <div id="chatHeader">
+      <span id="chatWith">Friend</span>
+      <button onclick="closeChat()">X</button>
+    </div>
+    <div id="previewStrip" class="preview-strip" style="display:none;"></div>
+    <div id="chatMessages"></div>
+    <div id="typingIndicator"></div>
+    <div id="chatInputContainer">
+      <button id="fileBtn">📎</button>
+      <input type="text" id="chatInput" placeholder="Type a message">
+      <button id="sendBtn">Send</button>
+      <input type="file" id="chatFileInput" style="display:none;" multiple>
+    </div>
   </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script>
-// ===== Firebase Config =====
-const firebaseConfig = {
-  apiKey: "YOUR-KEY",
-  authDomain: "YOUR-DOMAIN",
-  databaseURL: "YOUR-DB-URL",
-  projectId: "YOUR-ID",
-  storageBucket: "YOUR-BUCKET",
-  messagingSenderId: "YOUR-SENDER-ID",
-  appId: "YOUR-APP-ID"
-};
+const firebaseConfig = { apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs", authDomain:"bumbble-c061f.firebaseapp.com", databaseURL:"https://bumbble-c061f-default-rtdb.firebaseio.com", projectId:"bumbble-c061f", storageBucket:"bumbble-c061f.appspot.com", messagingSenderId:"213165886981", appId:"1:213165886981:web:c18652003444869b1bd66c" };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-// ===== Global Vars =====
-let currentUserUid = null;
-let currentChatFriendUid = null;
-let unreadCounters = {};
-let friends = [];
-
-// ===== DOM Refs =====
-const friendsDiv = document.getElementById("friends");
-const chatBox = document.getElementById("chatBox");
-const chatHeader = document.getElementById("chatHeader");
-const messagesDiv = document.getElementById("messages");
-const msgInput = document.getElementById("msgInput");
+const nav = document.getElementById("navLinks");
+const userList = document.getElementById("userList");
+const chatModal = document.getElementById("chatModal");
+const chatMessages = document.getElementById("chatMessages");
+const chatWith = document.getElementById("chatWith");
+const chatInput = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
+const fileBtn = document.getElementById("fileBtn");
+const chatFileInput = document.getElementById("chatFileInput");
+const typingIndicator = document.getElementById("typingIndicator");
+const previewStrip = document.getElementById("previewStrip");
 
-// ===== Auth & Load Friends =====
-auth.onAuthStateChanged(user => {
+let currentUserUid = "";
+let currentChatFriendUid = "";
+let currentChatListener = null;
+const unreadCounters = {};
+const lastChatTimestamps = {};
+const localPreviewMap = {};
+let typingTimeout;
+
+// ===== Auth =====
+auth.onAuthStateChanged(user=>{
   if(user && user.emailVerified){
     currentUserUid = user.uid;
+    nav.innerHTML = `
+      <a href="index.html">Home</a>
+      <a href="friends.html">Friends</a>
+      <a href="stories.html">Stories</a>
+      <a href="events.html">Events</a>
+      <a href="safety.html">Safety</a>
+      <a href="profile.html">Profile</a>
+      <a href="#" id="logoutBtn">Logout</a>`;
+    document.getElementById("logoutBtn").addEventListener("click",()=>{
+      db.ref('users/'+currentUserUid+'/public/online').set(false);
+      localStorage.removeItem("lastChatFriendUid");
+      localStorage.removeItem("lastChatFriendName");
+      auth.signOut().then(()=>window.location.href="login.html");
+    });
+    setupOnlineStatus();
     loadUsersRealtime();
-    listenForUnreadMessages();
+    const lastUid = localStorage.getItem("lastChatFriendUid");
+    const lastName = localStorage.getItem("lastChatFriendName");
+    if(lastUid && lastName) openChat(lastUid,lastName);
+    setupUnreadCounterListener();
   } else {
-    window.location.href = "login.html";
+    nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
+    document.querySelector(".friends-container").innerHTML="<p>Please login to view users.</p>";
   }
 });
 
-// ===== Load Users Realtime =====
-function loadUsersRealtime(){
-  db.ref("users").on("value", snapshot => {
-    const usersData = snapshot.val() || {};
-    friends = [];
-    Object.keys(usersData).forEach(uid => {
-      if(uid === currentUserUid) return;
-      const u = usersData[uid].public || {};
-      friends.push({ uid, name: u.name || "Unknown" });
-    });
-    renderFriendList();
-  });
-}
-
-// ===== Render Friend List =====
-function renderFriendList(){
-  friendsDiv.innerHTML = "";
-  friends.forEach(f => {
-    const row = document.createElement("div");
-    row.className = "user-row";
-    row.dataset.uid = f.uid;
-
-    const name = document.createElement("div");
-    name.textContent = f.name;
-
-    // Add unread badge if any
-    if(unreadCounters[f.uid]){
-      const badge = document.createElement("span");
-      badge.className = "badge";
-      badge.textContent = unreadCounters[f.uid];
-      name.appendChild(badge);
+// ===== Online Status =====
+function setupOnlineStatus(){
+  const userStatusRef = db.ref('users/'+currentUserUid+'/public/online');
+  db.ref('.info/connected').on('value',snap=>{
+    if(snap.val()===true){
+      userStatusRef.set(true);
+      userStatusRef.onDisconnect().set(false);
     }
-
-    row.appendChild(name);
-    row.onclick = () => openChat(f.uid, f.name);
-    friendsDiv.appendChild(row);
   });
 }
 
-// ===== Open Chat =====
-function openChat(friendUid, friendName){
+// ===== Load Users =====
+function loadUsersRealtime(){
+  db.ref('users').on('value', snapshot=>{
+    const usersData = snapshot.val()||{};
+    const friends = Object.keys(usersData).filter(uid=>uid!==currentUserUid).map(uid=>{
+      const u = usersData[uid].public||{};
+      return { uid, name:u.name||"Unknown", gender:u.gender||"N/A", online:u.online||false };
+    });
+    friends.sort((a,b)=>{
+      const tA = lastChatTimestamps[a.uid]||0;
+      const tB = lastChatTimestamps[b.uid]||0;
+      return tB-tA || a.name.localeCompare(b.name);
+    });
+    userList.innerHTML='';
+    friends.forEach(f=>{
+      const row = document.createElement('div');
+      row.className='user-row';
+      row.dataset.uid=f.uid;
+      row.dataset.name=f.name;
+      row.innerHTML=`<div><span class="status-dot ${f.online?'online':'offline'}"></span>${f.name} (${f.gender})</div>`;
+      row.addEventListener('click',()=>openChat(f.uid,f.name));
+      userList.appendChild(row);
+    });
+    updateFriendListBadges();
+  });
+}
+
+// ===== Friend Badges & Flash =====
+function updateFriendListBadges(){
+  document.querySelectorAll('.user-row').forEach(row=>{
+    const uid = row.dataset.uid;
+    let badge = row.querySelector('.badge');
+    if(unreadCounters[uid] && unreadCounters[uid]>0){
+      if(!badge){ badge=document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge); }
+      badge.textContent = unreadCounters[uid];
+    } else if(badge) badge.remove();
+  });
+}
+function flashUserRow(uid){
+  const row = document.querySelector(`.user-row[data-uid="${uid}"]`);
+  if(row){ row.classList.add('flash'); setTimeout(()=>row.classList.remove('flash'),800); }
+}
+
+// ===== Unified Unread Listener =====
+function setupUnreadCounterListener() {
+  db.ref("chats").on("child_added", snap => {
+    snap.child("messages").ref.on("child_added", msgSnap => {
+      const msg = msgSnap.val();
+      if (!msg || !currentUserUid) return;
+      if (msg.receiver === currentUserUid && msg.sender !== currentChatFriendUid) {
+        unreadCounters[msg.sender] = (unreadCounters[msg.sender] || 0) + 1;
+        lastChatTimestamps[msg.sender] = msg.timestamp;
+        updateFriendListBadges();
+        flashUserRow(msg.sender);
+        loadUsersRealtime();
+      }
+    });
+  });
+}
+
+// ===== Chat =====
+function openChat(friendUid,friendName){
+  document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
+  const activeRow=document.querySelector(`.user-row[data-uid="${friendUid}"]`);
+  if(activeRow) activeRow.classList.add('active');
   currentChatFriendUid = friendUid;
-  chatBox.style.display = "flex";
-  chatHeader.textContent = friendName;
-  messagesDiv.innerHTML = "";
-  unreadCounters[friendUid] = 0;
-  renderFriendList();
+  chatWith.textContent = friendName;
+  localStorage.setItem("lastChatFriendUid", friendUid);
+  localStorage.setItem("lastChatFriendName", friendName);
+  chatModal.style.display='flex';
+  chatMessages.innerHTML=''; typingIndicator.textContent='';
+  unreadCounters[friendUid]=0; updateFriendListBadges();
+
+  listenTyping(friendUid);
 
   const chatId = getChatId(currentUserUid, friendUid);
-  db.ref("chats/" + chatId + "/messages").off();
-  db.ref("chats/" + chatId + "/messages").on("child_added", snap => {
-    const msg = snap.val();
-    if(!msg) return;
-    displayMessage(msg);
+  if(currentChatListener) currentChatListener.off();
+  const chatRef = db.ref('chats/' + chatId);
+  chatRef.child('members').update({ [currentUserUid]: true, [friendUid]: true });
+
+  chatRef.child('messages').once('value', snap=>{
+    const msgs = snap.val()||{};
+    Object.keys(msgs).sort((a,b)=> msgs[a].timestamp - msgs[b].timestamp).forEach(k=>addOrUpdateMessageToChat({...msgs[k], _key:k}));
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  });
+
+  currentChatListener = chatRef.child('messages');
+  currentChatListener.on('child_added', snap=>{
+    const msg = snap.val(); msg._key = snap.key;
+    addOrUpdateMessageToChat(msg);
+    lastChatTimestamps[friendUid] = msg.timestamp;
+  });
+  currentChatListener.on('child_changed', snap=>{
+    const msg = snap.val(); msg._key = snap.key;
+    addOrUpdateMessageToChat(msg);
   });
 }
 
-// ===== Display Message =====
-function displayMessage(msg){
-  const div = document.createElement("div");
-  div.className = "message " + (msg.sender === currentUserUid ? "sent" : "received");
-  div.textContent = msg.text;
-  messagesDiv.appendChild(div);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+// ===== Render Messages =====
+function addOrUpdateMessageToChat(msg){
+  if(!msg || !msg._key) return;
+  const id='msg-'+msg._key;
+  let el=document.getElementById(id);
+  const isSelf = msg.sender===currentUserUid;
+  if(!el){ el=document.createElement('div'); el.id=id; el.className='message '+(isSelf?'self':'friend'); chatMessages.appendChild(el); }
+  if(msg.fileData){
+    if(msg.fileType?.startsWith('image/')||msg.fileName?.match(/\.(jpg|jpeg|png|gif)$/i)){
+      el.innerHTML=`<img class="chat-image" src="${msg.fileData}" alt="${msg.fileName||'image'}"/><a class="file-link" href="${msg.fileData}" download="${msg.fileName||'image'}"></a><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
+    } else el.innerHTML=`<div class="small-muted">${msg.fileName||'File'}</div><a class="file-link" href="${msg.fileData}" download="${msg.fileName||'file'}"></a><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
+  } else if(msg.uploading){
+    el.innerHTML=`<div class="small-muted">${msg.fileName||'Sending...'}</div><span class="uploading-badge">Sending...</span><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
+  } else if(msg.text) el.innerHTML=`${escapeHtml(msg.text)}<div class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</div>`;
+  else el.innerHTML=`<div class="small-muted">Unknown message</div>`;
+  chatMessages.scrollTop=chatMessages.scrollHeight;
+}
+
+// ===== Typing =====
+chatInput.addEventListener('input',()=>{
+  if(!currentChatFriendUid) return;
+  db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).set(true);
+  clearTimeout(typingTimeout);
+  typingTimeout=setTimeout(()=>db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove(),1000);
+});
+function listenTyping(friendUid){
+  db.ref('typing/'+currentUserUid+'/'+friendUid).on('value',snap=>{
+    typingIndicator.textContent = snap.exists()?`${chatWith.textContent} is typing...`:'';
+  });
 }
 
 // ===== Send Message =====
-sendBtn.onclick = () => {
-  const text = msgInput.value.trim();
-  if(!text || !currentChatFriendUid) return;
-  const chatId = getChatId(currentUserUid, currentChatFriendUid);
-  const newMsgRef = db.ref("chats/" + chatId + "/messages").push();
-  newMsgRef.set({
-    sender: currentUserUid,
-    receiver: currentChatFriendUid,
-    text,
-    timestamp: Date.now()
-  });
-  msgInput.value = "";
-};
+function sendMessage(){
+  const text=chatInput.value.trim(); if(!text || !currentChatFriendUid) return;
+  const chatId=getChatId(currentUserUid,currentChatFriendUid);
+  const msgObj={ sender:currentUserUid, receiver:currentChatFriendUid, text, timestamp:Date.now() };
+  db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [currentChatFriendUid]:true });
+  db.ref('chats/'+chatId+'/messages').push(msgObj);
+  chatInput.value='';
+  lastChatTimestamps[currentChatFriendUid]=msgObj.timestamp;
+}
+chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); }});
+sendBtn.addEventListener('click',sendMessage);
 
-function getChatId(uid1, uid2){
-  return uid1 < uid2 ? uid1 + "_" + uid2 : uid2 + "_" + uid1;
+// ===== Close Chat =====
+function closeChat(){
+  if(currentChatFriendUid) db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove();
+  chatModal.style.display='none'; currentChatFriendUid=''; typingIndicator.textContent=''; previewStrip.innerHTML=''; previewStrip.style.display='none';
 }
 
-// ===== Listen for Unread Messages =====
-function listenForUnreadMessages(){
-  db.ref("chats").on("value", snapshot => {
-    snapshot.forEach(chatSnap => {
-      chatSnap.child("messages").forEach(msgSnap => {
-        const msg = msgSnap.val();
-        if(msg && msg.receiver === currentUserUid && msg.sender !== currentChatFriendUid){
-          unreadCounters[msg.sender] = (unreadCounters[msg.sender] || 0) + 1;
-        }
-      });
-    });
-    renderFriendList();
+// ===== Files =====
+fileBtn.addEventListener('click',()=>chatFileInput.click());
+chatFileInput.addEventListener('change', async e=>{
+  const files = Array.from(e.target.files); if(!files.length) return;
+  previewStrip.style.display='flex'; previewStrip.innerHTML='';
+  files.forEach(file=>{
+    const reader = new FileReader();
+    reader.onload=(ev)=>{
+      const thumb=document.createElement('img'); thumb.className='preview-thumb'; thumb.src=ev.target.result;
+      previewStrip.appendChild(thumb);
+      localPreviewMap[file.name]=ev.target.result;
+    }
+    reader.readAsDataURL(file);
   });
-}
+});
 
-// ===== Logout =====
-document.getElementById("logoutBtn").onclick = () => {
-  auth.signOut();
-};
+// ===== Utility =====
+function getChatId(uid1,uid2){ return uid1<uid2? uid1+'_'+uid2 : uid2+'_'+uid1; }
+function escapeHtml(text){ return text.replace(/[&<>"']/g, m=>({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[m]); }
 </script>
+
 </body>
 </html>
