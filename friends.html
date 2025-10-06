@@ -1,22 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Bumbble - Friends & Chat</title>
 <style>
 body { font-family: Arial, sans-serif; margin:0; background:#fefefe; color:#333; display:flex; min-height:100vh; flex-direction: column; }
 header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#ffcb2b; box-shadow:0 3px 6px rgba(0,0,0,0.1); position:fixed; top:0; left:0; right:0; z-index:500; }
 header h1{ font-size:24px; margin:0; }
 nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
+.status-selector { margin-left:12px; padding:6px 8px; border-radius:6px; border:none; background:#fff; font-weight:bold; }
 .friends-container { width:250px; background:#fffbe6; border-right:1px solid #eee; padding:10px; overflow-y:auto; position:fixed; top:60px; bottom:0; left:0; }
 .main-content { flex:1; margin-left:250px; padding:80px 20px 20px 20px; }
 .user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
 .user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #eee; cursor:pointer; transition:0.2s; position:relative; }
 .user-row:hover, .user-row.active { background:#fffbcc; }
-.status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
+.status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; vertical-align:middle; }
 .online { background:green; } .offline { background:red; } .away { background:orange; } .busy { background:purple; }
 .badge { background:red; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
+.user-row.new-message { border-left:4px solid red; animation: flashRed 1s infinite; }
+@keyframes flashRed { 0%,50%,100% { border-color:red; } 25%,75% { border-color:transparent; } }
+
 #chatModal { position:fixed; bottom:0; right:20px; width:360px; max-height:70vh; border:1px solid #ccc; background:#fff; border-radius:10px 10px 0 0; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); resize:both; overflow:hidden; z-index:1000; }
 #chatHeader { background:#ffcb2b; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; border-radius:10px 10px 0 0; cursor:move; }
 #chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:#fefefe; scroll-behavior:smooth; position:relative; }
@@ -52,7 +56,16 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
 <body>
 
 <header>
-  <h1>Bumbble</h1>
+  <div style="display:flex; align-items:center;">
+    <h1>Bumbble</h1>
+    <!-- Status selector for current user -->
+    <select id="statusSelector" class="status-selector" title="Set your status">
+      <option value="online">Online</option>
+      <option value="away">Away</option>
+      <option value="busy">Busy</option>
+      <option value="offline">Offline</option>
+    </select>
+  </div>
   <nav id="navLinks"></nav>
 </header>
 
@@ -97,6 +110,7 @@ const fileBtn = document.getElementById("fileBtn");
 const chatFileInput = document.getElementById("chatFileInput");
 const typingIndicator = document.getElementById("typingIndicator");
 const previewStrip = document.getElementById("previewStrip");
+const statusSelector = document.getElementById("statusSelector");
 
 let currentUserUid = "";
 let currentChatFriendUid = "";
@@ -114,7 +128,6 @@ auth.onAuthStateChanged(user=>{
       <a href="index.html">Home</a>
       <a href="friends.html">Friends</a>
       <a href="stories.html">Stories</a>
-      <a href="events.html">Events</a>
       <a href="safety.html">Safety</a>
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>`;
@@ -124,6 +137,22 @@ auth.onAuthStateChanged(user=>{
       localStorage.removeItem("lastChatFriendName");
       auth.signOut().then(()=>window.location.href="login.html");
     });
+
+    // load and set user's status in selector (if exists)
+    db.ref('users/'+currentUserUid+'/public/status').once('value', snap=>{
+      const s = snap.val()||'online';
+      statusSelector.value = s;
+    });
+
+    statusSelector.addEventListener('change', ()=>{
+      const val = statusSelector.value;
+      if(!currentUserUid) return;
+      db.ref('users/'+currentUserUid+'/public/status').set(val);
+      // optionally also toggle online flag for offline status
+      if(val==='offline') db.ref('users/'+currentUserUid+'/public/online').set(false);
+      else db.ref('users/'+currentUserUid+'/public/online').set(true);
+    });
+
     setupOnlineStatus();
     loadUsersRealtime();
     const lastUid = localStorage.getItem("lastChatFriendUid");
@@ -136,6 +165,7 @@ auth.onAuthStateChanged(user=>{
 });
 
 function setupOnlineStatus(){
+  if(!currentUserUid) return;
   const userStatusRef = db.ref('users/'+currentUserUid+'/public/online');
   db.ref('.info/connected').on('value',snap=>{
     if(snap.val()===true){
@@ -157,20 +187,30 @@ function loadUsersRealtime(){
       const tB = lastChatTimestamps[b.uid]||0;
       return tB-tA || a.name.localeCompare(b.name);
     });
+
     userList.innerHTML='';
     friends.forEach(f=>{
       const row=document.createElement('div');
       row.className='user-row';
       row.dataset.uid=f.uid;
       row.dataset.name=f.name;
-      row.innerHTML=`<div><span class="status-dot ${f.status}"></span>${f.name} (${f.gender})</div>`;
+
+      // Main label with status dot & name
+      const inner = document.createElement('div');
+      inner.innerHTML = `<span class="status-dot ${f.status}"></span>${f.name} (${f.gender})`;
+      row.appendChild(inner);
+
+      // Ensure clicking opens chat
       row.addEventListener('click',()=>openChat(f.uid,f.name));
+
       userList.appendChild(row);
     });
+
     updateFriendListBadges();
   });
 }
 
+// ===== Update badges & flashing =====
 function updateFriendListBadges(){
   document.querySelectorAll('.user-row').forEach(row=>{
     const uid=row.dataset.uid;
@@ -178,11 +218,15 @@ function updateFriendListBadges(){
     if(unreadCounters[uid]){
       if(badge) badge.textContent=unreadCounters[uid];
       else { const span=document.createElement('span'); span.className='badge'; span.textContent=unreadCounters[uid]; row.querySelector('div').appendChild(span); }
-    } else if(badge) badge.remove();
+      row.classList.add('new-message'); // keep flashing until cleared
+    } else {
+      if(badge) badge.remove();
+      row.classList.remove('new-message');
+    }
   });
 }
 
-// ===== Chat Functions =====
+// ===== Chat =====
 function openChat(friendUid, friendName){
   document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
   const activeRow=document.querySelector(`.user-row[data-uid="${friendUid}"]`);
@@ -196,6 +240,8 @@ function openChat(friendUid, friendName){
   chatModal.style.display = 'flex';
   chatMessages.innerHTML = '';
   typingIndicator.textContent = '';
+
+  // Clear unread locally and update UI (stop flashing)
   unreadCounters[friendUid] = 0;
   updateFriendListBadges();
 
@@ -207,20 +253,24 @@ function openChat(friendUid, friendName){
   const chatRef = db.ref('chats/' + chatId);
   chatRef.child('members').update({ [currentUserUid]: true, [friendUid]: true });
 
+  // Load existing messages once (ordered)
   chatRef.child('messages').once('value', snap=>{
     const msgs = snap.val() || {};
-    Object.keys(msgs)
-      .sort((a,b)=> msgs[a].timestamp - msgs[b].timestamp)
-      .forEach(k => addOrUpdateMessageToChat({...msgs[k], _key: k}));
+    Object.keys(msgs).sort((a,b)=>msgs[a].timestamp - msgs[b].timestamp).forEach(k=> addOrUpdateMessageToChat({...msgs[k], _key:k}));
     chatMessages.scrollTop = chatMessages.scrollHeight;
   });
 
+  // Subscribe to realtime messages for this chat
   currentChatListener = chatRef.child('messages');
   currentChatListener.on('child_added', snap=>{
     const msg = snap.val(); msg._key = snap.key;
     addOrUpdateMessageToChat(msg);
     lastChatTimestamps[friendUid] = msg.timestamp;
-    if(msg.sender!==currentUserUid) showFloatingEmoji(msg);
+    if(msg.sender !== currentUserUid){
+      // If the message is not from me, it's new — but since user opened chat we cleared unread
+      // Optionally produce floating emoji
+      showFloatingEmoji(msg);
+    }
   });
   currentChatListener.on('child_changed', snap=>{
     const msg = snap.val(); msg._key = snap.key;
@@ -228,7 +278,6 @@ function openChat(friendUid, friendName){
   });
 }
 
-// ===== Message Rendering =====
 function addOrUpdateMessageToChat(msg){
   if(!msg || !msg._key) return;
   const id='msg-'+msg._key;
@@ -254,14 +303,15 @@ function addOrUpdateMessageToChat(msg){
   chatMessages.scrollTop=chatMessages.scrollHeight;
 }
 
-// ===== Floating Emoji =====
+// ===== Floating Emoji (visual delight) =====
 function showFloatingEmoji(msg){
   const emojis = ['💌','✨','💬','❤️','🔥','🎉'];
   const emoji = emojis[Math.floor(Math.random()*emojis.length)];
   const el = document.createElement('div');
   el.className='floating-emoji';
-  el.style.top=(Math.random()*30+20)+'px';
-  el.style.left=(Math.random()*200+50)+'px';
+  // place near top of chatMessages for visibility
+  el.style.top=(Math.random()*30+10)+'px';
+  el.style.left=(Math.random()*220+20)+'px';
   el.textContent = emoji;
   chatMessages.appendChild(el);
   setTimeout(()=>el.remove(),1000);
@@ -274,7 +324,6 @@ chatInput.addEventListener('input',()=>{
   clearTimeout(typingTimeout);
   typingTimeout=setTimeout(()=>db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove(),1000);
 });
-
 function listenTyping(friendUid){
   db.ref('typing/'+currentUserUid+'/'+friendUid).on('value',snap=>{
     typingIndicator.textContent=snap.exists()?`${chatWith.textContent} is typing...`:'';
@@ -308,17 +357,24 @@ function closeChat(){
 function getChatId(uid1,uid2){ return uid1<uid2?uid1+'_'+uid2:uid2+'_'+uid1; }
 function escapeHtml(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
 
-// ===== Unread Counters =====
+// ===== Realtime Unread Counter (listen to any new chat) =====
+// This increments local unreadCounters for the receiver user (you) when messages arrive
 db.ref('chats').on('child_added',snap=>{
-  snap.ref.child('messages').on('child_added',msgSnap=>{
-    const msg=msgSnap.val();
-    if(msg?.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
-      unreadCounters[msg.sender]=(unreadCounters[msg.sender]||0)+1;
-      lastChatTimestamps[msg.sender]=msg.timestamp;
+  // For each chat, listen to new messages
+  snap.ref.child('messages').on('child_added', msgSnap=>{
+    const msg = msgSnap.val();
+    // Only update counters when this client is the receiver and chat is not currently open with that sender
+    if(!msg) return;
+    if(msg.receiver === currentUserUid && msg.sender !== currentChatFriendUid){
+      unreadCounters[msg.sender] = (unreadCounters[msg.sender]||0) + 1;
+      lastChatTimestamps[msg.sender] = msg.timestamp;
       updateFriendListBadges();
     }
   });
 });
+
+// Also keep listening to child_changed for messages that may update uploading -> done states
+db.ref('chats').on('child_changed', ()=>{ /* noop: keeps firebase listeners warm, no logic needed here */ });
 
 // ===== Drag Chat =====
 dragElement(chatModal);
@@ -327,9 +383,9 @@ function dragElement(el){
   const header=document.getElementById("chatHeader");
   if(header) header.onmousedown=dragMouseDown; else el.onmousedown=dragMouseDown;
   function dragMouseDown(e){ e.preventDefault(); pos3=e.clientX; pos4=e.clientY; document.onmouseup=closeDragElement; document.onmousemove=elementDrag; }
-  function elementDrag(e){ e.preventDefault(); pos1=pos3-e.clientX; pos2=pos4-e.clientY; pos3=e.clientX; pos4=e.clientY; 
+  function elementDrag(e){ e.preventDefault(); pos1=pos3-e.clientX; pos2=pos4-e.clientY; pos3=e.clientX; pos4=e.clientY;
     const newTop=elmntTop(el.offsetTop-pos2); const newLeft=elmntLeft(el.offsetLeft-pos1);
-    el.style.top=newTop+'px'; el.style.left=newLeft+'px'; 
+    el.style.top=newTop+'px'; el.style.left=newLeft+'px';
   }
   function closeDragElement(){ document.onmouseup=null; document.onmousemove=null; }
   function elmntTop(top){ return Math.max(0, Math.min(window.innerHeight-el.offsetHeight, top)); }
@@ -395,6 +451,7 @@ function compressImageToDataURL(file,maxBytes,callback){
 
 // ===== Revoke URLs on unload =====
 window.addEventListener('beforeunload',()=>{ Object.values(localPreviewMap).forEach(url=>{ try{ if(url.startsWith('blob:')) URL.revokeObjectURL(url); }catch(e){} }); });
+
 </script>
 </body>
 </html>
