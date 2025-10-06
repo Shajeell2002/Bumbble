@@ -313,8 +313,7 @@ function closeChat(){
   typingIndicator.textContent='';
   previewStrip.innerHTML='';
   previewStrip.style.display='none';
-  emojiPicker.style.display='none';
-}
+  }
 
 // ===== Helpers =====
 function getChatId(uid1,uid2){ return uid1<uid2?uid1+'_'+uid2:uid2+'_'+uid1; }
@@ -413,3 +412,4 @@ window.addEventListener('beforeunload',()=>{ Object.values(localPreviewMap).forE
 
 </body>
 </html>
+
