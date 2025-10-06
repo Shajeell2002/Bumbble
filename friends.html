@@ -124,6 +124,7 @@ auth.onAuthStateChanged(user=>{
     });
     setupOnlineStatus();
     loadUsersRealtime();
+    listenUnreadMessages(); // start listening after auth
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
     if(lastUid && lastName) openChat(lastUid,lastName);
@@ -262,7 +263,7 @@ chatInput.addEventListener('input',()=>{
 
 function listenTyping(friendUid){
   db.ref('typing/'+currentUserUid+'/'+friendUid).on('value',snap=>{
-    typingIndicator.textContent = snap.exists()?`${chatWith.textContent} is typing...`:'';
+    typingIndicator.textContent = snap.exists()?`${chatWith.textContent} is typing...`:''; 
   });
 }
 
@@ -301,36 +302,11 @@ function listenUnreadMessages() {
       const msg = msgSnap.val();
       if (!msg || !msg.sender || !msg.receiver) return;
 
-      // Only update unread if:
-      // 1. Current user is the receiver
-      // 2. Current user is NOT actively chatting with sender
       if (msg.receiver === currentUserUid && msg.sender !== currentChatFriendUid) {
         unreadCounters[msg.sender] = (unreadCounters[msg.sender] || 0) + 1;
         lastChatTimestamps[msg.sender] = msg.timestamp;
-        updateFriendListBadges();
-        flashUserRow(msg.sender);
-        loadUsersRealtime(); // reorder friend list based on last activity
-      }
-    });
-  });
-}
 
-// Initialize unread listener
-listenUnreadMessages();
-
-function listenUnreadMessages() {
-  db.ref('chats').on('child_added', snap => {
-    const chatRef = snap.ref.child('messages');
-    chatRef.on('child_added', msgSnap => {
-      const msg = msgSnap.val();
-      if (!msg || !msg.sender || !msg.receiver) return;
-
-      if (msg.receiver === currentUserUid && msg.sender !== currentChatFriendUid) {
-        // Increment unread
-        unreadCounters[msg.sender] = (unreadCounters[msg.sender] || 0) + 1;
-        lastChatTimestamps[msg.sender] = msg.timestamp;
-
-        // Update badge safely
+        // Update badge directly
         const row = document.querySelector(`.user-row[data-uid="${msg.sender}"]`);
         if (row) {
           let badge = row.querySelector('.badge');
@@ -360,8 +336,6 @@ function reorderFriendList() {
   });
   rows.forEach(r => container.appendChild(r));
 }
-
-
 
 // ===== Drag Chat =====
 dragElement(chatModal);
