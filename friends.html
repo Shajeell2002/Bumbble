@@ -80,15 +80,7 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
 
 <script>
 // ===== Firebase Init =====
-const firebaseConfig = { 
-  apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
-  authDomain:"bumbble-c061f.firebaseapp.com",
-  databaseURL:"https://bumbble-c061f-default-rtdb.firebaseio.com",
-  projectId:"bumbble-c061f",
-  storageBucket:"bumbble-c061f.appspot.com",
-  messagingSenderId:"213165886981",
-  appId:"1:213165886981:web:c18652003444869b1bd66c"
-};
+const firebaseConfig = { apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs", authDomain:"bumbble-c061f.firebaseapp.com", databaseURL:"https://bumbble-c061f-default-rtdb.firebaseio.com", projectId:"bumbble-c061f", storageBucket:"bumbble-c061f.appspot.com", messagingSenderId:"213165886981", appId:"1:213165886981:web:c18652003444869b1bd66c" };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
@@ -112,10 +104,11 @@ let currentChatListener = null;
 const unreadCounters = {};
 const lastChatTimestamps = {};
 const localPreviewMap = {};
-let typingTimeout;
+let typingThrottleTimeout;
+const friendRows = new Map(); // cache for friend DOM rows
 
 // ===== Auth =====
-auth.onAuthStateChanged(user => {
+auth.onAuthStateChanged(user=>{
   if(user && user.emailVerified){
     currentUserUid = user.uid;
     nav.innerHTML = `
@@ -133,8 +126,7 @@ auth.onAuthStateChanged(user => {
       auth.signOut().then(()=>window.location.href="login.html");
     });
     setupOnlineStatus();
-    loadUsersRealtime();
-
+    loadUsersRealtimeOptimized();
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
     if(lastUid && lastName) openChat(lastUid,lastName);
@@ -155,61 +147,55 @@ function setupOnlineStatus(){
   });
 }
 
-// ===== Load Users & Keep Unread Badges =====
-function loadUsersRealtime(){
-  db.ref('users').on('value', snapshot=>{
-    const usersData = snapshot.val() || {};
-    const friends = Object.keys(usersData)
-      .filter(uid => uid !== currentUserUid)
-      .map(uid => {
-        const u = usersData[uid].public || {};
-        return { uid, name: u.name || "Unknown", gender: u.gender || "N/A", online: u.online || false };
-      });
-
-    friends.sort((a,b)=>{
-      const tA = lastChatTimestamps[a.uid]||0;
-      const tB = lastChatTimestamps[b.uid]||0;
-      return tB-tA || a.name.localeCompare(b.name);
-    });
-
-    userList.innerHTML='';
-    friends.forEach(f=>{
-      const row = document.createElement('div');
-      row.className='user-row';
-      row.dataset.uid=f.uid;
-      row.dataset.name=f.name;
-      row.innerHTML=`<div><span class="status-dot ${f.online?'online':'offline'}"></span>${f.name} (${f.gender})</div>`;
-      row.addEventListener('click',()=>openChat(f.uid,f.name));
-      userList.appendChild(row);
-
-      if(unreadCounters[f.uid]) updateFriendBadge(f.uid, unreadCounters[f.uid]);
-    });
-  });
+// ===== Load & Optimize Users =====
+function loadUsersRealtimeOptimized() {
+  const usersRef = db.ref('users');
+  usersRef.on('child_added', snap => addOrUpdateFriend(snap.key, snap.val()));
+  usersRef.on('child_changed', snap => addOrUpdateFriend(snap.key, snap.val()));
+  usersRef.on('child_removed', snap => removeFriend(snap.key));
 }
 
-// ===== Friend Badge =====
-function updateFriendBadge(uid,count){
-  const row = document.querySelector(`.user-row[data-uid="${uid}"]`);
+function addOrUpdateFriend(uid, userData) {
+  if(uid === currentUserUid) return;
+  const data = userData.public || {};
+  let row = friendRows.get(uid);
+
+  if(!row){
+    row = document.createElement('div');
+    row.className = 'user-row';
+    row.dataset.uid = uid;
+    row.addEventListener('click',()=>openChat(uid, data.name||"Unknown"));
+    row.innerHTML = `<div><span class="status-dot ${data.online?'online':'offline'}"></span>${data.name||"Unknown"} (${data.gender||"N/A"})</div>`;
+    userList.appendChild(row);
+    friendRows.set(uid,row);
+  } else {
+    const dot = row.querySelector('.status-dot');
+    dot.className = `status-dot ${data.online?'online':'offline'}`;
+    const nameDiv = row.querySelector('div');
+    nameDiv.childNodes[1].nodeValue = `${data.name||"Unknown"} (${data.gender||"N/A"})`;
+  }
+  if(unreadCounters[uid]) updateFriendBadge(uid, unreadCounters[uid]);
+}
+
+function removeFriend(uid){
+  const row = friendRows.get(uid);
+  if(row){ row.remove(); friendRows.delete(uid); }
+}
+
+// ===== Friend Badge & Flash =====
+function updateFriendBadge(uid, count) {
+  const row = friendRows.get(uid);
   if(!row) return;
-  const innerDiv = row.querySelector('div') || row;
-  let badge = innerDiv.querySelector('.badge');
-  if(count>0){
-    if(!badge){
-      badge = document.createElement('span');
-      badge.className='badge';
-      innerDiv.appendChild(badge);
-    }
+  let badge = row.querySelector('.badge');
+  if(count > 0){
+    if(!badge){ badge = document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge); }
     badge.textContent = count;
   } else if(badge){ badge.remove(); }
 }
 
-// ===== Flash Friend Row =====
 function flashUserRow(uid){
-  const row = document.querySelector(`.user-row[data-uid="${uid}"]`);
-  if(row){
-    row.classList.add('flash');
-    setTimeout(()=>row.classList.remove('flash'),800);
-  }
+  const row = friendRows.get(uid);
+  if(row){ row.classList.add('flash'); setTimeout(()=>row.classList.remove('flash'),800); }
 }
 
 // ===== Open Chat =====
@@ -226,39 +212,41 @@ function openChat(friendUid,friendName){
   chatModal.style.display='flex';
   chatMessages.innerHTML='';
   typingIndicator.textContent='';
-  previewStrip.innerHTML=''; previewStrip.style.display='none';
 
   unreadCounters[friendUid] = 0;
   updateFriendBadge(friendUid,0);
 
   listenTyping(friendUid);
+  listenToFriendMessages(friendUid);
+}
 
-  const chatId = getChatId(currentUserUid,friendUid);
+// ===== Listen to Current Chat Messages =====
+function listenToFriendMessages(friendUid){
+  const chatId = getChatId(currentUserUid, friendUid);
+  const chatRef = db.ref('chats/'+chatId+'/messages');
+
   if(currentChatListener) currentChatListener.off();
+  currentChatListener = chatRef;
 
-  const chatRef = db.ref('chats/' + chatId);
-  chatRef.child('members').update({ [currentUserUid]: true, [friendUid]: true });
-
-  chatRef.child('messages').once('value', snap=>{
-    const msgs = snap.val()||{};
-    Object.keys(msgs).sort((a,b)=> msgs[a].timestamp - msgs[b].timestamp)
-      .forEach(k=>addOrUpdateMessageToChat({...msgs[k], _key:k}));
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  });
-
-  currentChatListener = chatRef.child('messages');
-  currentChatListener.on('child_added', snap=>{
+  chatRef.on('child_added', snap=>{
     const msg = snap.val(); msg._key = snap.key;
+    if(msg.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
+      unreadCounters[msg.sender]=(unreadCounters[msg.sender]||0)+1;
+      updateFriendBadge(msg.sender, unreadCounters[msg.sender]);
+      flashUserRow(msg.sender);
+    }
     addOrUpdateMessageToChat(msg);
-    lastChatTimestamps[friendUid] = msg.timestamp;
-  });
-  currentChatListener.on('child_changed', snap=>{
-    const msg = snap.val(); msg._key = snap.key;
-    addOrUpdateMessageToChat(msg);
+    lastChatTimestamps[msg.sender]=msg.timestamp;
   });
 }
 
 // ===== Render Messages =====
+let isAtBottom = true;
+chatMessages.addEventListener('scroll',()=>{
+  const threshold = 30;
+  isAtBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < threshold;
+});
+
 function addOrUpdateMessageToChat(msg){
   if(!msg || !msg._key) return;
   const id='msg-'+msg._key;
@@ -266,28 +254,27 @@ function addOrUpdateMessageToChat(msg){
   const isSelf = msg.sender===currentUserUid;
   if(!el){ el=document.createElement('div'); el.id=id; el.className='message '+(isSelf?'self':'friend'); chatMessages.appendChild(el); }
 
-  function renderText(text){
-    return text.replace(/:\)/g,'😊').replace(/:\(/g,'😞').replace(/:D/g,'😃').replace(/:P/g,'😜').replace(/<3/g,'❤️');
-  }
+  function renderText(text){ return text.replace(/:\)/g,'😊').replace(/:\(/g,'😞').replace(/:D/g,'😃').replace(/:P/g,'😜').replace(/<3/g,'❤️'); }
 
   if(msg.fileData){
     if(msg.fileType?.startsWith('image/')||msg.fileName?.match(/\.(jpg|jpeg|png|gif)$/i)){
       el.innerHTML=`<img class="chat-image" src="${msg.fileData}" alt="${msg.fileName||'image'}"/><a class="file-link" href="${msg.fileData}" download="${msg.fileName||'image'}"></a><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
     } else el.innerHTML=`<div class="small-muted">${msg.fileName||'File'}</div><a class="file-link" href="${msg.fileData}" download="${msg.fileName||'file'}"></a><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
-  } else if(msg.uploading){
-    el.innerHTML=`<div class="small-muted">${msg.fileName||'Sending...'}</div><span class="uploading-badge">Sending...</span><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
-  } else if(msg.text) el.innerHTML=`${renderText(escapeHtml(msg.text))}<div class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</div>`;
+  } else if(msg.uploading){ el.innerHTML=`<div class="small-muted">${msg.fileName||'Sending...'}</div><span class="uploading-badge">Sending...</span><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`; }
+  else if(msg.text) el.innerHTML=`${renderText(escapeHtml(msg.text))}<div class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</div>`;
   else el.innerHTML=`<div class="small-muted">Unknown message</div>`;
-  chatMessages.scrollTop=chatMessages.scrollHeight;
+  if(isAtBottom) chatMessages.scrollTop=chatMessages.scrollHeight;
 }
 
 // ===== Typing =====
 chatInput.addEventListener('input',()=>{
   if(!currentChatFriendUid) return;
-  db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).set(true);
-  clearTimeout(typingTimeout);
-  typingTimeout=setTimeout(()=>db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove(),1000);
+  if(!typingThrottleTimeout){
+    db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).set(true);
+    typingThrottleTimeout=setTimeout(()=>{ db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove(); typingThrottleTimeout=null; },500);
+  }
 });
+
 function listenTyping(friendUid){
   db.ref('typing/'+currentUserUid+'/'+friendUid).on('value',snap=>{
     typingIndicator.textContent = snap.exists()?`${chatWith.textContent} is typing...`:'';
@@ -301,7 +288,8 @@ function sendMessage(){
   const msgObj={ sender:currentUserUid, receiver:currentChatFriendUid, text, timestamp:Date.now() };
   db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [currentChatFriendUid]:true });
   db.ref('chats/'+chatId+'/messages').push(msgObj);
-  chatInput.value=''; lastChatTimestamps[currentChatFriendUid]=msgObj.timestamp;
+  chatInput.value='';
+  lastChatTimestamps[currentChatFriendUid]=msgObj.timestamp;
 }
 chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); }});
 sendBtn.addEventListener('click',sendMessage);
@@ -312,104 +300,14 @@ function closeChat(){
   chatModal.style.display='none';
   currentChatFriendUid='';
   typingIndicator.textContent='';
-  previewStrip.innerHTML=''; previewStrip.style.display='none';
+  previewStrip.innerHTML='';
+  previewStrip.style.display='none';
 }
 
 // ===== Helpers =====
-function getChatId(uid1,uid2){ return uid1<uid2?uid1+'_'+uid2:uid2+'_'+uid1; }
-function escapeHtml(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
-
-// ===== Unread Counters & Flash =====
-db.ref('chats').on('child_added',snap=>{
-  snap.ref.child('messages').on('child_added',msgSnap=>{
-    const msg=msgSnap.val();
-    if(msg?.receiver===currentUserUid){
-      if(msg.sender!==currentChatFriendUid){ 
-        unreadCounters[msg.sender]=(unreadCounters[msg.sender]||0)+1;
-        flashUserRow(msg.sender);
-        updateFriendBadge(msg.sender, unreadCounters[msg.sender]);
-      } else unreadCounters[msg.sender]=0;
-      lastChatTimestamps[msg.sender]=msg.timestamp;
-      loadUsersRealtime();
-    }
-  });
-});
-
-// ===== Drag Chat =====
-dragElement(chatModal);
-function dragElement(el){
-  let pos1=0,pos2=0,pos3=0,pos4=0;
-  const header=document.getElementById("chatHeader");
-  if(header) header.onmousedown=dragMouseDown; else el.onmousedown=dragMouseDown;
-  function dragMouseDown(e){ e.preventDefault(); pos3=e.clientX; pos4=e.clientY; document.onmouseup=closeDragElement; document.onmousemove=elementDrag; }
-  function elementDrag(e){ e.preventDefault(); pos1=pos3-e.clientX; pos2=pos4-e.clientY; pos3=e.clientX; pos4=e.clientY; 
-    const newTop=Math.max(0, Math.min(window.innerHeight-el.offsetHeight, el.offsetTop-pos2));
-    const newLeft=Math.max(0, Math.min(window.innerWidth-el.offsetWidth, el.offsetLeft-pos1));
-    el.style.top=newTop+'px'; el.style.left=newLeft+'px'; 
-  }
-  function closeDragElement(){ document.onmouseup=null; document.onmousemove=null; }
-}
-
-// ===== File Upload & Preview =====
-fileBtn.addEventListener('click',()=>chatFileInput.click());
-chatFileInput.addEventListener('change',handleFiles);
-function handleFiles(){
-  const files = Array.from(chatFileInput.files||[]);
-  if(files.length===0 || !currentChatFriendUid){ chatFileInput.value=''; return; }
-  previewStrip.innerHTML=''; previewStrip.style.display='flex';
-  const chatId = getChatId(currentUserUid,currentChatFriendUid);
-  db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [currentChatFriendUid]:true });
-  files.forEach(file=>{
-    const msgRef = db.ref('chats/'+chatId+'/messages').push();
-    const key = msgRef.key;
-    const placeholder={ sender:currentUserUid, receiver:currentChatFriendUid, timestamp:Date.now(), fileName:file.name, fileType:file.type||'', uploading:true };
-    msgRef.set(placeholder).then(()=>{
-      if(file.type.startsWith('image/')){
-        const objUrl=URL.createObjectURL(file); localPreviewMap[key]=objUrl; addPreviewThumb(key,objUrl,file.name);
-        compressImageToDataURL(file,64*1024,dataUrl=>{ db.ref('chats/'+chatId+'/messages/'+key).update({ fileData:dataUrl, uploading:false }); });
-      } else {
-        addPreviewThumb(key,null,file.name);
-        const reader=new FileReader();
-        reader.onload=e=>db.ref('chats/'+chatId+'/messages/'+key).update({ fileData:e.target.result, uploading:false });
-        reader.readAsDataURL(file);
-      }
-    });
-  });
-  chatFileInput.value='';
-}
-function addPreviewThumb(key, url, name){
-  const container=document.createElement('div'); container.dataset.temp=key; container.style.display='flex'; container.style.flexDirection='column'; container.style.alignItems='center'; container.style.width='70px';
-  if(url){ const img=document.createElement('img'); img.src=url; img.className='preview-thumb'; container.appendChild(img); }
-  else { const box=document.createElement('div'); box.className='preview-thumb'; box.style.display='flex'; box.style.alignItems='center'; box.style.justifyContent='center'; box.textContent=name.split('.')[0]; box.style.fontSize='11px'; container.appendChild(box); }
-  const progressBar=document.createElement('div'); progressBar.className='progress-bar'; progressBar.innerHTML='<div class="progress-fill" style="width:30%"></div>'; container.appendChild(progressBar);
-  previewStrip.appendChild(container);
-}
-
-// ===== Image Compression =====
-function compressImageToDataURL(file,maxBytes,callback){
-  if(file.size<=maxBytes){ const r=new FileReader(); r.onload=e=>callback(e.target.result); r.readAsDataURL(file); return; }
-  const reader=new FileReader(); reader.onload=e=>{
-    const img=new Image(); img.onload=()=>{
-      let scale=Math.sqrt(maxBytes/file.size); scale=Math.min(1,Math.max(0.1,scale)); let quality=0.9;
-      const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d');
-      (function attempt(){
-        canvas.width=Math.max(1, Math.round(img.width*scale)); canvas.height=Math.max(1, Math.round(img.height*scale));
-        ctx.clearRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0,canvas.width,canvas.height);
-        try {
-          const dataUrl=canvas.toDataURL(file.type||'image/jpeg',quality);
-          const approxBytes=Math.round((dataUrl.split(',')[1]||'').length*3/4);
-          if(approxBytes<=maxBytes||(quality<=0.35&&scale<=0.25)) callback(dataUrl);
-          else{ if(quality>0.4) quality=Math.max(0.35,quality-0.15); else scale=Math.max(0.2,scale*0.8); setTimeout(attempt,10); }
-        } catch(e){ const r2=new FileReader(); r2.onload=ev=>callback(ev.target.result); r2.readAsDataURL(file); }
-      })();
-    };
-    img.src=e.target.result;
-  }; reader.readAsDataURL(file);
-}
-
-// ===== Revoke URLs =====
-window.addEventListener('beforeunload',()=>{ Object.values(localPreviewMap).forEach(url=>{ try{ if(url.startsWith('blob:')) URL.revokeObjectURL(url); }catch(e){} }); });
+function getChatId(uid1,uid2){ return [uid1,uid2].sort().join('_'); }
+function escapeHtml(unsafe){ return unsafe.replace(/[&<"'>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])); }
 </script>
+
 </body>
 </html>
-
