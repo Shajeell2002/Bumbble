@@ -124,7 +124,6 @@ auth.onAuthStateChanged(user=>{
     });
     setupOnlineStatus();
     loadUsersRealtime();
-    listenUnreadMessages(); // start listening after auth
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
     if(lastUid && lastName) openChat(lastUid,lastName);
@@ -152,6 +151,7 @@ function loadUsersRealtime(){
       const u = usersData[uid].public||{};
       return { uid, name:u.name||"Unknown", gender:u.gender||"N/A", online:u.online||false };
     });
+    // Sort by last activity timestamp
     friends.sort((a,b)=>{
       const tA = lastChatTimestamps[a.uid]||0;
       const tB = lastChatTimestamps[b.uid]||0;
@@ -191,6 +191,17 @@ function flashUserRow(uid){
   }
 }
 
+// ===== Reorder Friend List =====
+function reorderFriendList(){
+  const rows = Array.from(document.querySelectorAll('.user-row'));
+  rows.sort((a,b)=>{
+    const tA = lastChatTimestamps[a.dataset.uid]||0;
+    const tB = lastChatTimestamps[b.dataset.uid]||0;
+    return tB-tA || a.dataset.name.localeCompare(b.dataset.name);
+  });
+  rows.forEach(r=>userList.appendChild(r));
+}
+
 // ===== Chat Functions =====
 function openChat(friendUid,friendName){
   document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
@@ -226,7 +237,7 @@ function openChat(friendUid,friendName){
   currentChatListener.on('child_added', snap=>{
     const msg = snap.val(); msg._key = snap.key;
     addOrUpdateMessageToChat(msg);
-    lastChatTimestamps[friendUid] = msg.timestamp;
+    if(msg.sender !== currentUserUid) lastChatTimestamps[friendUid] = msg.timestamp;
   });
   currentChatListener.on('child_changed', snap=>{
     const msg = snap.val(); msg._key = snap.key;
@@ -275,7 +286,6 @@ function sendMessage(){
   db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [currentChatFriendUid]:true });
   db.ref('chats/'+chatId+'/messages').push(msgObj);
   chatInput.value='';
-  lastChatTimestamps[currentChatFriendUid]=msgObj.timestamp;
 }
 chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); }});
 sendBtn.addEventListener('click',sendMessage);
@@ -294,7 +304,7 @@ function closeChat(){
 function getChatId(uid1,uid2){ return uid1<uid2?uid1+'_'+uid2:uid2+'_'+uid1; }
 function escapeHtml(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
 
-// ===== Unread Counters for Recipient Only =====
+// ===== Unread Counters for Incoming Messages Only =====
 function listenUnreadMessages() {
   db.ref('chats').on('child_added', snap => {
     const chatRef = snap.ref.child('messages');
@@ -302,40 +312,20 @@ function listenUnreadMessages() {
       const msg = msgSnap.val();
       if (!msg || !msg.sender || !msg.receiver) return;
 
-      if (msg.receiver === currentUserUid && msg.sender !== currentChatFriendUid) {
-        unreadCounters[msg.sender] = (unreadCounters[msg.sender] || 0) + 1;
+      // Only incoming messages for current user
+      if (msg.receiver === currentUserUid) {
+        // Increase unread only if not active chat
+        if (msg.sender !== currentChatFriendUid) unreadCounters[msg.sender] = (unreadCounters[msg.sender] || 0) + 1;
+
         lastChatTimestamps[msg.sender] = msg.timestamp;
-
-        // Update badge directly
-        const row = document.querySelector(`.user-row[data-uid="${msg.sender}"]`);
-        if (row) {
-          let badge = row.querySelector('.badge');
-          if (!badge) {
-            badge = document.createElement('span');
-            badge.className = 'badge';
-            row.querySelector('div').appendChild(badge);
-          }
-          badge.textContent = unreadCounters[msg.sender];
-          flashUserRow(msg.sender);
-        }
-
-        // Reorder friend list manually
+        updateFriendListBadges();
+        flashUserRow(msg.sender);
         reorderFriendList();
       }
     });
   });
 }
-
-function reorderFriendList() {
-  const container = userList;
-  const rows = Array.from(container.children);
-  rows.sort((a, b) => {
-    const tA = lastChatTimestamps[a.dataset.uid] || 0;
-    const tB = lastChatTimestamps[b.dataset.uid] || 0;
-    return tB - tA || a.dataset.name.localeCompare(b.dataset.name);
-  });
-  rows.forEach(r => container.appendChild(r));
-}
+listenUnreadMessages();
 
 // ===== Drag Chat =====
 dragElement(chatModal);
