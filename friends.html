@@ -181,7 +181,8 @@ function loadUsersRealtime(){
 function updateFriendListBadges(){
   document.querySelectorAll('.user-row').forEach(row=>{
     const uid = row.dataset.uid;
-    let badge = row.querySelector('.badge');
+    const badge = row.querySelector('.badge');
+    if(badge){
     if(unreadCounters[uid]){
       if(!badge){ badge=document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge); }
       badge.textContent = unreadCounters[uid];
