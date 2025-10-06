@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Bumbble - Friends & Chat</title>
 <style>
 body {
@@ -11,8 +11,8 @@ body {
   background: #fefefe;
   color: #333;
   display: flex;
-  min-height: 100vh;
   flex-direction: column;
+  min-height: 100vh;
 }
 header {
   display: flex;
@@ -20,7 +20,6 @@ header {
   align-items: center;
   padding: 10px 15px;
   background: #f7c948;
-  color: #222;
   font-weight: bold;
 }
 .container {
@@ -44,13 +43,11 @@ header {
   border-bottom: 1px solid #eee;
   display: flex;
   justify-content: space-between;
-  cursor: pointer;
   align-items: center;
+  cursor: pointer;
   transition: background 0.3s;
 }
-.user-row:hover {
-  background: #ffecb3;
-}
+.user-row:hover { background: #ffecb3; }
 .user-row.flash {
   background: #ffe082 !important;
   transition: background 0.5s;
@@ -68,6 +65,8 @@ header {
   padding: 10px;
   overflow-y: auto;
   background: #fff;
+  display: flex;
+  flex-direction: column;
 }
 .message {
   margin: 5px 0;
@@ -75,14 +74,8 @@ header {
   border-radius: 10px;
   max-width: 70%;
 }
-.sent {
-  background: #e0f7fa;
-  align-self: flex-end;
-}
-.received {
-  background: #f1f8e9;
-  align-self: flex-start;
-}
+.sent { background: #e0f7fa; align-self: flex-end; }
+.received { background: #f1f8e9; align-self: flex-start; }
 #inputArea {
   display: flex;
   padding: 10px;
@@ -114,131 +107,141 @@ header {
 </header>
 
 <div class="container">
-  <div id="friendsList"></div>
+  <div id="friendsList">Loading friends...</div>
 
   <div id="chatContainer">
     <div id="messages"></div>
     <div id="inputArea">
       <input id="messageInput" type="text" placeholder="Type a message..." />
+      <input type="file" id="fileInput" style="display:none;" />
+      <button id="uploadBtn">📎</button>
       <button id="sendBtn">Send</button>
     </div>
   </div>
 </div>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
 
 <script>
-// ==== Firebase Config ====
+// ====== Firebase Config ======
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_DOMAIN",
+  authDomain: "YOUR_AUTH_DOMAIN",
   databaseURL: "YOUR_DB_URL",
   projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_BUCKET",
+  storageBucket: "YOUR_STORAGE_BUCKET",
   messagingSenderId: "YOUR_SENDER_ID",
   appId: "YOUR_APP_ID"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const storage = firebase.storage();
 
-// ==== Global State ====
 let currentUserUid = null;
 let currentChatFriendUid = null;
 let unreadCounters = {};
 let lastChatTimestamps = {};
 let friends = [];
 
-// ==== Auth ====
+// ====== Auth Check ======
 firebase.auth().onAuthStateChanged(user => {
   if (user) {
     currentUserUid = user.uid;
-    loadUsersRealtime();
+    loadFriends();
     listenUnreadMessages();
   } else {
     window.location.href = "login.html";
   }
 });
+document.getElementById("logoutBtn").onclick = () => firebase.auth().signOut();
 
-document.getElementById("logoutBtn").addEventListener("click", () => {
-  firebase.auth().signOut();
-});
-
-// ==== Load Friend List ====
-function loadUsersRealtime() {
+// ====== Load Friends ======
+function loadFriends() {
   db.ref("users").on("value", snapshot => {
-    const usersData = snapshot.val() || {};
+    const data = snapshot.val() || {};
     friends = [];
 
-    Object.keys(usersData).forEach(uid => {
+    Object.keys(data).forEach(uid => {
       if (uid === currentUserUid) return;
-      const u = usersData[uid].public || {};
+      const u = data[uid].public || data[uid];
       friends.push({
         uid,
         name: u.name || "Unknown",
-        gender: u.gender || "N/A",
-        lastActive: lastChatTimestamps[uid] || 0
+        gender: u.gender || "N/A"
       });
     });
-    renderFriendList();
+
+    renderFriends();
   });
 }
 
-// ==== Render Friend List ====
-function renderFriendList() {
+function renderFriends() {
   const list = document.getElementById("friendsList");
+  if (friends.length === 0) {
+    list.innerHTML = "<p>No users found.</p>";
+    return;
+  }
   list.innerHTML = "";
-  const sorted = friends.sort((a, b) => (lastChatTimestamps[b.uid] || 0) - (lastChatTimestamps[a.uid] || 0));
 
+  const sorted = friends.sort((a, b) => (lastChatTimestamps[b.uid] || 0) - (lastChatTimestamps[a.uid] || 0));
   sorted.forEach(u => {
-    const row = document.createElement("div");
-    row.className = "user-row";
-    row.dataset.uid = u.uid;
-    row.innerHTML = `
+    const div = document.createElement("div");
+    div.className = "user-row";
+    div.dataset.uid = u.uid;
+    div.innerHTML = `
       <div>${u.name}</div>
       ${unreadCounters[u.uid] ? `<span class="badge">${unreadCounters[u.uid]}</span>` : ""}
     `;
-    row.addEventListener("click", () => openChat(u.uid, u.name));
-    list.appendChild(row);
+    div.onclick = () => openChat(u.uid, u.name);
+    list.appendChild(div);
   });
 }
 
-// ==== Open Chat ====
+// ====== Open Chat ======
 function openChat(uid, name) {
   currentChatFriendUid = uid;
-  document.getElementById("messages").innerHTML = "";
   unreadCounters[uid] = 0;
-  renderFriendList();
+  renderFriends();
+
+  const messagesDiv = document.getElementById("messages");
+  messagesDiv.innerHTML = `<h4>Chat with ${name}</h4>`;
 
   const chatId = getChatId(currentUserUid, uid);
-  db.ref("chats/" + chatId + "/messages").off();
-
-  db.ref("chats/" + chatId + "/messages").on("child_added", snap => {
+  db.ref(`chats/${chatId}/messages`).off();
+  db.ref(`chats/${chatId}/messages`).on("child_added", snap => {
     const msg = snap.val();
-    if (!msg) return;
     displayMessage(msg);
   });
 }
 
-// ==== Display Message ====
+// ====== Display Message ======
 function displayMessage(msg) {
-  const messagesDiv = document.getElementById("messages");
   const div = document.createElement("div");
-  div.className = `message ${msg.sender === currentUserUid ? "sent" : "received"}`;
-  div.textContent = msg.text;
-  messagesDiv.appendChild(div);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  div.className = "message " + (msg.sender === currentUserUid ? "sent" : "received");
+
+  if (msg.text) div.textContent = msg.text;
+  if (msg.fileUrl) {
+    const a = document.createElement("a");
+    a.href = msg.fileUrl;
+    a.target = "_blank";
+    a.textContent = "📎 File";
+    div.appendChild(a);
+  }
+
+  document.getElementById("messages").appendChild(div);
+  const container = document.getElementById("messages");
+  container.scrollTop = container.scrollHeight;
 }
 
-// ==== Send Message ====
-document.getElementById("sendBtn").addEventListener("click", sendMessage);
-
-function sendMessage() {
+// ====== Send Message ======
+document.getElementById("sendBtn").onclick = () => {
   const input = document.getElementById("messageInput");
   const text = input.value.trim();
   if (!text || !currentChatFriendUid) return;
-  input.value = "";
 
   const chatId = getChatId(currentUserUid, currentChatFriendUid);
   const msg = {
@@ -247,34 +250,57 @@ function sendMessage() {
     text,
     timestamp: Date.now()
   };
-  db.ref("chats/" + chatId + "/messages").push(msg);
+  db.ref(`chats/${chatId}/messages`).push(msg);
   lastChatTimestamps[currentChatFriendUid] = msg.timestamp;
-  reorderFriendList();
-}
+  input.value = "";
+  renderFriends();
+};
 
-// ==== Listen for Incoming Messages ====
+// ====== File Upload ======
+document.getElementById("uploadBtn").onclick = () => document.getElementById("fileInput").click();
+
+document.getElementById("fileInput").onchange = e => {
+  const file = e.target.files[0];
+  if (!file || !currentChatFriendUid) return;
+  const chatId = getChatId(currentUserUid, currentChatFriendUid);
+  const ref = storage.ref(`chat_files/${chatId}/${Date.now()}_${file.name}`);
+
+  ref.put(file).then(() =>
+    ref.getDownloadURL().then(url => {
+      const msg = {
+        sender: currentUserUid,
+        receiver: currentChatFriendUid,
+        fileUrl: url,
+        timestamp: Date.now()
+      };
+      db.ref(`chats/${chatId}/messages`).push(msg);
+      lastChatTimestamps[currentChatFriendUid] = msg.timestamp;
+      renderFriends();
+    })
+  );
+};
+
+// ====== Listen for Unread Messages ======
 function listenUnreadMessages() {
   db.ref("chats").on("child_added", snap => {
     const chatRef = snap.ref.child("messages");
     chatRef.on("child_added", msgSnap => {
       const msg = msgSnap.val();
-      if (!msg || !msg.sender || !msg.receiver) return;
+      if (!msg) return;
 
-      // Only process if current user is receiver
       if (msg.receiver === currentUserUid) {
-        // Increase unread if not active chat
         if (msg.sender !== currentChatFriendUid) {
           unreadCounters[msg.sender] = (unreadCounters[msg.sender] || 0) + 1;
         }
         lastChatTimestamps[msg.sender] = msg.timestamp;
-        renderFriendList();
+        renderFriends();
         flashUserRow(msg.sender);
       }
     });
   });
 }
 
-// ==== Helpers ====
+// ====== Helpers ======
 function flashUserRow(uid) {
   const row = document.querySelector(`.user-row[data-uid="${uid}"]`);
   if (row) {
@@ -283,12 +309,8 @@ function flashUserRow(uid) {
   }
 }
 
-function reorderFriendList() {
-  renderFriendList();
-}
-
-function getChatId(uid1, uid2) {
-  return uid1 < uid2 ? uid1 + "_" + uid2 : uid2 + "_" + uid1;
+function getChatId(a, b) {
+  return a < b ? `${a}_${b}` : `${b}_${a}`;
 }
 </script>
 </body>
