@@ -14,8 +14,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 .user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
 .user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #eee; cursor:pointer; transition:0.2s; }
 .user-row:hover, .user-row.active { background:#fffbcc; }
-.user-row.flash { animation:flashRed 0.5s; }
-@keyframes flashRed { 0%{background:#ffcccc;} 100%{background:#fffbcc;} }
 .status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
 .online { background:green; } .offline { background:red; }
 .badge { background:red; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
@@ -31,9 +29,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 #chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:8px; background:#fafafa; }
 #sendBtn { padding:8px 12px; border:none; background:#ffcb2b; cursor:pointer; border-radius:8px; }
 #sendBtn:hover { background:#f1b800; }
-.friends-container::-webkit-scrollbar { width:6px; }
-.friends-container::-webkit-scrollbar-thumb { background:#ffcb2b; border-radius:3px; }
-.friends-container::-webkit-scrollbar-track { background:#f1f1f1; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -90,6 +85,8 @@ let currentUserUid = "";
 let currentChatFriendUid = "";
 let currentChatListener = null;
 
+const unreadMap = {};
+
 // ===== Auth =====
 auth.onAuthStateChanged(user=>{
   if(user && user.emailVerified){
@@ -104,7 +101,7 @@ auth.onAuthStateChanged(user=>{
     });
     setupOnlineStatus();
     loadUsers();
-    listenUnreadCounts();
+    listenUnread();
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
     document.querySelector(".friends-container").innerHTML="<p>Please login to view users.</p>";
@@ -146,8 +143,7 @@ function loadUsers(){
 }
 
 // ===== Unread =====
-const unreadMap = {};
-function listenUnreadCounts(){
+function listenUnread(){
   db.ref('unread/'+currentUserUid).on('value',snap=>{
     Object.assign(unreadMap, snap.val()||{});
     updateUnreadBadges();
@@ -159,10 +155,7 @@ function updateUnreadBadges(){
     const uid=row.dataset.uid;
     let badge=row.querySelector('.badge');
     if(unreadMap[uid]>0){
-      if(!badge){
-        badge=document.createElement('span'); badge.className='badge';
-        row.querySelector('div').appendChild(badge);
-      }
+      if(!badge){ badge=document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge);}
       badge.textContent = unreadMap[uid];
     } else if(badge) badge.remove();
   });
@@ -179,7 +172,7 @@ function openChat(friendUid,friendName){
   chatModal.style.display='flex';
   chatMessages.innerHTML='';
 
-  // Reset unread
+  // Clear unread count for this friend
   db.ref('unread/'+currentUserUid+'/'+friendUid).set(0);
 
   const chatId = getChatId(currentUserUid,friendUid);
@@ -211,11 +204,13 @@ function sendMessage(){
   if(!text || !currentChatFriendUid) return;
   const chatId = getChatId(currentUserUid,currentChatFriendUid);
   const msgObj = { sender:currentUserUid, receiver:currentChatFriendUid, text, timestamp:Date.now() };
+  
   db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [currentChatFriendUid]:true });
   db.ref('chats/'+chatId+'/messages').push(msgObj);
 
-  // Update unread for receiver
-  db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid).transaction(count=>(count||0)+1);
+  // Increment unread count for receiver
+  const unreadRef = db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid);
+  unreadRef.transaction(current=> (current||0)+1 );
 
   chatInput.value='';
 }
