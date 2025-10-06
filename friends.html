@@ -168,29 +168,27 @@ function loadUsersRealtime(){
       row.innerHTML=`<div><span class="status-dot ${f.online?'online':'offline'}"></span>${f.name} (${f.gender})</div>`;
       row.addEventListener('click',()=>openChat(f.uid,f.name));
       userList.appendChild(row);
+      // Update badge if any
+      if(unreadCounters[f.uid]) updateFriendBadge(f.uid, unreadCounters[f.uid]);
     });
-    updateFriendListBadges();
   });
 }
 
-// ===== Friend Badges & Flash =====
-function updateFriendListBadges(){
-  document.querySelectorAll('.user-row').forEach(row=>{
-    const uid = row.dataset.uid;
-    let badge = row.querySelector('.badge');
-    if(unreadCounters[uid]){
-      if(!badge){ badge=document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge); }
-      badge.textContent = unreadCounters[uid];
-    } else if(badge) badge.remove();
-  });
+// ===== Friend Badge =====
+function updateFriendBadge(uid, count) {
+  const row = document.querySelector(`.user-row[data-uid="${uid}"]`);
+  if(!row) return;
+  let badge = row.querySelector('.badge');
+  if(count > 0){
+    if(!badge){ badge = document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge); }
+    badge.textContent = count;
+  } else if(badge){ badge.remove(); }
 }
 
+// ===== Flash Friend Row =====
 function flashUserRow(uid){
   const row = document.querySelector(`.user-row[data-uid="${uid}"]`);
-  if(row){
-    row.classList.add('flash');
-    setTimeout(()=>row.classList.remove('flash'),800);
-  }
+  if(row){ row.classList.add('flash'); setTimeout(()=>row.classList.remove('flash'),800); }
 }
 
 // ===== Open Chat =====
@@ -207,8 +205,9 @@ function openChat(friendUid,friendName){
   chatModal.style.display='flex';
   chatMessages.innerHTML='';
   typingIndicator.textContent='';
-  unreadCounters[friendUid]=0;
-  updateFriendListBadges();
+
+  unreadCounters[friendUid] = 0;
+  updateFriendBadge(friendUid,0);
 
   listenTyping(friendUid);
 
@@ -236,7 +235,7 @@ function openChat(friendUid,friendName){
   });
 }
 
-// ===== Render Messages (with emoji support) =====
+// ===== Render Messages with Emoji =====
 function addOrUpdateMessageToChat(msg){
   if(!msg || !msg._key) return;
   const id='msg-'+msg._key;
@@ -245,7 +244,6 @@ function addOrUpdateMessageToChat(msg){
   if(!el){ el=document.createElement('div'); el.id=id; el.className='message '+(isSelf?'self':'friend'); chatMessages.appendChild(el); }
 
   function renderText(text){
-    // Convert emoji unicode characters into visible emojis (basic support)
     return text.replace(/:\)/g,'😊').replace(/:\(/g,'😞').replace(/:D/g,'😃').replace(/:P/g,'😜').replace(/<3/g,'❤️');
   }
 
@@ -267,10 +265,9 @@ chatInput.addEventListener('input',()=>{
   clearTimeout(typingTimeout);
   typingTimeout=setTimeout(()=>db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove(),1000);
 });
-
 function listenTyping(friendUid){
   db.ref('typing/'+currentUserUid+'/'+friendUid).on('value',snap=>{
-    typingIndicator.textContent = snap.exists()?`${chatWith.textContent} is typing...`:'';  
+    typingIndicator.textContent = snap.exists()?`${chatWith.textContent} is typing...`:'';
   });
 }
 
@@ -305,11 +302,13 @@ function escapeHtml(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").repl
 db.ref('chats').on('child_added',snap=>{
   snap.ref.child('messages').on('child_added',msgSnap=>{
     const msg=msgSnap.val();
-    if(msg?.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
-      unreadCounters[msg.sender]=(unreadCounters[msg.sender]||0)+1;
+    if(msg?.receiver===currentUserUid){
+      if(msg.sender!==currentChatFriendUid){ 
+        unreadCounters[msg.sender]=(unreadCounters[msg.sender]||0)+1;
+        flashUserRow(msg.sender);
+        updateFriendBadge(msg.sender, unreadCounters[msg.sender]);
+      } else unreadCounters[msg.sender]=0;
       lastChatTimestamps[msg.sender]=msg.timestamp;
-      updateFriendListBadges();
-      flashUserRow(msg.sender);
       loadUsersRealtime();
     }
   });
@@ -389,7 +388,7 @@ function compressImageToDataURL(file,maxBytes,callback){
 
 // ===== Revoke URLs =====
 window.addEventListener('beforeunload',()=>{ Object.values(localPreviewMap).forEach(url=>{ try{ if(url.startsWith('blob:')) URL.revokeObjectURL(url); }catch(e){} }); });
-
 </script>
+
 </body>
 </html>
