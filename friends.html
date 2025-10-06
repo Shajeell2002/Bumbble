@@ -40,7 +40,7 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
 .file-link { display:inline-block; padding:6px 8px; background:#fff; border-radius:6px; border:1px solid #ddd; text-decoration:none; color:#333; margin-bottom:6px; font-size:14px; }
 .file-link::before { content: '⤓ '; }
 .preview-strip { display:flex; gap:8px; padding:8px; overflow:auto; border-bottom:1px solid #eee; background:#fff; }
-.preview-thumb { width:60px; height:60px; border-radius:6px; object-fit:cover; border:1px solid #ddd; position:relative; }
+.preview-thumb { width:60px; height:60px; border-radius:6px; object-fit:cover; border:1px solid #ddd; position:relative; text-align:center; font-size:10px; line-height:60px; overflow:hidden; }
 .progress-bar { width:60px; height:4px; background:#eee; border-radius:3px; margin-top:4px; }
 .progress-fill { height:100%; width:0%; background:#059669; border-radius:3px; transition:width 0.3s ease; }
 .small-muted { font-size:11px; color:#666; }
@@ -48,6 +48,7 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 </head>
 <body>
 
@@ -84,6 +85,7 @@ const firebaseConfig = { apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs", authD
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
+const storage = firebase.storage();
 
 // ===== DOM =====
 const nav = document.getElementById("navLinks");
@@ -103,7 +105,6 @@ let currentChatFriendUid = "";
 let currentChatListener = null;
 const unreadCounters = {};
 const lastChatTimestamps = {};
-const localPreviewMap = {};
 let typingThrottleTimeout;
 const friendRows = new Map(); // cache for friend DOM rows
 
@@ -212,6 +213,8 @@ function openChat(friendUid,friendName){
   chatModal.style.display='flex';
   chatMessages.innerHTML='';
   typingIndicator.textContent='';
+  previewStrip.innerHTML='';
+  previewStrip.style.display='none';
 
   unreadCounters[friendUid] = 0;
   updateFriendBadge(friendUid,0);
@@ -236,16 +239,12 @@ function listenToFriendMessages(friendUid){
       flashUserRow(msg.sender);
     }
     addOrUpdateMessageToChat(msg);
-    lastChatTimestamps[msg.sender]=msg.timestamp;
   });
 }
 
 // ===== Render Messages =====
 let isAtBottom = true;
-chatMessages.addEventListener('scroll',()=>{
-  const threshold = 30;
-  isAtBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < threshold;
-});
+chatMessages.addEventListener('scroll',()=>{ isAtBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 30; });
 
 function addOrUpdateMessageToChat(msg){
   if(!msg || !msg._key) return;
@@ -277,7 +276,7 @@ chatInput.addEventListener('input',()=>{
 
 function listenTyping(friendUid){
   db.ref('typing/'+currentUserUid+'/'+friendUid).on('value',snap=>{
-    typingIndicator.textContent = snap.exists()?`${chatWith.textContent} is typing...`:'';
+    typingIndicator.textContent = snap.exists()?`${chatWith.textContent} is typing...`:''; 
   });
 }
 
@@ -289,10 +288,64 @@ function sendMessage(){
   db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [currentChatFriendUid]:true });
   db.ref('chats/'+chatId+'/messages').push(msgObj);
   chatInput.value='';
-  lastChatTimestamps[currentChatFriendUid]=msgObj.timestamp;
 }
 chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); }});
 sendBtn.addEventListener('click',sendMessage);
+
+// ===== File Upload =====
+fileBtn.addEventListener('click',()=>chatFileInput.click());
+
+chatFileInput.addEventListener('change', async (e)=>{
+  const files = Array.from(e.target.files);
+  if(!files.length || !currentChatFriendUid) return;
+
+  previewStrip.style.display='flex';
+  files.forEach(file=>{
+    const thumb = document.createElement('div');
+    thumb.className='preview-thumb';
+    thumb.textContent='Uploading...';
+    previewStrip.appendChild(thumb);
+
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      if(file.type.startsWith('image/')) thumb.innerHTML=`<img src="${ev.target.result}" class="preview-thumb"/>`;
+      else thumb.textContent = file.name;
+    }
+    reader.readAsDataURL(file);
+
+    const storageRef = storage.ref(`chat_files/${Date.now()}_${file.name}`);
+    const uploadTask = storageRef.put(file);
+
+    const progressBar = document.createElement('div');
+    progressBar.className='progress-bar';
+    const progressFill = document.createElement('div');
+    progressFill.className='progress-fill';
+    progressBar.appendChild(progressFill);
+    thumb.appendChild(progressBar);
+
+    uploadTask.on('state_changed',
+      snapshot=>{
+        const percent = (snapshot.bytesTransferred/snapshot.totalBytes)*100;
+        progressFill.style.width = percent+'%';
+      },
+      error=>{ thumb.textContent='Error'; console.error(error); },
+      async ()=>{
+        const url = await uploadTask.snapshot.ref.getDownloadURL();
+        sendFileMessage(file,url);
+        thumb.remove();
+      }
+    );
+  });
+
+  chatFileInput.value='';
+});
+
+function sendFileMessage(file, url){
+  const chatId = getChatId(currentUserUid,currentChatFriendUid);
+  const msgObj = { sender: currentUserUid, receiver: currentChatFriendUid, fileName: file.name, fileType: file.type, fileData: url, timestamp: Date.now() };
+  db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [currentChatFriendUid]:true });
+  db.ref('chats/'+chatId+'/messages').push(msgObj);
+}
 
 // ===== Close Chat =====
 function closeChat(){
