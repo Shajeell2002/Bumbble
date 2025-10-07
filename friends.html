@@ -110,6 +110,7 @@ let unreadCounters = {};
 const lastChatTimestamps = {};
 let typingTimeout;
 
+// Error handling
 window.addEventListener('error', function(ev){
   const msg = ev && ev.message ? ev.message : String(ev);
   showError("Runtime error: " + msg);
@@ -272,38 +273,34 @@ function addOrUpdateMessageToChat(msg){
   const id='msg-'+msg._key;
   let el=document.getElementById(id);
   const isSelf=(msg.sender===currentUserUid);
-  if(!el){ 
-    el=document.createElement('div'); 
-    el.id=id; 
-    el.className='message '+(isSelf?'self':'friend'); 
-    chatMessages.appendChild(el);
-  }
-
+  if(!el){ el=document.createElement('div'); el.id=id; el.className='message '+(isSelf?'self':'friend'); chatMessages.appendChild(el);}
+  
   if(msg.fileData){
     let isImage=false;
     if(msg.fileType && msg.fileType.indexOf('image/')===0) isImage=true;
     if(!isImage && msg.fileName && /\.(jpg|jpeg|png|gif)$/i.test(msg.fileName)) isImage=true;
 
     if(isImage){
-      // image preview with clickable download
-      el.innerHTML = '<a href="'+msg.fileData+'" download="'+(msg.fileName||'image')+'" target="_blank">' +
-                     '<img class="chat-image" src="'+msg.fileData+'" alt="image" style="max-width:200px; border-radius:8px;" />' +
-                     '</a>' +
-                     '<span class="timestamp '+(isSelf?'':'friend')+'">'+new Date(msg.timestamp).toLocaleString()+'</span>';
+      el.innerHTML = `
+        <div style="display:flex; align-items:center; gap:6px;">
+          <a href="${msg.fileData}" download="${msg.fileName||'image'}" target="_blank">
+            <img class="chat-image" src="${msg.fileData}" alt="image" style="max-width:150px; border-radius:8px;" />
+          </a>
+          <a href="${msg.fileData}" download="${msg.fileName||'image'}" style="text-decoration:none; font-size:18px;">📥</a>
+        </div>
+        <span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>
+      `;
     } else {
-      // non-image file: download icon
-      el.innerHTML = '<a href="'+msg.fileData+'" download="'+(msg.fileName||'file')+'" style="text-decoration:none; font-size:18px;">📥</a>' +
-                     '<span class="timestamp '+(isSelf?'':'friend')+'">'+new Date(msg.timestamp).toLocaleString()+'</span>';
+      el.innerHTML = `
+        <a href="${msg.fileData}" download="${msg.fileName||'file'}" style="text-decoration:none; font-size:18px;">📥</a>
+        <span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>
+      `;
     }
-
   } else if(msg.uploading){
     el.innerHTML='<div class="small-muted">'+escapeHtml(msg.fileName||'Sending...')+'</div><span class="uploading-badge">Sending...</span><span class="timestamp '+(isSelf?'':'friend')+'">'+new Date(msg.timestamp).toLocaleString()+'</span>';
   } else if(msg.text){
     el.innerHTML=escapeHtml(msg.text)+'<div class="timestamp '+(isSelf?'':'friend')+'">'+new Date(msg.timestamp).toLocaleString()+'</div>';
-  } else { 
-    el.innerHTML='<div class="small-muted">Unknown message</div>'; 
-  }
-
+  } else { el.innerHTML='<div class="small-muted">Unknown message</div>'; }
   chatMessages.scrollTop=chatMessages.scrollHeight;
 }
 
@@ -326,10 +323,10 @@ function sendMessage(){
   const chatId=getChatId(currentUserUid,currentChatFriendUid);
   const msgObj={ sender:currentUserUid, receiver:currentChatFriendUid, text:text, timestamp:Date.now() };
   chatInput.value='';
-  db.ref('chats/'+chatId+'/messages').push(msgObj);
+  const newMsgRef = db.ref('chats/'+chatId+'/messages').push(msgObj);
 
   // mark unread for receiver
-  db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+Date.now()).set(true);
+  db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+newMsgRef.key).set(true);
 }
 
 sendBtn.addEventListener('click', sendMessage);
@@ -344,7 +341,7 @@ chatFileInput.addEventListener('change', function(e){
     const tempMsgRef = db.ref('chats/'+chatId+'/messages').push({ sender:currentUserUid, receiver:currentChatFriendUid, uploading:true, fileName:f.name, timestamp:Date.now() });
     reader.onload=function(ev){
       tempMsgRef.update({ uploading:false, fileData:ev.target.result, fileType:f.type });
-      db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+Date.now()).set(true);
+      db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempMsgRef.key).set(true);
     };
     reader.readAsDataURL(f);
   });
