@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Bumbble - Friends & Chat</title>
 <style>
-/* (kept your original styling) */
 body { font-family: Arial, sans-serif; margin:0; background:#fefefe; color:#333; display:flex; min-height:100vh; flex-direction: column; }
 header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#ffcb2b; box-shadow:0 3px 6px rgba(0,0,0,0.1); position:fixed; top:0; left:0; right:0; z-index:500; }
 header h1{ font-size:24px; margin:0; }
@@ -41,7 +40,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 .error-banner { background:#ffdddd; color:#800; padding:8px 12px; border:1px solid #f5b3b3; margin:10px; border-radius:6px; }
 </style>
 
-<!-- Firebase compat libs (same you used earlier) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -51,7 +49,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 <header>
   <h1>Bumbble</h1>
   <nav id="navLinks">
-    <!-- default nav so header is never empty while auth loads -->
     <a href="index.html">Home</a>
     <a href="login.html">Login</a>
     <a href="signup.html">Sign Up</a>
@@ -79,17 +76,10 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
     </div>
   </div>
 
-  <!-- error area (will show JS errors if any) -->
   <div id="errorArea"></div>
 </div>
 
 <script>
-/*
-  Robust version: increment unread on send, clear unread on chat open,
-  ensure unread map is fully refreshed from DB snapshot.
-  Also show runtime errors in-page so a 'blank' page is easy to diagnose.
-*/
-
 try {
   const firebaseConfig = {
     apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
@@ -104,7 +94,6 @@ try {
   const auth = firebase.auth();
   const db = firebase.database();
 
-  // Elements
   const nav = document.getElementById("navLinks");
   const userList = document.getElementById("userList");
   const chatModal = document.getElementById("chatModal");
@@ -121,22 +110,19 @@ try {
   let currentUserUid = "";
   let currentChatFriendUid = "";
   let currentChatListener = null;
-  const unreadCounters = {}; // { senderUid: count }
+  let unreadCounters = {};
   const lastChatTimestamps = {};
   let typingTimeout;
 
-  // show runtime errors in page
   window.addEventListener('error', function(ev){
     const msg = ev && ev.message ? ev.message : String(ev);
     showError("Runtime error: " + msg);
     console.error(ev.error || ev);
   });
-
   function showError(text){
     errorArea.innerHTML = '<div class="error-banner">' + escapeHtml(text) + '</div>';
   }
 
-  // AUTH
   auth.onAuthStateChanged(function(user){
     try {
       if(user && user.emailVerified){
@@ -153,20 +139,18 @@ try {
           db.ref('users/'+currentUserUid+'/public/online').set(false);
           localStorage.removeItem("lastChatFriendUid");
           localStorage.removeItem("lastChatFriendName");
-          auth.signOut().then(function(){ window.location.href = "login.html"; });
+          auth.signOut().then(()=> window.location.href="login.html");
         });
 
         setupOnlineStatus();
         loadUsersRealtime();
         setupUnreadListener();
 
-        // If last chat stored, open it
         const lastUid = localStorage.getItem("lastChatFriendUid");
         const lastName = localStorage.getItem("lastChatFriendName");
         if(lastUid && lastName) openChat(lastUid, lastName);
 
       } else {
-        // Not signed in or not verified: show basic nav and message — page still renders
         nav.innerHTML = '<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>';
         document.querySelector(".friends-container").innerHTML = "<p style='padding:12px'>Please login to view users.</p>";
       }
@@ -187,263 +171,198 @@ try {
     });
   }
 
-  // LOAD USERS
   function loadUsersRealtime(){
-    db.ref('users').on('value', function(snapshot){
+    db.ref('users').on('value', snapshot => {
       try {
         const usersData = snapshot.val() || {};
-        const friends = Object.keys(usersData).filter(function(uid){ return uid !== currentUserUid; }).map(function(uid){
-          const u = usersData[uid].public || {};
-          return { uid: uid, name: u.name || "Unknown", gender: u.gender || "N/A", online: !!u.online };
-        });
+        const friends = Object.keys(usersData)
+          .filter(uid => uid !== currentUserUid)
+          .map(uid => {
+            const u = usersData[uid].public || {};
+            return { uid, name: u.name||"Unknown", gender:u.gender||"N/A", online:!!u.online };
+          });
 
-        friends.sort(function(a,b){
-          const tA = lastChatTimestamps[a.uid] || 0;
-          const tB = lastChatTimestamps[b.uid] || 0;
-          return tB - tA || a.name.localeCompare(b.name);
-        });
-
+        friends.sort((a,b) => (lastChatTimestamps[b.uid]||0) - (lastChatTimestamps[a.uid]||0) || a.name.localeCompare(b.name));
         userList.innerHTML = '';
-        friends.forEach(function(f){
+        friends.forEach(f=>{
           const row = document.createElement('div');
-          row.className = 'user-row';
-          row.dataset.uid = f.uid;
-          row.dataset.name = f.name;
-          row.innerHTML = '<div><span class="status-dot ' + (f.online ? 'online' : 'offline') + '"></span>' + escapeHtml(f.name) + ' (' + escapeHtml(f.gender) + ')</div>';
-          row.addEventListener('click', function(){ openChat(f.uid, f.name); });
+          row.className='user-row';
+          row.dataset.uid=f.uid;
+          row.dataset.name=f.name;
+          row.innerHTML='<div><span class="status-dot '+(f.online?'online':'offline')+'"></span>'+escapeHtml(f.name)+' ('+escapeHtml(f.gender)+')</div>';
+          row.addEventListener('click', ()=>openChat(f.uid,f.name));
           userList.appendChild(row);
         });
-
         updateFriendListBadges();
-      } catch(err){
-        showError("Error loading users: " + err.message);
-        console.error(err);
-      }
+      } catch(err){ showError("Error loading users: " + err.message); }
     });
   }
 
-  // UNREAD LISTENER: always fully rebuild local map from snapshot
   function setupUnreadListener(){
-    db.ref('unread/' + currentUserUid).on('value', function(snap){
-      try {
-        var data = snap.exists() ? (snap.val() || {}) : {};
-        // clear local keys
-        Object.keys(unreadCounters).forEach(function(k){ delete unreadCounters[k]; });
-        // copy snapshot
-        Object.keys(data).forEach(function(k){ unreadCounters[k] = data[k]; });
-        updateFriendListBadges();
-      } catch(err){
-        showError("Error reading unread snapshot: " + err.message);
-        console.error(err);
-      }
+    db.ref('unread/'+currentUserUid).on('value', snap => {
+      unreadCounters = {};
+      const data = snap.val() || {};
+      Object.keys(data).forEach(senderUid => {
+        unreadCounters[senderUid] = Object.keys(data[senderUid]||{}).length;
+      });
+      updateFriendListBadges();
     });
   }
 
   function updateFriendListBadges(){
-    try {
-      var rows = document.querySelectorAll('.user-row');
-      rows.forEach(function(row){
-        var uid = row.dataset.uid;
-        var badge = row.querySelector('.badge');
-        var count = Number(unreadCounters[uid] || 0);
-        if(count > 0){
-          if(!badge){
-            badge = document.createElement('span');
-            badge.className = 'badge';
-            row.querySelector('div').appendChild(badge);
-          }
-          badge.textContent = String(count);
-        } else if(badge) {
-          badge.remove();
-        }
-      });
-    } catch(err){
-      console.error("Badge update error:", err);
-    }
+    document.querySelectorAll('.user-row').forEach(row=>{
+      const uid = row.dataset.uid;
+      let badge = row.querySelector('.badge');
+      const count = Number(unreadCounters[uid]||0);
+      if(count>0){
+        if(!badge){ badge=document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge); }
+        badge.textContent=count;
+      } else if(badge) badge.remove();
+    });
   }
 
   function flashUserRow(uid){
-    var row = document.querySelector('.user-row[data-uid="' + uid + '"]');
-    if(row){
-      row.classList.add('flash');
-      setTimeout(function(){ row.classList.remove('flash'); }, 800);
-    }
+    const row = document.querySelector('.user-row[data-uid="'+uid+'"]');
+    if(row){ row.classList.add('flash'); setTimeout(()=>row.classList.remove('flash'),800); }
   }
 
-  // OPEN CHAT: remove unread on open
   function openChat(friendUid, friendName){
     try {
-      document.querySelectorAll('.user-row').forEach(function(r){ r.classList.remove('active'); });
-      var activeRow = document.querySelector('.user-row[data-uid="' + friendUid + '"]');
+      document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
+      const activeRow = document.querySelector('.user-row[data-uid="'+friendUid+'"]');
       if(activeRow) activeRow.classList.add('active');
 
       currentChatFriendUid = friendUid;
       chatWith.textContent = friendName;
-      localStorage.setItem("lastChatFriendUid", friendUid);
-      localStorage.setItem("lastChatFriendName", friendName);
-      chatModal.style.display = 'flex';
-      chatMessages.innerHTML = '';
-      typingIndicator.textContent = '';
+      localStorage.setItem("lastChatFriendUid",friendUid);
+      localStorage.setItem("lastChatFriendName",friendName);
+      chatModal.style.display='flex';
+      chatMessages.innerHTML='';
+      typingIndicator.textContent='';
 
-      // Clear unread for this friend in DB and local map
-      db.ref('unread/' + currentUserUid + '/' + friendUid).remove();
-      delete unreadCounters[friendUid];
+      db.ref('unread/'+currentUserUid+'/'+friendUid).remove();
+      unreadCounters[friendUid]=0;
       updateFriendListBadges();
 
-      var chatId = getChatId(currentUserUid, friendUid);
+      const chatId = getChatId(currentUserUid,friendUid);
       if(currentChatListener) currentChatListener.off();
 
-      var chatRef = db.ref('chats/' + chatId);
-      chatRef.child('members').update({ [currentUserUid]: true, [friendUid]: true });
+      db.ref('chats/'+chatId+'/members').update({ [currentUserUid]: true, [friendUid]: true });
+      const chatRef=db.ref('chats/'+chatId+'/messages');
 
-      // load history once
-      chatRef.child('messages').once('value', function(snap){
-        var msgs = snap.val() || {};
-        Object.keys(msgs).sort(function(a,b){ return msgs[a].timestamp - msgs[b].timestamp; }).forEach(function(k){
-          addOrUpdateMessageToChat(Object.assign({}, msgs[k], { _key: k }));
+      chatRef.once('value', snap=>{
+        const msgs = snap.val()||{};
+        Object.keys(msgs).sort((a,b)=>msgs[a].timestamp-msgs[b].timestamp).forEach(k=>{
+          addOrUpdateMessageToChat(Object.assign({}, msgs[k], {_key:k}));
         });
         chatMessages.scrollTop = chatMessages.scrollHeight;
       });
 
-      // realtime messages — do NOT increment unread here (increment is done when sender sends)
-      currentChatListener = chatRef.child('messages');
-      currentChatListener.on('child_added', function(snap){
-        var msg = snap.val(); msg._key = snap.key;
+      currentChatListener=chatRef;
+      chatRef.on('child_added', snap=>{
+        const msg = snap.val(); msg._key = snap.key;
         addOrUpdateMessageToChat(msg);
         lastChatTimestamps[friendUid] = msg.timestamp;
 
-        // Defensive: if a message is for me and chat is open, ensure any unread entry gets cleared
-        if(msg.receiver === currentUserUid && msg.sender !== currentUserUid && currentChatFriendUid === msg.sender){
-          db.ref('unread/' + currentUserUid + '/' + msg.sender).remove();
-          delete unreadCounters[msg.sender];
-          updateFriendListBadges();
+        if(msg.receiver===currentUserUid && msg.sender!==currentUserUid){
+          if(currentChatFriendUid!==msg.sender){
+            db.ref('unread/'+currentUserUid+'/'+msg.sender+'/'+msg._key).set(true);
+            flashUserRow(msg.sender);
+          } else {
+            db.ref('unread/'+currentUserUid+'/'+msg.sender).remove();
+            delete unreadCounters[msg.sender];
+            updateFriendListBadges();
+          }
         }
       });
 
-      currentChatListener.on('child_changed', function(snap){
-        var msg = snap.val(); msg._key = snap.key;
-        addOrUpdateMessageToChat(msg);
-      });
-
+      chatRef.on('child_changed', snap=>{ addOrUpdateMessageToChat(Object.assign({},snap.val(),{_key:snap.key})); });
       listenTyping(friendUid);
-    } catch(err){
-      showError("openChat error: " + err.message);
-      console.error(err);
-    }
+    } catch(err){ showError("openChat error: "+err.message); }
   }
 
-  // render messages
   function addOrUpdateMessageToChat(msg){
-    if(!msg || !msg._key) return;
-    var id = 'msg-' + msg._key;
-    var el = document.getElementById(id);
-    var isSelf = (msg.sender === currentUserUid);
-    if(!el){
-      el = document.createElement('div');
-      el.id = id;
-      el.className = 'message ' + (isSelf ? 'self' : 'friend');
-      chatMessages.appendChild(el);
-    }
-
+    if(!msg||!msg._key) return;
+    const id='msg-'+msg._key;
+    let el=document.getElementById(id);
+    const isSelf=(msg.sender===currentUserUid);
+    if(!el){ el=document.createElement('div'); el.id=id; el.className='message '+(isSelf?'self':'friend'); chatMessages.appendChild(el);}
+    
     if(msg.fileData){
-      var isImage = false;
-      if(msg.fileType && typeof msg.fileType === 'string' && msg.fileType.indexOf('image/') === 0) isImage = true;
-      if(!isImage && msg.fileName && /\.(jpg|jpeg|png|gif)$/i.test(msg.fileName)) isImage = true;
-
+      let isImage=false;
+      if(msg.fileType && msg.fileType.indexOf('image/')===0) isImage=true;
+      if(!isImage && msg.fileName && /\.(jpg|jpeg|png|gif)$/i.test(msg.fileName)) isImage=true;
       if(isImage){
-        el.innerHTML = '<img class="chat-image" src="' + msg.fileData + '" alt="' + (msg.fileName || 'image') + '"/>' +
-                       '<a class="file-link" href="' + msg.fileData + '" download="' + (msg.fileName || 'image') + '">' + (msg.fileName || 'image') + '</a>' +
-                       '<span class="timestamp ' + (isSelf ? '' : 'friend') + '">' + new Date(msg.timestamp).toLocaleString() + '</span>';
+        el.innerHTML='<img class="chat-image" src="'+msg.fileData+'" alt="'+(msg.fileName||'image')+'"/>' +
+                     '<a class="file-link" href="'+msg.fileData+'" download="'+(msg.fileName||'image')+'">'+(msg.fileName||'image')+'</a>' +
+                     '<span class="timestamp '+(isSelf?'':'friend')+'">'+new Date(msg.timestamp).toLocaleString()+'</span>';
       } else {
-        el.innerHTML = '<div class="small-muted">' + escapeHtml(msg.fileName || 'File') + '</div>' +
-                       '<a class="file-link" href="' + msg.fileData + '" download="' + (msg.fileName || 'file') + '">' + (msg.fileName || 'Download') + '</a>' +
-                       '<span class="timestamp ' + (isSelf ? '' : 'friend') + '">' + new Date(msg.timestamp).toLocaleString() + '</span>';
+        el.innerHTML='<div class="small-muted">'+escapeHtml(msg.fileName||'File')+'</div>' +
+                     '<a class="file-link" href="'+msg.fileData+'" download="'+(msg.fileName||'file')+'">'+(msg.fileName||'Download')+'</a>' +
+                     '<span class="timestamp '+(isSelf?'':'friend')+'">'+new Date(msg.timestamp).toLocaleString()+'</span>';
       }
     } else if(msg.uploading){
-      el.innerHTML = '<div class="small-muted">' + escapeHtml(msg.fileName || 'Sending...') + '</div><span class="uploading-badge">Sending...</span><span class="timestamp ' + (isSelf ? '' : 'friend') + '">' + new Date(msg.timestamp).toLocaleString() + '</span>';
+      el.innerHTML='<div class="small-muted">'+escapeHtml(msg.fileName||'Sending...')+'</div><span class="uploading-badge">Sending...</span><span class="timestamp '+(isSelf?'':'friend')+'">'+new Date(msg.timestamp).toLocaleString()+'</span>';
     } else if(msg.text){
-      el.innerHTML = escapeHtml(msg.text) + '<div class="timestamp ' + (isSelf ? '' : 'friend') + '">' + new Date(msg.timestamp).toLocaleString() + '</div>';
-    } else {
-      el.innerHTML = '<div class="small-muted">Unknown message</div>';
-    }
+      el.innerHTML=escapeHtml(msg.text)+'<div class="timestamp '+(isSelf?'':'friend')+'">'+new Date(msg.timestamp).toLocaleString()+'</div>';
+    } else { el.innerHTML='<div class="small-muted">Unknown message</div>'; }
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
-  // typing indicator
   chatInput.addEventListener('input', function(){
     if(!currentChatFriendUid) return;
-    db.ref('typing/' + currentChatFriendUid + '/' + currentUserUid).set(true);
+    db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).set(true);
     clearTimeout(typingTimeout);
-    typingTimeout = setTimeout(function(){ db.ref('typing/' + currentChatFriendUid + '/' + currentUserUid).remove(); }, 1000);
+    typingTimeout = setTimeout(()=>db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove(), 1000);
   });
 
   function listenTyping(friendUid){
-    db.ref('typing/' + currentUserUid + '/' + friendUid).on('value', function(snap){
-      typingIndicator.textContent = snap && snap.exists() ? (chatWith.textContent + ' is typing...') : '';
+    db.ref('typing/'+currentUserUid+'/'+friendUid).on('value', snap=>{
+      typingIndicator.textContent = snap.exists()? chatWith.textContent + ' is typing...' : '';
     });
   }
 
-  // SEND MESSAGE: push message and increment unread for receiver once
   function sendMessage(){
-    try {
-      var text = chatInput.value.trim();
-      if(!text || !currentChatFriendUid) return;
-      var chatId = getChatId(currentUserUid, currentChatFriendUid);
-      var msgObj = { sender: currentUserUid, receiver: currentChatFriendUid, text: text, timestamp: Date.now() };
-
-      db.ref('chats/' + chatId + '/members').update({ [currentUserUid]: true, [currentChatFriendUid]: true });
-      db.ref('chats/' + chatId + '/messages').push(msgObj);
-
-      // increment unread on receiver side (one shot)
-      if(currentChatFriendUid !== currentUserUid){
-        db.ref('unread/' + currentChatFriendUid + '/' + currentUserUid).transaction(function(current){ return (current || 0) + 1; });
-      }
-
-      chatInput.value = '';
-      lastChatTimestamps[currentChatFriendUid] = msgObj.timestamp;
-    } catch(err){
-      showError("Send error: " + err.message);
-      console.error(err);
-    }
+    const text=chatInput.value.trim();
+    if(!text || !currentChatFriendUid) return;
+    const chatId = getChatId(currentUserUid,currentChatFriendUid);
+    const msgObj = { sender: currentUserUid, receiver: currentChatFriendUid, text, timestamp:Date.now() };
+    db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [currentChatFriendUid]:true });
+    db.ref('chats/'+chatId+'/messages').push(msgObj);
+    if(currentChatFriendUid!==currentUserUid) db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+Date.now()).set(true);
+    chatInput.value=''; lastChatTimestamps[currentChatFriendUid]=msgObj.timestamp;
   }
-  chatInput.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); sendMessage(); }});
+  chatInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); }});
   sendBtn.addEventListener('click', sendMessage);
 
-  // close chat
   function closeChat(){
-    chatModal.style.display = 'none';
+    chatModal.style.display='none';
     if(currentChatListener) currentChatListener.off();
-    currentChatFriendUid = '';
+    currentChatFriendUid='';
   }
 
-  // file upload: push file message and increment unread
-  fileBtn.addEventListener('click', function(){ chatFileInput.click(); });
-  chatFileInput.addEventListener('change', function(e){
+  fileBtn.addEventListener('click', ()=> chatFileInput.click());
+  chatFileInput.addEventListener('change', e=>{
     if(!currentChatFriendUid) return;
-    var files = Array.prototype.slice.call(e.target.files || []);
-    var chatId = getChatId(currentUserUid, currentChatFriendUid);
-    files.forEach(function(file){
-      var reader = new FileReader();
-      reader.onload = function(ev){
-        var msgObj = { sender: currentUserUid, receiver: currentChatFriendUid, fileData: ev.target.result, fileName: file.name, fileType: file.type, timestamp: Date.now() };
-        db.ref('chats/' + chatId + '/messages').push(msgObj);
-        if(currentChatFriendUid !== currentUserUid){
-          db.ref('unread/' + currentChatFriendUid + '/' + currentUserUid).transaction(function(current){ return (current || 0) + 1; });
-        }
+    const files=Array.from(e.target.files||[]);
+    const chatId = getChatId(currentUserUid,currentChatFriendUid);
+    files.forEach(file=>{
+      const reader=new FileReader();
+      reader.onload=function(ev){
+        const msgObj={ sender:currentUserUid, receiver:currentChatFriendUid, fileData:ev.target.result, fileName:file.name, fileType:file.type, timestamp:Date.now() };
+        db.ref('chats/'+chatId+'/messages').push(msgObj);
+        if(currentChatFriendUid!==currentUserUid) db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+Date.now()).set(true);
       };
       reader.readAsDataURL(file);
     });
-    chatFileInput.value = '';
+    chatFileInput.value='';
   });
 
-  // helpers
-  function getChatId(uid1, uid2){ return uid1 < uid2 ? uid1 + '_' + uid2 : uid2 + '_' + uid1; }
+  function getChatId(uid1, uid2){ return uid1<uid2 ? uid1+'_'+uid2 : uid2+'_'+uid1; }
   function escapeHtml(text){ return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 } catch(err){
-  // any top-level initialization error will show here
-  var errArea = document.getElementById('errorArea');
-  if(errArea) errArea.innerHTML = '<div class="error-banner">Initialization error: ' + (err && err.message ? escapeHtml(err.message) : escapeHtml(String(err))) + '</div>';
+  if(document.getElementById('errorArea')) document.getElementById('errorArea').innerHTML='<div class="error-banner">Initialization error: '+escapeHtml(err.message||String(err))+'</div>';
   console.error("Initialization error:", err);
 }
 </script>
