@@ -110,6 +110,7 @@ let unreadCounters = {};
 const lastChatTimestamps = {};
 let typingTimeout;
 
+// error handling
 window.addEventListener('error', function(ev){
   const msg = ev && ev.message ? ev.message : String(ev);
   showError("Runtime error: " + msg);
@@ -227,6 +228,7 @@ function openChat(friendUid, friendName){
   chatMessages.innerHTML='';
   typingIndicator.textContent='';
 
+  // remove unread messages for this friend
   db.ref('unread/'+currentUserUid+'/'+friendUid).remove();
   delete unreadCounters[friendUid];
   updateFriendListBadges();
@@ -272,19 +274,25 @@ function addOrUpdateMessageToChat(msg){
   let el=document.getElementById(id);
   const isSelf=(msg.sender===currentUserUid);
   if(!el){ el=document.createElement('div'); el.id=id; el.className='message '+(isSelf?'self':'friend'); chatMessages.appendChild(el);}
-
+  
   if(msg.fileData){
     let isImage=false;
     if(msg.fileType && msg.fileType.indexOf('image/')===0) isImage=true;
     if(!isImage && msg.fileName && /\.(jpg|jpeg|png|gif)$/i.test(msg.fileName)) isImage=true;
+
     if(isImage){
-      el.innerHTML='<img class="chat-image" src="'+msg.fileData+'" alt="image" style="max-width:200px; border-radius:8px;" />' +
-                   '<span class="timestamp '+(isSelf?'':'friend')+'">'+new Date(msg.timestamp).toLocaleString()+'</span>';
+        // image preview + clickable download
+        el.innerHTML = '<a href="'+msg.fileData+'" download="'+(msg.fileName||'image')+'" target="_blank">' +
+                       '<img class="chat-image" src="'+msg.fileData+'" alt="image" style="max-width:200px; border-radius:8px;" />' +
+                       '</a>' +
+                       '<span class="timestamp '+(isSelf?'':'friend')+'">'+new Date(msg.timestamp).toLocaleString()+'</span>';
     } else {
-      el.innerHTML='<div class="small-muted">'+escapeHtml(msg.fileName||'File')+'</div>' +
-                   '<a class="file-link" href="'+msg.fileData+'" download="'+(msg.fileName||'file')+'">'+(msg.fileName||'Download')+'</a>' +
-                   '<span class="timestamp '+(isSelf?'':'friend')+'">'+new Date(msg.timestamp).toLocaleString()+'</span>';
+        // other files
+        el.innerHTML='<div class="small-muted">'+escapeHtml(msg.fileName||'File')+'</div>' +
+                     '<a class="file-link" href="'+msg.fileData+'" download="'+(msg.fileName||'file')+'">'+(msg.fileName||'Download')+'</a>' +
+                     '<span class="timestamp '+(isSelf?'':'friend')+'">'+new Date(msg.timestamp).toLocaleString()+'</span>';
     }
+
   } else if(msg.uploading){
     el.innerHTML='<div class="small-muted">'+escapeHtml(msg.fileName||'Sending...')+'</div><span class="uploading-badge">Sending...</span><span class="timestamp '+(isSelf?'':'friend')+'">'+new Date(msg.timestamp).toLocaleString()+'</span>';
   } else if(msg.text){
@@ -313,6 +321,8 @@ function sendMessage(){
   const msgObj={ sender:currentUserUid, receiver:currentChatFriendUid, text:text, timestamp:Date.now() };
   chatInput.value='';
   db.ref('chats/'+chatId+'/messages').push(msgObj);
+
+  // mark unread for receiver
   db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+Date.now()).set(true);
 }
 
