@@ -5,130 +5,99 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Friends & Chat</title>
 <style>
-/* ----- Body & Background ----- */
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    color: #333;
-    display: flex;
-    min-height: 100vh;
-    flex-direction: column;
-    background: linear-gradient(135deg, #a0e7e5 0%, #7dd6d3 50%, #b2f7ef 100%);
-    background-attachment: fixed;
+body { 
+    font-family: Arial, sans-serif; 
+    margin:0; 
+    background: #e0f7fa; 
+    color:#333; 
+    display:flex; 
+    min-height:100vh; 
+    flex-direction: column; 
 }
-body::before {
-    content: "";
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    pointer-events: none;
-    background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px);
-    background-size: 20px 20px;
-    z-index: 0;
+header { 
+    display:flex; 
+    justify-content:space-between; 
+    align-items:center; 
+    padding:15px 20px; 
+    background:#4dd0e1; 
+    box-shadow:0 3px 6px rgba(0,0,0,0.1); 
+    position:fixed; top:0; left:0; right:0; 
+    z-index:500; 
 }
+header h1{ font-size:24px; margin:0; color:#fff; }
+nav a{ margin-left:10px; font-weight:bold; color:#fff; text-decoration:none; }
+nav a:hover{ text-decoration:underline; }
 
-/* ----- Header ----- */
-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 20px;
-    background: rgba(0,255,255,0.9); /* aqua header */
-    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
-    position: fixed;
-    top: 0; left: 0; right: 0; z-index: 500;
-    backdrop-filter: blur(4px);
-}
-header h1{ font-size:24px; margin:0; }
-nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
-
-/* ----- Friends Sidebar ----- */
-.friends-container {
-    width: 250px;
-    background: rgba(173,216,230,0.85); /* light aqua sidebar */
-    border-right: 1px solid #eee;
-    padding: 10px;
-    overflow-y: auto;
-    position: fixed;
-    top: 60px; bottom: 0; left: 0;
-    backdrop-filter: blur(4px);
+.friends-container { 
+    width:250px; 
+    background:#b2ebf2; 
+    border-right:1px solid #81d4fa; 
+    padding:10px; 
+    overflow-y:auto; 
+    position:fixed; 
+    top:60px; bottom:0; left:0; 
 }
 .user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
-.user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #eee; cursor:pointer; transition:0.2s; }
-.user-row:hover, .user-row.active { background:#81e6e6; }
+.user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #81d4fa; cursor:pointer; transition:0.2s; }
+.user-row:hover, .user-row.active { background:#b2ebf2; }
+.user-row.flash { animation:flashBlue 0.5s; }
+@keyframes flashBlue { 0%{background:#4dd0e1;} 100%{background:#b2ebf2;} }
+
 .status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
-.online { background:green; } .offline { background:red; }
+.online { background:green; } 
+.offline { background:red; }
 
-/* Heartbeat animation for active friend */
-@keyframes heartbeat {
-  0%,100% { transform: scale(1); }
-  25%,75% { transform: scale(1.2); }
-  50% { transform: scale(1.1); }
-}
-.user-row.active .status-dot {
-    animation: heartbeat 1.5s infinite;
-    box-shadow: 0 0 6px rgba(0,255,255,0.5);
-}
+.badge { background:#00796b; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
 
-/* ----- Badge ----- */
-.badge { background:red; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
-
-/* ----- Main Content & Chat Modal ----- */
-.main-content {
-    flex: 1;
-    margin-left: 250px;
-    padding: 80px 20px 20px 20px;
+#chatModal { 
+    position:fixed; bottom:0; right:20px; width:360px; max-height:70vh; 
+    border:1px solid #ccc; 
+    background:#e0f7fa; 
+    border-radius:10px 10px 0 0; 
+    display:none; 
+    flex-direction:column; 
+    box-shadow:0 4px 12px rgba(0,0,0,0.2); 
+    resize:both; 
+    overflow:hidden; 
+    z-index:1000; 
 }
-#chatModal {
-    position: fixed;
-    bottom: 0; right: 20px;
-    width: 360px; max-height: 70vh;
-    border: 1px solid #ccc;
-    background: #fff;
-    border-radius: 10px 10px 0 0;
-    display: none;
-    flex-direction: column;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    resize: both;
-    overflow: hidden;
-    z-index: 1000;
+#chatHeader { 
+    background:#4dd0e1; 
+    padding:10px; 
+    font-weight:bold; 
+    display:flex; 
+    justify-content:space-between; 
+    align-items:center; 
+    border-radius:10px 10px 0 0; 
+    cursor:move; 
+    color:#fff;
 }
-#chatHeader {
-    background:#00ffff; /* aqua chat header */
-    padding:10px;
-    font-weight:bold;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    border-radius:10px 10px 0 0;
-    cursor:move;
-}
-#chatMessages {
-    flex:1;
-    padding:10px;
-    overflow-y:auto;
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-    background:#fefefe;
-    scroll-behavior:smooth;
+#chatMessages { 
+    flex:1; 
+    padding:10px; 
+    overflow-y:auto; 
+    display:flex; 
+    flex-direction:column; 
+    gap:8px; 
+    background:#e0f7fa; 
+    scroll-behavior:smooth; 
 }
 #typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
-
 .message { max-width:80%; padding:8px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
-.message.self { background:#059669; color:white; align-self:flex-end; }
-.message.friend { background:#e9e9e9; color:#111; align-self:flex-start; }
+.message.self { background:#26a69a; color:white; align-self:flex-end; }
+.message.friend { background:#b2ebf2; color:#111; align-self:flex-start; }
 .timestamp { font-size:10px; color:#eee; margin-top:6px; text-align:right; display:block; }
-.timestamp.friend { color:#666; }
-.uploading-badge { font-size:11px; color:#444; margin-top:6px; display:inline-block; background:#fff3cd; padding:3px 6px; border-radius:6px; border:1px solid #ffeeba; }
+.timestamp.friend { color:#555; }
+.uploading-badge { font-size:11px; color:#444; margin-top:6px; display:inline-block; background:#b2dfdb; padding:3px 6px; border-radius:6px; border:1px solid #80cbc4; }
 
-#chatInputContainer { display:flex; border-top:1px solid #ddd; align-items:center; gap:6px; padding:8px; }
-#chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:8px; background:#fafafa; }
-#sendBtn, #fileBtn { padding:8px 12px; border:none; background:#00ced1; cursor:pointer; border-radius:8px; }
-#sendBtn:hover, #fileBtn:hover { background:#20b2aa; }
+#chatInputContainer { display:flex; border-top:1px solid #81d4fa; align-items:center; gap:6px; padding:8px; }
+#chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:8px; background:#e0f7fa; }
+#sendBtn, #fileBtn { padding:8px 12px; border:none; background:#4dd0e1; cursor:pointer; border-radius:8px; color:#fff; }
+#sendBtn:hover, #fileBtn:hover { background:#26c6da; }
 
 .friends-container::-webkit-scrollbar { width:6px; }
-.friends-container::-webkit-scrollbar-thumb { background:#00ced1; border-radius:3px; }
-.friends-container::-webkit-scrollbar-track { background:#f1f1f1; }
+.friends-container::-webkit-scrollbar-thumb { background:#26c6da; border-radius:3px; }
+.friends-container::-webkit-scrollbar-track { background:#b2ebf2; }
 
 .img-debug { max-width:120px; display:block; margin-top:6px; }
 .error-banner { background:#ffdddd; color:#800; padding:8px 12px; border:1px solid #f5b3b3; margin:10px; border-radius:6px; }
@@ -172,7 +141,7 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 </div>
 
 <script>
-// ----- Firebase Setup -----
+// Firebase config & init
 const firebaseConfig = {
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
   authDomain:"bumbble-c061f.firebaseapp.com",
@@ -186,7 +155,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-// ----- DOM Elements -----
+// DOM
 const nav = document.getElementById("navLinks");
 const userList = document.getElementById("userList");
 const chatModal = document.getElementById("chatModal");
@@ -206,18 +175,12 @@ let unreadCounters = {};
 const lastChatTimestamps = {};
 let typingTimeout;
 
-// ----- Error Handling -----
-window.addEventListener('error', function(ev){
-  const msg = ev && ev.message ? ev.message : String(ev);
-  showError("Runtime error: " + msg);
-  console.error(ev.error || ev);
-});
-function showError(text){
-  errorArea.innerHTML = '<div class="error-banner">' + escapeHtml(text) + '</div>';
-}
+// Error
+window.addEventListener('error', ev=>showError("Runtime error: " + (ev.message||String(ev))));
+function showError(text){ errorArea.innerHTML = '<div class="error-banner">' + escapeHtml(text) + '</div>'; }
 
-// ----- Auth State -----
-auth.onAuthStateChanged(user => {
+// Auth
+auth.onAuthStateChanged(user=>{
   if(user && user.emailVerified){
     currentUserUid = user.uid;
     nav.innerHTML = `
@@ -232,24 +195,21 @@ auth.onAuthStateChanged(user => {
       db.ref('users/'+currentUserUid+'/public/online').set(false);
       localStorage.removeItem("lastChatFriendUid");
       localStorage.removeItem("lastChatFriendName");
-      auth.signOut().then(()=> window.location.href="login.html");
+      auth.signOut().then(()=>window.location.href="login.html");
     });
-
     setupOnlineStatus();
     loadUsersRealtime();
     setupUnreadListener();
-
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
     if(lastUid && lastName) openChat(lastUid, lastName);
-
   } else {
     nav.innerHTML = '<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>';
     document.querySelector(".friends-container").innerHTML = "<p style='padding:12px'>Please login to view users.</p>";
   }
 });
 
-// ----- Online Status -----
+// Online
 function setupOnlineStatus(){
   if(!currentUserUid) return;
   const userStatusRef = db.ref('users/'+currentUserUid+'/public/online');
@@ -261,17 +221,17 @@ function setupOnlineStatus(){
   });
 }
 
-// ----- Load Users -----
+// Load users
 function loadUsersRealtime(){
   db.ref('users').on('value', snapshot=>{
     const usersData = snapshot.val() || {};
     const friends = Object.keys(usersData)
-      .filter(uid => uid !== currentUserUid)
+      .filter(uid=>uid!==currentUserUid)
       .map(uid=>{
-        const u = usersData[uid].public || {};
-        return { uid, name: u.name||"Unknown", gender:u.gender||"N/A", online:!!u.online };
+        const u=usersData[uid].public||{};
+        return { uid, name:u.name||"Unknown", gender:u.gender||"N/A", online:!!u.online };
       });
-    friends.sort((a,b)=>(lastChatTimestamps[b.uid]||0) - (lastChatTimestamps[a.uid]||0) || a.name.localeCompare(b.name));
+    friends.sort((a,b)=>(lastChatTimestamps[b.uid]||0)-(lastChatTimestamps[a.uid]||0)||a.name.localeCompare(b.name));
     userList.innerHTML='';
     friends.forEach(f=>{
       const row=document.createElement('div');
@@ -286,39 +246,38 @@ function loadUsersRealtime(){
   });
 }
 
-// ----- Unread Messages -----
+// Unread
 function setupUnreadListener(){
   db.ref('unread/'+currentUserUid).on('value', snap=>{
-    unreadCounters = {};
-    const data = snap.val() || {};
-    Object.keys(data).forEach(senderUid=>{
-      unreadCounters[senderUid] = Object.keys(data[senderUid]||{}).length;
-    });
+    unreadCounters={};
+    const data = snap.val()||{};
+    Object.keys(data).forEach(uid=>unreadCounters[uid]=Object.keys(data[uid]||{}).length);
     updateFriendListBadges();
   });
 }
+
 function updateFriendListBadges(){
   document.querySelectorAll('.user-row').forEach(row=>{
     const uid=row.dataset.uid;
     let badge=row.querySelector('.badge');
     const count=Number(unreadCounters[uid]||0);
     if(count>0){
-      if(!badge){ badge=document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge); }
+      if(!badge){ badge=document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge);}
       badge.textContent=count;
     } else if(badge) badge.remove();
   });
 }
+
 function flashUserRow(uid){
   const row=document.querySelector('.user-row[data-uid="'+uid+'"]');
-  if(row){ row.classList.add('flash'); setTimeout(()=>row.classList.remove('flash'),800); }
+  if(row){ row.classList.add('flash'); setTimeout(()=>row.classList.remove('flash'),800);}
 }
 
-// ----- Chat Functions -----
+// Chat
 function openChat(friendUid, friendName){
   document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
   const activeRow=document.querySelector('.user-row[data-uid="'+friendUid+'"]');
   if(activeRow) activeRow.classList.add('active');
-
   currentChatFriendUid=friendUid;
   chatWith.textContent=friendName;
   localStorage.setItem("lastChatFriendUid",friendUid);
@@ -326,8 +285,6 @@ function openChat(friendUid, friendName){
   chatModal.style.display='flex';
   chatMessages.innerHTML='';
   typingIndicator.textContent='';
-
-  // remove unread messages for this friend
   db.ref('unread/'+currentUserUid+'/'+friendUid).remove();
   delete unreadCounters[friendUid];
   updateFriendListBadges();
@@ -335,8 +292,8 @@ function openChat(friendUid, friendName){
   const chatId=getChatId(currentUserUid,friendUid);
   if(currentChatListener) currentChatListener.off();
   db.ref('chats/'+chatId+'/members').update({ [currentUserUid]: true, [friendUid]: true });
-
   const chatRef=db.ref('chats/'+chatId+'/messages');
+
   chatRef.once('value', snap=>{
     const msgs=snap.val()||{};
     Object.keys(msgs).sort((a,b)=>msgs[a].timestamp-msgs[b].timestamp).forEach(k=>{
@@ -449,3 +406,4 @@ function escapeHtml(text){ return text.replace(/[&<>"']/g, m=>({ '&':'&amp;', '<
 
 </body>
 </html>
+
