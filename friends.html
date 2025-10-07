@@ -19,7 +19,7 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 .status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
 .online { background:green; } .offline { background:red; }
 .badge { background:#9b59b6; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
-#chatModal { position:fixed; bottom:0; right:20px; width:360px; max-height:70vh; border:1px solid #ccc; background:#d8cce5; border-radius:10px 10px 0 0; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); resize:both; overflow:hidden; z-index:1000; }
+#chatModal { position:fixed; bottom:0; right:20px; width:360px; height:500px; max-height:70vh; border:1px solid #ccc; background:#d8cce5; border-radius:10px 10px 0 0; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); overflow:hidden; z-index:1000; }
 #chatHeader { background:#d8cce5; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; border-radius:10px 10px 0 0; cursor:move; }
 #chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:#f8f6fb; scroll-behavior:smooth; }
 #typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
@@ -38,6 +38,7 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 .friends-container::-webkit-scrollbar-track { background:#f0e6fa; }
 .error-banner { background:#f2e6ff; color:#800; padding:8px 12px; border:1px solid #d8b3ff; margin:10px; border-radius:6px; }
 .chat-image { max-width:100%; height:auto; display:block; margin-top:4px; }
+#chatResizer { width:12px; height:12px; background:#9775c2; border-radius:50%; cursor:se-resize; position:absolute; bottom:4px; right:4px; z-index:10; }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -73,6 +74,7 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
       <button id="sendBtn">Send</button>
       <input type="file" id="chatFileInput" style="display:none;" multiple>
     </div>
+    <div id="chatResizer"></div>
   </div>
   <div id="errorArea"></div>
 </div>
@@ -110,6 +112,7 @@ let unreadCounters = {};
 const lastChatTimestamps = {};
 let typingTimeout;
 
+// ===== ERROR HANDLING =====
 window.addEventListener('error', function(ev){
   const msg = ev && ev.message ? ev.message : String(ev);
   showError("Runtime error: " + msg);
@@ -119,6 +122,7 @@ function showError(text){
   errorArea.innerHTML = '<div class="error-banner">' + escapeHtml(text) + '</div>';
 }
 
+// ===== AUTH =====
 auth.onAuthStateChanged(user => {
   if(user && user.emailVerified){
     currentUserUid = user.uid;
@@ -144,14 +148,13 @@ auth.onAuthStateChanged(user => {
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
     if(lastUid && lastName) openChat(lastUid, lastName);
-
   } else {
     nav.innerHTML = '<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>';
     document.querySelector(".friends-container").innerHTML = "<p style='padding:12px'>Please login to view users.</p>";
   }
 });
 
-// ======= ONLINE STATUS =======
+// ===== ONLINE STATUS =====
 function setupOnlineStatus(){
   if(!currentUserUid) return;
   const userStatusRef = db.ref('users/'+currentUserUid+'/public/online');
@@ -163,7 +166,7 @@ function setupOnlineStatus(){
   });
 }
 
-// ======= USERS LIST =======
+// ===== USERS LIST =====
 function loadUsersRealtime(){
   db.ref('users').on('value', snapshot=>{
     const usersData = snapshot.val() || {};
@@ -188,7 +191,7 @@ function loadUsersRealtime(){
   });
 }
 
-// ======= UNREAD BADGES =======
+// ===== UNREAD BADGES =====
 function setupUnreadListener(){
   db.ref('unread/'+currentUserUid).on('value', snap=>{
     unreadCounters = {};
@@ -217,7 +220,7 @@ function flashUserRow(uid){
   if(row){ row.classList.add('flash'); setTimeout(()=>row.classList.remove('flash'),800); }
 }
 
-// ======= OPEN CHAT =======
+// ===== OPEN CHAT =====
 function openChat(friendUid, friendName){
   document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
   const activeRow=document.querySelector('.user-row[data-uid="'+friendUid+'"]');
@@ -270,14 +273,14 @@ function openChat(friendUid, friendName){
   listenTyping(friendUid);
 }
 
-// ======= ADD MESSAGE =======
+// ===== ADD MESSAGE =====
 function addOrUpdateMessageToChat(msg){
   if(!msg||!msg._key) return;
   const id='msg-'+msg._key;
   let el=document.getElementById(id);
   const isSelf=(msg.sender===currentUserUid);
   if(!el){ el=document.createElement('div'); el.id=id; el.className='message '+(isSelf?'self':'friend'); chatMessages.appendChild(el); }
-  
+
   if(msg.fileData){
     let isImage=false;
     if(msg.fileType && msg.fileType.indexOf('image/')===0) isImage=true;
@@ -296,7 +299,7 @@ function addOrUpdateMessageToChat(msg){
   chatMessages.scrollTop=chatMessages.scrollHeight;
 }
 
-// ======= TYPING =======
+// ===== TYPING =====
 chatInput.addEventListener('input', function(){
   if(!currentChatFriendUid) return;
   db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).set(true);
@@ -310,7 +313,7 @@ function listenTyping(friendUid){
   });
 }
 
-// ======= SEND MESSAGE =======
+// ===== SEND MESSAGE =====
 function sendMessage(){
   const text=chatInput.value.trim();
   if(!text || !currentChatFriendUid) return;
@@ -320,11 +323,10 @@ function sendMessage(){
   const newMsgRef = db.ref('chats/'+chatId+'/messages').push(msgObj);
   db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+newMsgRef.key).set(true);
 }
-
 sendBtn.addEventListener('click', sendMessage);
 chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
 
-// ======= FILE UPLOAD WITH COMPRESSION =======
+// ===== FILE UPLOAD =====
 fileBtn.addEventListener('click', ()=>chatFileInput.click());
 chatFileInput.addEventListener('change', function(e){
   const files = Array.from(e.target.files);
@@ -375,10 +377,46 @@ chatFileInput.addEventListener('change', function(e){
   });
 });
 
-// ======= CLOSE CHAT =======
+// ===== CLOSE CHAT =====
 function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null; if(currentChatListener) currentChatListener.off(); }
 function getChatId(a,b){ return a<b? a+'_'+b : b+'_'+a; }
 function escapeHtml(text){ return text.replace(/[&<>"']/g, m=>({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[m]); }
+
+// ===== CHAT RESIZER =====
+const chatResizer = document.getElementById("chatResizer");
+let isResizing = false;
+let lastX, lastY, lastWidth, lastHeight;
+
+chatResizer.addEventListener('mousedown', e=>{
+  isResizing = true;
+  lastX = e.clientX;
+  lastY = e.clientY;
+  const rect = chatModal.getBoundingClientRect();
+  lastWidth = rect.width;
+  lastHeight = rect.height;
+  document.body.style.userSelect = 'none';
+});
+
+document.addEventListener('mousemove', e=>{
+  if(!isResizing) return;
+  const dx = e.clientX - lastX;
+  const dy = e.clientY - lastY;
+  let newWidth = lastWidth + dx;
+  let newHeight = lastHeight + dy;
+  const minWidth = 300;
+  const minHeight = 200;
+  const maxWidth = window.innerWidth - 40;
+  const maxHeight = window.innerHeight - 60;
+  chatModal.style.width = Math.min(Math.max(newWidth, minWidth), maxWidth) + 'px';
+  chatModal.style.height = Math.min(Math.max(newHeight, minHeight), maxHeight) + 'px';
+});
+
+document.addEventListener('mouseup', e=>{
+  if(isResizing){
+    isResizing=false;
+    document.body.style.userSelect = 'auto';
+  }
+});
 </script>
 
 </body>
