@@ -110,7 +110,6 @@ let unreadCounters = {};
 const lastChatTimestamps = {};
 let typingTimeout;
 
-// error handling
 window.addEventListener('error', function(ev){
   const msg = ev && ev.message ? ev.message : String(ev);
   showError("Runtime error: " + msg);
@@ -229,12 +228,7 @@ function openChat(friendUid, friendName){
   typingIndicator.textContent='';
 
   // remove unread messages for this friend
-  db.ref('unread/'+currentUserUid+'/'+friendUid).remove()
-    .then(()=>{
-      delete unreadCounters[friendUid];
-      updateFriendListBadges();
-    })
-    .catch(err=>console.error("Failed to clear unread:",err));
+  db.ref('unread/'+currentUserUid+'/'+friendUid).remove();
 
   const chatId=getChatId(currentUserUid,friendUid);
   if(currentChatListener) currentChatListener.off();
@@ -260,8 +254,9 @@ function openChat(friendUid, friendName){
         db.ref('unread/'+currentUserUid+'/'+msg.sender+'/'+msg._key).set(true);
         flashUserRow(msg.sender);
       } else {
-        db.ref('unread/'+currentUserUid+'/'+msg.sender).remove()
-          .then(()=>{ delete unreadCounters[msg.sender]; updateFriendListBadges(); });
+        db.ref('unread/'+currentUserUid+'/'+msg.sender).remove();
+        delete unreadCounters[msg.sender];
+        updateFriendListBadges();
       }
     }
   });
@@ -317,11 +312,8 @@ function sendMessage(){
   const chatId=getChatId(currentUserUid,currentChatFriendUid);
   const msgObj={ sender:currentUserUid, receiver:currentChatFriendUid, text:text, timestamp:Date.now() };
   chatInput.value='';
-  const newMsgRef = db.ref('chats/'+chatId+'/messages').push(msgObj);
-  // mark unread for receiver using message key
-  newMsgRef.then(ref=>{
-    db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+ref.key).set(true);
-  });
+  db.ref('chats/'+chatId+'/messages').push(msgObj);
+  db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+Date.now()).set(true);
 }
 
 sendBtn.addEventListener('click', sendMessage);
@@ -336,7 +328,7 @@ chatFileInput.addEventListener('change', function(e){
     const tempMsgRef = db.ref('chats/'+chatId+'/messages').push({ sender:currentUserUid, receiver:currentChatFriendUid, uploading:true, fileName:f.name, timestamp:Date.now() });
     reader.onload=function(ev){
       tempMsgRef.update({ uploading:false, fileData:ev.target.result, fileType:f.type });
-      db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempMsgRef.key).set(true);
+      db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+Date.now()).set(true);
     };
     reader.readAsDataURL(f);
   });
