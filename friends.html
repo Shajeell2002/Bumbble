@@ -151,9 +151,8 @@ const previewStrip = document.getElementById("previewStrip");
 let currentUserUid = "";
 let currentChatFriendUid = "";
 let currentChatListener = null;
-const unreadCounters = {};
+const unreadCounters = {};            // map: senderUid -> count
 const lastChatTimestamps = {};
-const localPreviewMap = {};
 let typingTimeout;
 
 // ===== Auth =====
@@ -228,15 +227,14 @@ function loadUsersRealtime(){
 // ===== Unread Listener =====
 function setupUnreadListener(){
   db.ref('unread/'+currentUserUid).on('value', snap=>{
-    // Replace the local unreadCounters with fresh snapshot contents.
-    // This ensures keys removed in Firebase are also removed locally.
-    const data = snap.exists() ? snap.val() : {};
+    // Fully refresh local unreadCounters from snapshot to avoid stale keys
+    const data = snap.exists() ? (snap.val() || {}) : {};
 
-    // clear previous keys
-    Object.keys(unreadCounters).forEach(k => delete unreadCounters[k]);
+    // clear old keys
+    Object.keys(unreadCounters).forEach(k=>delete unreadCounters[k]);
 
-    // repopulate
-    Object.keys(data).forEach(senderUid => {
+    // copy fresh
+    Object.keys(data).forEach(senderUid=>{
       unreadCounters[senderUid] = data[senderUid];
     });
 
@@ -249,7 +247,6 @@ function updateFriendListBadges(){
   document.querySelectorAll('.user-row').forEach(row=>{
     const uid = row.dataset.uid;
     let badge = row.querySelector('.badge');
-
     const count = Number(unreadCounters[uid] || 0);
     if(count > 0){
       if(!badge){ badge=document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge); }
@@ -292,38 +289,27 @@ function openChat(friendUid,friendName){
   const chatRef = db.ref('chats/' + chatId);
   chatRef.child('members').update({ [currentUserUid]: true, [friendUid]: true });
 
-  // Load historical messages first
+  // load history
   chatRef.child('messages').once('value', snap=>{
     const msgs = snap.val()||{};
     Object.keys(msgs).sort((a,b)=> msgs[a].timestamp - msgs[b].timestamp).forEach(k=>addOrUpdateMessageToChat({...msgs[k], _key:k}));
     chatMessages.scrollTop = chatMessages.scrollHeight;
   });
 
-  // Real-time listener (child_added will also fire for existing messages,
-  // but our unread increment is guarded below by currentChatFriendUid)
+  // realtime listener (do NOT increment unread here)
   currentChatListener = chatRef.child('messages');
   currentChatListener.on('child_added', snap=>{
     const msg = snap.val(); msg._key = snap.key;
     addOrUpdateMessageToChat(msg);
     lastChatTimestamps[friendUid] = msg.timestamp;
 
-    // Only handle unread if current user is receiver
-    if(msg.receiver === currentUserUid && msg.sender !== currentUserUid){
-      // === IMPORTANT FIX ===
-      // Only increment unread count if the chat with the sender is NOT currently open.
-      if(currentChatFriendUid !== msg.sender){
-        const unreadRef = db.ref('unread/'+currentUserUid+'/'+msg.sender);
-        unreadRef.transaction(current => (current || 0) + 1);
-        flashUserRow(msg.sender);
-      } else {
-        // Defensive: ensure unread entry is removed if present (receiver is viewing the chat)
-        db.ref('unread/'+currentUserUid+'/'+msg.sender).remove();
-        unreadCounters[msg.sender] = 0;
-        updateFriendListBadges();
-      }
+    // Defensive: if message is for me and chat is currently open, ensure unread cleared
+    if(msg.receiver === currentUserUid && msg.sender !== currentUserUid && currentChatFriendUid === msg.sender){
+      db.ref('unread/'+currentUserUid+'/'+msg.sender).remove();
+      unreadCounters[msg.sender] = 0;
+      updateFriendListBadges();
     }
   });
-
   currentChatListener.on('child_changed', snap=>{
     const msg = snap.val(); msg._key = snap.key;
     addOrUpdateMessageToChat(msg);
@@ -371,7 +357,15 @@ function sendMessage(){
   const chatId=getChatId(currentUserUid,currentChatFriendUid);
   const msgObj={ sender:currentUserUid, receiver:currentChatFriendUid, text, timestamp:Date.now() };
   db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [currentChatFriendUid]:true });
+  // push message
   db.ref('chats/'+chatId+'/messages').push(msgObj);
+
+  // IMPORTANT: increment unread for the receiver (so unread is tracked consistently server-side)
+  if(currentChatFriendUid !== currentUserUid){
+    db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid).transaction(current => (current || 0) + 1);
+    // option: flash receiver row if they are online and visible to this client (not required)
+  }
+
   chatInput.value='';
   lastChatTimestamps[currentChatFriendUid]=msgObj.timestamp;
 }
@@ -392,6 +386,10 @@ chatFileInput.addEventListener('change', async e=>{
     reader.onload=(ev)=>{
       const msgObj={ sender:currentUserUid, receiver:currentChatFriendUid, fileData:ev.target.result, fileName:file.name, fileType:file.type, timestamp:Date.now() };
       db.ref('chats/'+chatId+'/messages').push(msgObj);
+      // increment unread for receiver
+      if(currentChatFriendUid !== currentUserUid){
+        db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid).transaction(current => (current || 0) + 1);
+      }
     };
     reader.readAsDataURL(file);
   });
@@ -404,4 +402,5 @@ function escapeHtml(text){ return text.replace(/&/g,'&amp;').replace(/</g,'&lt;'
 </script>
 </body>
 </html>
+
 
