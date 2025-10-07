@@ -280,13 +280,11 @@ function addOrUpdateMessageToChat(msg){
     if(msg.fileType && msg.fileType.indexOf('image/')===0) isImage=true;
     if(!isImage && msg.fileName && /\.(jpg|jpeg|png|gif)$/i.test(msg.fileName)) isImage=true;
 
-    if(isImage){
+  if(isImage){
   el.innerHTML = `
     <div style="display:flex; flex-direction:column; align-items:flex-start; gap:4px;">
-      <a href="${msg.fileData}" download="${msg.fileName||'image'}" target="_blank">
-        <img class="chat-image" src="${msg.fileData}" alt="image" style="max-width:150px; border-radius:8px;" />
-      </a>
-      <a href="${msg.fileData}" download="${msg.fileName||'image'}" style="text-decoration:none; font-size:14px;">⬇️ Download</a>
+      <img class="chat-image" src="${msg.fileData}" alt="image" style="max-width:150px; border-radius:8px;" />
+      <a href="${msg.fileData}" download="${msg.fileName||'image'}" style="font-size:16px; text-decoration:none;">⬇️</a>
     </div>
     <span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>
   `;
@@ -354,5 +352,6 @@ function escapeHtml(text){ return text.replace(/[&<>"']/g, m=>({ '&':'&amp;', '<
 
 </body>
 </html>
+
 
 
