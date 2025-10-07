@@ -5,39 +5,118 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Friends & Chat</title>
 <style>
-body { font-family: Arial, sans-serif; margin:0; background:#fefefe; color:#333; display:flex; min-height:100vh; flex-direction: column; }
-header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#ffcb2b; box-shadow:0 3px 6px rgba(0,0,0,0.1); position:fixed; top:0; left:0; right:0; z-index:500; }
+/* Body and background */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    color: #333;
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+    background: #FFD6DA; /* pastel light pink */
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Single large heart decorative element */
+body::before {
+    content: "❤";
+    position: absolute;
+    font-size: 300px; /* large heart */
+    color: rgba(255, 182, 193, 0.1); /* subtle light pink */
+    top: 20%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-15deg);
+    z-index: 0; /* behind content */
+    pointer-events: none;
+}
+
+/* Header */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: #ffcb2b;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 500;
+}
 header h1{ font-size:24px; margin:0; }
 nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
-.friends-container { width:250px; background:#fffbe6; border-right:1px solid #eee; padding:10px; overflow-y:auto; position:fixed; top:60px; bottom:0; left:0; }
-.main-content { flex:1; margin-left:250px; padding:80px 20px 20px 20px; }
-.user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
-.user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #eee; cursor:pointer; transition:0.2s; }
-.user-row:hover, .user-row.active { background:#fffbcc; }
-.user-row.flash { animation:flashRed 0.5s; }
+
+/* Friends container */
+.friends-container {
+    width: 250px;
+    background: #fffbe6;
+    border-right: 1px solid #eee;
+    padding: 10px;
+    overflow-y: auto;
+    position: fixed;
+    top: 60px; bottom: 0; left: 0;
+    z-index: 1;
+}
+.user-list { display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.user-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 8px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s;
+}
+.user-row:hover, .user-row.active { background: #fffbcc; }
+.user-row.flash { animation: flashRed 0.5s; }
 @keyframes flashRed { 0%{background:#ffcccc;} 100%{background:#fffbcc;} }
 .status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
-.online { background:green; } .offline { background:red; }
+.online { background: green; } .offline { background: red; }
 .badge { background:red; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
-#chatModal { position:fixed; bottom:0; right:20px; width:360px; max-height:70vh; border:1px solid #ccc; background:#fff; border-radius:10px 10px 0 0; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); resize:both; overflow:hidden; z-index:1000; }
-#chatHeader { background:#ffcb2b; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; border-radius:10px 10px 0 0; cursor:move; }
-#chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:#fefefe; scroll-behavior:smooth; }
-#typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
-.message { max-width:80%; padding:8px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
-.message.self { background:#059669; color:white; align-self:flex-end; }
-.message.friend { background:#e9e9e9; color:#111; align-self:flex-start; }
-.timestamp { font-size:10px; color:#eee; margin-top:6px; text-align:right; display:block; }
-.timestamp.friend { color:#666; }
-.uploading-badge { font-size:11px; color:#444; margin-top:6px; display:inline-block; background:#fff3cd; padding:3px 6px; border-radius:6px; border:1px solid #ffeeba; }
-#chatInputContainer { display:flex; border-top:1px solid #ddd; align-items:center; gap:6px; padding:8px; }
-#chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:8px; background:#fafafa; }
-#sendBtn, #fileBtn { padding:8px 12px; border:none; background:#ffcb2b; cursor:pointer; border-radius:8px; }
-#sendBtn:hover, #fileBtn:hover { background:#f1b800; }
-.friends-container::-webkit-scrollbar { width:6px; }
-.friends-container::-webkit-scrollbar-thumb { background:#ffcb2b; border-radius:3px; }
-.friends-container::-webkit-scrollbar-track { background:#f1f1f1; }
-.img-debug { max-width:120px; display:block; margin-top:6px; }
-.error-banner { background:#ffdddd; color:#800; padding:8px 12px; border:1px solid #f5b3b3; margin:10px; border-radius:6px; }
+
+/* Main content */
+.main-content {
+    flex: 1;
+    margin-left: 250px;
+    padding: 80px 20px 20px 20px;
+    z-index: 2;
+}
+
+/* Chat modal */
+#chatModal {
+    position: fixed; bottom: 0; right: 20px;
+    width: 360px; max-height: 70vh;
+    border: 1px solid #ccc; background: #fff;
+    border-radius: 10px 10px 0 0; display: none; flex-direction: column;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2); resize: both; overflow: hidden;
+    z-index: 1000;
+}
+#chatHeader {
+    background: #ffcb2b; padding: 10px; font-weight: bold;
+    display: flex; justify-content: space-between; align-items: center;
+    border-radius: 10px 10px 0 0; cursor: move;
+}
+#chatMessages {
+    flex: 1; padding: 10px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 8px;
+    background: #fefefe; scroll-behavior: smooth;
+}
+#typingIndicator { font-size: 12px; color: #555; padding-left: 10px; height: 18px; }
+.message { max-width: 80%; padding: 8px 10px; border-radius: 10px; position: relative; word-wrap: break-word; }
+.message.self { background: #059669; color: white; align-self: flex-end; }
+.message.friend { background: #e9e9e9; color: #111; align-self: flex-start; }
+.timestamp { font-size: 10px; color: #eee; margin-top: 6px; text-align: right; display: block; }
+.timestamp.friend { color: #666; }
+.uploading-badge { font-size: 11px; color: #444; margin-top: 6px; display: inline-block; background: #fff3cd; padding: 3px 6px; border-radius: 6px; border: 1px solid #ffeeba; }
+
+#chatInputContainer {
+    display: flex; border-top: 1px solid #ddd; align-items: center; gap: 6px; padding: 8px;
+}
+#chatInput { flex: 1; padding: 8px; border: none; outline: none; border-radius: 8px; background: #fafafa; }
+#sendBtn, #fileBtn { padding: 8px 12px; border: none; background: #ffcb2b; cursor: pointer; border-radius: 8px; }
+#sendBtn:hover, #fileBtn:hover { background: #f1b800; }
+
+.friends-container::-webkit-scrollbar { width: 6px; }
+.friends-container::-webkit-scrollbar-thumb { background: #ffcb2b; border-radius: 3px; }
+.friends-container::-webkit-scrollbar-track { background: #f1f1f1; }
+
+.img-debug { max-width: 120px; display: block; margin-top: 6px; }
+.error-banner { background: #ffdddd; color: #800; padding: 8px 12px; border: 1px solid #f5b3b3; margin: 10px; border-radius: 6px; }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -78,6 +157,7 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 </div>
 
 <script>
+// Firebase config and initialization
 const firebaseConfig = {
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
   authDomain:"bumbble-c061f.firebaseapp.com",
@@ -91,6 +171,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
+// Elements
 const nav = document.getElementById("navLinks");
 const userList = document.getElementById("userList");
 const chatModal = document.getElementById("chatModal");
@@ -120,6 +201,7 @@ function showError(text){
   errorArea.innerHTML = '<div class="error-banner">' + escapeHtml(text) + '</div>';
 }
 
+// Auth state listener
 auth.onAuthStateChanged(user => {
   if(user && user.emailVerified){
     currentUserUid = user.uid;
@@ -152,74 +234,21 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-function setupOnlineStatus(){
-  if(!currentUserUid) return;
-  const userStatusRef = db.ref('users/'+currentUserUid+'/public/online');
-  db.ref('.info/connected').on('value', snap=>{
-    if(snap && snap.val()===true){
-      userStatusRef.set(true);
-      userStatusRef.onDisconnect().set(false);
-    }
-  });
-}
+// Functions (online, chat, unread, send)
+function setupOnlineStatus(){ if(!currentUserUid) return; const userStatusRef = db.ref('users/'+currentUserUid+'/public/online'); db.ref('.info/connected').on('value', snap=>{ if(snap && snap.val()===true){ userStatusRef.set(true); userStatusRef.onDisconnect().set(false); } }); }
 
-function loadUsersRealtime(){
-  db.ref('users').on('value', snapshot=>{
-    const usersData = snapshot.val() || {};
-    const friends = Object.keys(usersData)
-      .filter(uid => uid !== currentUserUid)
-      .map(uid=>{
-        const u = usersData[uid].public || {};
-        return { uid, name: u.name||"Unknown", gender:u.gender||"N/A", online:!!u.online };
-      });
-    friends.sort((a,b)=>(lastChatTimestamps[b.uid]||0) - (lastChatTimestamps[a.uid]||0) || a.name.localeCompare(b.name));
-    userList.innerHTML='';
-    friends.forEach(f=>{
-      const row=document.createElement('div');
-      row.className='user-row';
-      row.dataset.uid=f.uid;
-      row.dataset.name=f.name;
-      row.innerHTML='<div><span class="status-dot '+(f.online?'online':'offline')+'"></span>'+escapeHtml(f.name)+' ('+escapeHtml(f.gender)+')</div>';
-      row.addEventListener('click', ()=>openChat(f.uid,f.name));
-      userList.appendChild(row);
-    });
-    updateFriendListBadges();
-  });
-}
+function loadUsersRealtime(){ db.ref('users').on('value', snapshot=>{ const usersData = snapshot.val() || {}; const friends = Object.keys(usersData).filter(uid => uid !== currentUserUid).map(uid=>{ const u = usersData[uid].public || {}; return { uid, name: u.name||"Unknown", gender:u.gender||"N/A", online:!!u.online }; }); friends.sort((a,b)=>(lastChatTimestamps[b.uid]||0) - (lastChatTimestamps[a.uid]||0) || a.name.localeCompare(b.name)); userList.innerHTML=''; friends.forEach(f=>{ const row=document.createElement('div'); row.className='user-row'; row.dataset.uid=f.uid; row.dataset.name=f.name; row.innerHTML='<div><span class="status-dot '+(f.online?'online':'offline')+'"></span>'+escapeHtml(f.name)+' ('+escapeHtml(f.gender)+')</div>'; row.addEventListener('click', ()=>openChat(f.uid,f.name)); userList.appendChild(row); }); updateFriendListBadges(); }); }
 
-function setupUnreadListener(){
-  db.ref('unread/'+currentUserUid).on('value', snap=>{
-    unreadCounters = {};
-    const data = snap.val() || {};
-    Object.keys(data).forEach(senderUid=>{
-      unreadCounters[senderUid] = Object.keys(data[senderUid]||{}).length;
-    });
-    updateFriendListBadges();
-  });
-}
+function setupUnreadListener(){ db.ref('unread/'+currentUserUid).on('value', snap=>{ unreadCounters = {}; const data = snap.val() || {}; Object.keys(data).forEach(senderUid=>{ unreadCounters[senderUid] = Object.keys(data[senderUid]||{}).length; }); updateFriendListBadges(); }); }
 
-function updateFriendListBadges(){
-  document.querySelectorAll('.user-row').forEach(row=>{
-    const uid=row.dataset.uid;
-    let badge=row.querySelector('.badge');
-    const count=Number(unreadCounters[uid]||0);
-    if(count>0){
-      if(!badge){ badge=document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge); }
-      badge.textContent=count;
-    } else if(badge) badge.remove();
-  });
-}
+function updateFriendListBadges(){ document.querySelectorAll('.user-row').forEach(row=>{ const uid=row.dataset.uid; let badge=row.querySelector('.badge'); const count=Number(unreadCounters[uid]||0); if(count>0){ if(!badge){ badge=document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge); } badge.textContent=count; } else if(badge) badge.remove(); }); }
 
-function flashUserRow(uid){
-  const row=document.querySelector('.user-row[data-uid="'+uid+'"]');
-  if(row){ row.classList.add('flash'); setTimeout(()=>row.classList.remove('flash'),800); }
-}
+function flashUserRow(uid){ const row=document.querySelector('.user-row[data-uid="'+uid+'"]'); if(row){ row.classList.add('flash'); setTimeout(()=>row.classList.remove('flash'),800); } }
 
 function openChat(friendUid, friendName){
   document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
   const activeRow=document.querySelector('.user-row[data-uid="'+friendUid+'"]');
   if(activeRow) activeRow.classList.add('active');
-
   currentChatFriendUid=friendUid;
   chatWith.textContent=friendName;
   localStorage.setItem("lastChatFriendUid",friendUid);
@@ -280,14 +309,14 @@ function addOrUpdateMessageToChat(msg){
     if(msg.fileType && msg.fileType.indexOf('image/')===0) isImage=true;
     if(!isImage && msg.fileName && /\.(jpg|jpeg|png|gif)$/i.test(msg.fileName)) isImage=true;
 
-  if(isImage){
-  el.innerHTML = `
-    <div style="display:flex; flex-direction:column; align-items:flex-start; gap:4px;">
-      <img class="chat-image" src="${msg.fileData}" alt="image" style="max-width:150px; border-radius:8px;" />
-      <a href="${msg.fileData}" download="${msg.fileName||'image'}" style="font-size:16px; text-decoration:none;">⬇️</a>
-    </div>
-    <span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>
-  `;
+    if(isImage){
+      el.innerHTML = `
+        <div style="display:flex; flex-direction:column; align-items:flex-start; gap:4px;">
+          <img class="chat-image" src="${msg.fileData}" alt="image" style="max-width:150px; border-radius:8px;" />
+          <a href="${msg.fileData}" download="${msg.fileName||'image'}" style="font-size:16px; text-decoration:none;">⬇️</a>
+        </div>
+        <span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>
+      `;
     } else {
       el.innerHTML = `
         <a href="${msg.fileData}" download="${msg.fileName||'file'}" style="text-decoration:none; font-size:18px;">⬇️</a>
@@ -322,14 +351,11 @@ function sendMessage(){
   const msgObj={ sender:currentUserUid, receiver:currentChatFriendUid, text:text, timestamp:Date.now() };
   chatInput.value='';
   const newMsgRef = db.ref('chats/'+chatId+'/messages').push(msgObj);
-
-  // mark unread for receiver
   db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+newMsgRef.key).set(true);
 }
 
 sendBtn.addEventListener('click', sendMessage);
 chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
-
 fileBtn.addEventListener('click', ()=>chatFileInput.click());
 chatFileInput.addEventListener('change', function(e){
   const files = Array.from(e.target.files);
@@ -352,6 +378,3 @@ function escapeHtml(text){ return text.replace(/[&<>"']/g, m=>({ '&':'&amp;', '<
 
 </body>
 </html>
-
-
-
