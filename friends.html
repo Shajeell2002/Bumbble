@@ -81,7 +81,16 @@ img.chat-image { max-width:220px; max-height:160px; border-radius:8px; cursor:po
 </div>
 
 <script>
-const firebaseConfig = { apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs", authDomain:"bumbble-c061f.firebaseapp.com", databaseURL:"https://bumbble-c061f-default-rtdb.firebaseio.com", projectId:"bumbble-c061f", storageBucket:"bumbble-c061f.appspot.com", messagingSenderId:"213165886981", appId:"1:213165886981:web:c18652003444869b1bd66c" };
+const firebaseConfig = { 
+  apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs", 
+  authDomain:"bumbble-c061f.firebaseapp.com", 
+  databaseURL:"https://bumbble-c061f-default-rtdb.firebaseio.com", 
+  projectId:"bumbble-c061f", 
+  storageBucket:"bumbble-c061f.appspot.com", 
+  messagingSenderId:"213165886981", 
+  appId:"1:213165886981:web:c18652003444869b1bd66c" 
+};
+
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
@@ -103,12 +112,11 @@ let currentChatFriendUid = "";
 let currentChatListener = null;
 const unreadCounters = {};
 const lastChatTimestamps = {};
-const localPreviewMap = {};
 let typingTimeout;
 
-// ===== Auth =====
-auth.onAuthStateChanged(user=>{
-  if(user && user.emailVerified){
+// ===== AUTH =====
+auth.onAuthStateChanged(user => {
+  if (user && user.emailVerified) {
     currentUserUid = user.uid;
     nav.innerHTML = `
       <a href="index.html">Home</a>
@@ -118,140 +126,162 @@ auth.onAuthStateChanged(user=>{
       <a href="safety.html">Safety</a>
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>`;
-    document.getElementById("logoutBtn").addEventListener("click",()=>{
-      db.ref('users/'+currentUserUid+'/public/online').set(false);
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      db.ref('users/' + currentUserUid + '/public/online').set(false);
       localStorage.removeItem("lastChatFriendUid");
       localStorage.removeItem("lastChatFriendName");
-      auth.signOut().then(()=>window.location.href="login.html");
+      auth.signOut().then(() => window.location.href = "login.html");
     });
+
     setupOnlineStatus();
     loadUsersRealtime();
     setupUnreadListener();
 
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
-    if(lastUid && lastName) openChat(lastUid,lastName);
+    if (lastUid && lastName) openChat(lastUid, lastName);
 
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
-    document.querySelector(".friends-container").innerHTML="<p>Please login to view users.</p>";
+    document.querySelector(".friends-container").innerHTML = "<p>Please login to view users.</p>";
   }
 });
 
-function setupOnlineStatus(){
-  const userStatusRef = db.ref('users/'+currentUserUid+'/public/online');
-  db.ref('.info/connected').on('value',snap=>{
-    if(snap.val()===true){
+// ===== ONLINE STATUS =====
+function setupOnlineStatus() {
+  const userStatusRef = db.ref('users/' + currentUserUid + '/public/online');
+  db.ref('.info/connected').on('value', snap => {
+    if (snap.val() === true) {
       userStatusRef.set(true);
       userStatusRef.onDisconnect().set(false);
     }
   });
 }
 
-// ===== Load Users =====
-function loadUsersRealtime(){
-  db.ref('users').on('value', snapshot=>{
-    const usersData = snapshot.val()||{};
-    const friends = Object.keys(usersData).filter(uid=>uid!==currentUserUid).map(uid=>{
-      const u = usersData[uid].public||{};
-      return { uid, name:u.name||"Unknown", gender:u.gender||"N/A", online:u.online||false };
+// ===== LOAD USERS =====
+function loadUsersRealtime() {
+  db.ref('users').on('value', snapshot => {
+    const usersData = snapshot.val() || {};
+    const friends = Object.keys(usersData)
+      .filter(uid => uid !== currentUserUid)
+      .map(uid => {
+        const u = usersData[uid].public || {};
+        return { uid, name: u.name || "Unknown", gender: u.gender || "N/A", online: u.online || false };
+      });
+
+    friends.sort((a, b) => {
+      const tA = lastChatTimestamps[a.uid] || 0;
+      const tB = lastChatTimestamps[b.uid] || 0;
+      return tB - tA || a.name.localeCompare(b.name);
     });
-    friends.sort((a,b)=>{
-      const tA = lastChatTimestamps[a.uid]||0;
-      const tB = lastChatTimestamps[b.uid]||0;
-      return tB-tA || a.name.localeCompare(b.name);
-    });
-    userList.innerHTML='';
-    friends.forEach(f=>{
+
+    userList.innerHTML = '';
+    friends.forEach(f => {
       const row = document.createElement('div');
-      row.className='user-row';
-      row.dataset.uid=f.uid;
-      row.dataset.name=f.name;
-      row.innerHTML=`<div><span class="status-dot ${f.online?'online':'offline'}"></span>${f.name} (${f.gender})</div>`;
-      row.addEventListener('click',()=>openChat(f.uid,f.name));
+      row.className = 'user-row';
+      row.dataset.uid = f.uid;
+      row.dataset.name = f.name;
+      row.innerHTML = `<div><span class="status-dot ${f.online ? 'online' : 'offline'}"></span>${f.name} (${f.gender})</div>`;
+      row.addEventListener('click', () => openChat(f.uid, f.name));
       userList.appendChild(row);
     });
     updateFriendListBadges();
   });
 }
 
-// ===== Unread Listener =====
-function setupUnreadListener(){
-  db.ref('unread/'+currentUserUid).on('value', snap=>{
+// ===== UNREAD LISTENER =====
+function setupUnreadListener() {
+  db.ref('unread/' + currentUserUid).on('value', snap => {
     const data = snap.val() || {};
-    Object.keys(data).forEach(senderUid=>{
+    Object.keys(data).forEach(senderUid => {
       unreadCounters[senderUid] = data[senderUid];
     });
     updateFriendListBadges();
   });
 }
 
-// ===== Friend Badges & Flash =====
-function updateFriendListBadges(){
-  document.querySelectorAll('.user-row').forEach(row=>{
+// ===== FRIEND BADGES =====
+function updateFriendListBadges() {
+  document.querySelectorAll('.user-row').forEach(row => {
     const uid = row.dataset.uid;
     let badge = row.querySelector('.badge');
-    if(unreadCounters[uid]){
-      if(!badge){ badge=document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge); }
+    if (unreadCounters[uid]) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'badge';
+        row.querySelector('div').appendChild(badge);
+      }
       badge.textContent = unreadCounters[uid];
-    } else if(badge) badge.remove();
+    } else if (badge) badge.remove();
   });
 }
 
-function flashUserRow(uid){
+function flashUserRow(uid) {
   const row = document.querySelector(`.user-row[data-uid="${uid}"]`);
-  if(row){
+  if (row) {
     row.classList.add('flash');
-    setTimeout(()=>row.classList.remove('flash'),800);
+    setTimeout(() => row.classList.remove('flash'), 800);
   }
 }
 
-// ===== Chat Functions =====
-function openChat(friendUid,friendName){
-  document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
-  const activeRow=document.querySelector(`.user-row[data-uid="${friendUid}"]`);
-  if(activeRow) activeRow.classList.add('active');
+// ===== CHAT OPEN =====
+function openChat(friendUid, friendName) {
+  document.querySelectorAll('.user-row').forEach(r => r.classList.remove('active'));
+  const activeRow = document.querySelector(`.user-row[data-uid="${friendUid}"]`);
+  if (activeRow) activeRow.classList.add('active');
 
   currentChatFriendUid = friendUid;
   chatWith.textContent = friendName;
   localStorage.setItem("lastChatFriendUid", friendUid);
   localStorage.setItem("lastChatFriendName", friendName);
 
-  chatModal.style.display='flex';
-  chatMessages.innerHTML='';
-  typingIndicator.textContent='';
+  chatModal.style.display = 'flex';
+  chatMessages.innerHTML = '';
+  typingIndicator.textContent = '';
 
-  // Clear unread for this friend
-  db.ref('unread/'+currentUserUid+'/'+friendUid).remove();
-  unreadCounters[friendUid]=0;
+  // Clear unread for this friend immediately
+  db.ref('unread/' + currentUserUid + '/' + friendUid).remove();
+  unreadCounters[friendUid] = 0;
   updateFriendListBadges();
 
   const chatId = getChatId(currentUserUid, friendUid);
-  if(currentChatListener) currentChatListener.off();
+  if (currentChatListener) currentChatListener.off();
 
   const chatRef = db.ref('chats/' + chatId);
   chatRef.child('members').update({ [currentUserUid]: true, [friendUid]: true });
 
-  chatRef.child('messages').once('value', snap=>{
-    const msgs = snap.val()||{};
-    Object.keys(msgs).sort((a,b)=> msgs[a].timestamp - msgs[b].timestamp).forEach(k=>addOrUpdateMessageToChat({...msgs[k], _key:k}));
+  chatRef.child('messages').once('value', snap => {
+    const msgs = snap.val() || {};
+    Object.keys(msgs)
+      .sort((a, b) => msgs[a].timestamp - msgs[b].timestamp)
+      .forEach(k => addOrUpdateMessageToChat({ ...msgs[k], _key: k }));
     chatMessages.scrollTop = chatMessages.scrollHeight;
   });
 
+  // ===== FIXED SECTION: UNREAD HANDLING =====
   currentChatListener = chatRef.child('messages');
-  currentChatListener.on('child_added', snap=>{
+  currentChatListener.on('child_added', snap => {
     const msg = snap.val(); msg._key = snap.key;
     addOrUpdateMessageToChat(msg);
     lastChatTimestamps[friendUid] = msg.timestamp;
 
-    // Only handle unread if current user is receiver
-    if(msg.receiver === currentUserUid && msg.sender !== currentUserUid){
-      const unreadRef = db.ref('unread/'+currentUserUid+'/'+msg.sender);
-      unreadRef.transaction(current => (current || 0) + 1);
-      flashUserRow(msg.sender);
+    if (msg.receiver === currentUserUid && msg.sender !== currentUserUid) {
+      if (currentChatFriendUid !== msg.sender) {
+        // Chat is NOT open -> increment unread
+        const unreadRef = db.ref('unread/' + currentUserUid + '/' + msg.sender);
+        unreadRef.transaction(current => (current || 0) + 1);
+        flashUserRow(msg.sender);
+      } else {
+        // Chat is open -> clear unread
+        db.ref('unread/' + currentUserUid + '/' + msg.sender).remove();
+        unreadCounters[msg.sender] = 0;
+        updateFriendListBadges();
+      }
     }
   });
-  currentChatListener.on('child_changed', snap=>{
+
+  currentChatListener.on('child_changed', snap => {
     const msg = snap.val(); msg._key = snap.key;
     addOrUpdateMessageToChat(msg);
   });
@@ -259,76 +289,110 @@ function openChat(friendUid,friendName){
   listenTyping(friendUid);
 }
 
-// ===== Render Messages =====
-function addOrUpdateMessageToChat(msg){
-  if(!msg || !msg._key) return;
-  const id='msg-'+msg._key;
-  let el=document.getElementById(id);
-  const isSelf = msg.sender===currentUserUid;
-  if(!el){ el=document.createElement('div'); el.id=id; el.className='message '+(isSelf?'self':'friend'); chatMessages.appendChild(el); }
+// ===== MESSAGE RENDER =====
+function addOrUpdateMessageToChat(msg) {
+  if (!msg || !msg._key) return;
+  const id = 'msg-' + msg._key;
+  let el = document.getElementById(id);
+  const isSelf = msg.sender === currentUserUid;
+  if (!el) {
+    el = document.createElement('div');
+    el.id = id;
+    el.className = 'message ' + (isSelf ? 'self' : 'friend');
+    chatMessages.appendChild(el);
+  }
 
-  if(msg.fileData){
-    if(msg.fileType?.startsWith('image/')||msg.fileName?.match(/\.(jpg|jpeg|png|gif)$/i)){
-      el.innerHTML=`<img class="chat-image" src="${msg.fileData}" alt="${msg.fileName||'image'}"/><a class="file-link" href="${msg.fileData}" download="${msg.fileName||'image'}"></a><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
-    } else el.innerHTML=`<div class="small-muted">${msg.fileName||'File'}</div><a class="file-link" href="${msg.fileData}" download="${msg.fileName||'file'}"></a><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
-  } else if(msg.uploading){
-    el.innerHTML=`<div class="small-muted">${msg.fileName||'Sending...'}</div><span class="uploading-badge">Sending...</span><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
-  } else if(msg.text) el.innerHTML=`${escapeHtml(msg.text)}<div class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</div>`;
-  else el.innerHTML=`<div class="small-muted">Unknown message</div>`;
-  chatMessages.scrollTop=chatMessages.scrollHeight;
+  if (msg.fileData) {
+    if (msg.fileType?.startsWith('image/') || msg.fileName?.match(/\.(jpg|jpeg|png|gif)$/i)) {
+      el.innerHTML = `
+        <img class="chat-image" src="${msg.fileData}" alt="${msg.fileName || 'image'}"/>
+        <a class="file-link" href="${msg.fileData}" download="${msg.fileName || 'image'}">${msg.fileName || 'image'}</a>
+        <span class="timestamp ${isSelf ? '' : 'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
+    } else {
+      el.innerHTML = `
+        <div class="small-muted">${msg.fileName || 'File'}</div>
+        <a class="file-link" href="${msg.fileData}" download="${msg.fileName || 'file'}">${msg.fileName || 'Download'}</a>
+        <span class="timestamp ${isSelf ? '' : 'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
+    }
+  } else if (msg.text) {
+    el.innerHTML = `${escapeHtml(msg.text)}<div class="timestamp ${isSelf ? '' : 'friend'}">${new Date(msg.timestamp).toLocaleString()}</div>`;
+  } else {
+    el.innerHTML = `<div class="small-muted">Unknown message</div>`;
+  }
+  chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// ===== Typing =====
-chatInput.addEventListener('input',()=>{
-  if(!currentChatFriendUid) return;
-  db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).set(true);
+// ===== TYPING =====
+chatInput.addEventListener('input', () => {
+  if (!currentChatFriendUid) return;
+  db.ref('typing/' + currentChatFriendUid + '/' + currentUserUid).set(true);
   clearTimeout(typingTimeout);
-  typingTimeout=setTimeout(()=>db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove(),1000);
+  typingTimeout = setTimeout(() => db.ref('typing/' + currentChatFriendUid + '/' + currentUserUid).remove(), 1000);
 });
 
-function listenTyping(friendUid){
-  db.ref('typing/'+currentUserUid+'/'+friendUid).on('value',snap=>{
-    typingIndicator.textContent = snap.exists()?`${chatWith.textContent} is typing...`:''; 
+function listenTyping(friendUid) {
+  db.ref('typing/' + currentUserUid + '/' + friendUid).on('value', snap => {
+    typingIndicator.textContent = snap.exists() ? `${chatWith.textContent} is typing...` : '';
   });
 }
 
-// ===== Send Message =====
-function sendMessage(){
-  const text=chatInput.value.trim(); if(!text || !currentChatFriendUid) return;
-  const chatId=getChatId(currentUserUid,currentChatFriendUid);
-  const msgObj={ sender:currentUserUid, receiver:currentChatFriendUid, text, timestamp:Date.now() };
-  db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [currentChatFriendUid]:true });
-  db.ref('chats/'+chatId+'/messages').push(msgObj);
-  chatInput.value='';
-  lastChatTimestamps[currentChatFriendUid]=msgObj.timestamp;
+// ===== SEND MESSAGE =====
+function sendMessage() {
+  const text = chatInput.value.trim();
+  if (!text || !currentChatFriendUid) return;
+
+  const chatId = getChatId(currentUserUid, currentChatFriendUid);
+  const msgObj = { sender: currentUserUid, receiver: currentChatFriendUid, text, timestamp: Date.now() };
+  db.ref('chats/' + chatId + '/members').update({ [currentUserUid]: true, [currentChatFriendUid]: true });
+  db.ref('chats/' + chatId + '/messages').push(msgObj);
+  chatInput.value = '';
+  lastChatTimestamps[currentChatFriendUid] = msgObj.timestamp;
 }
-chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); }});
-sendBtn.addEventListener('click',sendMessage);
 
-// ===== Close Chat =====
-function closeChat(){ chatModal.style.display='none'; if(currentChatListener) currentChatListener.off(); currentChatFriendUid=''; }
+chatInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+sendBtn.addEventListener('click', sendMessage);
 
-// ===== File Upload =====
-fileBtn.addEventListener('click',()=>chatFileInput.click());
-chatFileInput.addEventListener('change', async e=>{
-  if(!currentChatFriendUid) return;
-  const files=Array.from(e.target.files);
-  const chatId=getChatId(currentUserUid,currentChatFriendUid);
-  files.forEach(file=>{
-    const reader=new FileReader();
-    reader.onload=(ev)=>{
-      const msgObj={ sender:currentUserUid, receiver:currentChatFriendUid, fileData:ev.target.result, fileName:file.name, fileType:file.type, timestamp:Date.now() };
-      db.ref('chats/'+chatId+'/messages').push(msgObj);
+// ===== CLOSE CHAT =====
+function closeChat() {
+  chatModal.style.display = 'none';
+  if (currentChatListener) currentChatListener.off();
+  currentChatFriendUid = '';
+}
+
+// ===== FILE UPLOAD =====
+fileBtn.addEventListener('click', () => chatFileInput.click());
+chatFileInput.addEventListener('change', e => {
+  if (!currentChatFriendUid) return;
+  const files = Array.from(e.target.files);
+  const chatId = getChatId(currentUserUid, currentChatFriendUid);
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const msgObj = {
+        sender: currentUserUid,
+        receiver: currentChatFriendUid,
+        fileData: ev.target.result,
+        fileName: file.name,
+        fileType: file.type,
+        timestamp: Date.now()
+      };
+      db.ref('chats/' + chatId + '/messages').push(msgObj);
     };
     reader.readAsDataURL(file);
   });
-  chatFileInput.value='';
+  chatFileInput.value = '';
 });
 
-// ===== Helpers =====
-function getChatId(uid1,uid2){ return uid1<uid2?uid1+'_'+uid2:uid2+'_'+uid1; }
-function escapeHtml(text){ return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// ===== HELPERS =====
+function getChatId(uid1, uid2) { return uid1 < uid2 ? uid1 + '_' + uid2 : uid2 + '_' + uid1; }
+function escapeHtml(text) { return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 </script>
+
 
 </body>
 </html>
