@@ -5,7 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Friends & Chat</title>
 <style>
-body { font-family: Arial, sans-serif; margin:0; background:#fefefe; color:#333; display:flex; min-height:100vh; flex-direction: column; }
+/* Body with light reddish heart pattern */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  color: #333;
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  background-color: #ffe6e6; /* light red base */
+  background-image: 
+    radial-gradient(circle at 10px 10px, rgba(255,150,150,0.3) 20%, transparent 21%),
+    radial-gradient(circle at 30px 30px, rgba(255,150,150,0.3) 20%, transparent 21%);
+  background-size: 40px 40px;
+}
+
 header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#ffcb2b; box-shadow:0 3px 6px rgba(0,0,0,0.1); position:fixed; top:0; left:0; right:0; z-index:500; }
 header h1{ font-size:24px; margin:0; }
 nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
@@ -78,6 +92,7 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 </div>
 
 <script>
+// Firebase config
 const firebaseConfig = {
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
   authDomain:"bumbble-c061f.firebaseapp.com",
@@ -227,7 +242,6 @@ function openChat(friendUid, friendName){
   chatMessages.innerHTML='';
   typingIndicator.textContent='';
 
-  // remove unread messages for this friend
   db.ref('unread/'+currentUserUid+'/'+friendUid).remove();
   delete unreadCounters[friendUid];
   updateFriendListBadges();
@@ -273,25 +287,23 @@ function addOrUpdateMessageToChat(msg){
   let el=document.getElementById(id);
   const isSelf=(msg.sender===currentUserUid);
   if(!el){ el=document.createElement('div'); el.id=id; el.className='message '+(isSelf?'self':'friend'); chatMessages.appendChild(el);}
-  
+
   if(msg.fileData){
     let isImage=false;
     if(msg.fileType && msg.fileType.indexOf('image/')===0) isImage=true;
     if(!isImage && msg.fileName && /\.(jpg|jpeg|png|gif)$/i.test(msg.fileName)) isImage=true;
 
-  if(isImage){
-  el.innerHTML = `
-    <div style="display:flex; flex-direction:column; align-items:flex-start; gap:4px;">
-      <img class="chat-image" src="${msg.fileData}" alt="image" style="max-width:150px; border-radius:8px;" />
-      <a href="${msg.fileData}" download="${msg.fileName||'image'}" style="font-size:16px; text-decoration:none;">⬇️</a>
-    </div>
-    <span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>
-  `;
-    } else {
+    if(isImage){
       el.innerHTML = `
-        <a href="${msg.fileData}" download="${msg.fileName||'file'}" style="text-decoration:none; font-size:18px;">⬇️</a>
-        <span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>
+      <div style="display:flex; flex-direction:column; align-items:flex-start; gap:2px; position:relative;">
+        <img src="${msg.fileData}" alt="image" style="max-width:150px; border-radius:8px;" />
+        <a href="${msg.fileData}" download="${msg.fileName||'image'}" style="font-size:16px; text-decoration:none; position:absolute; bottom:2px; right:2px;">⬇️</a>
+      </div>
+      <span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>
       `;
+    } else {
+      el.innerHTML = `<a href="${msg.fileData}" download="${msg.fileName||'file'}" style="text-decoration:none; font-size:18px;">⬇️</a>
+      <span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
     }
   } else if(msg.uploading){
     el.innerHTML='<div class="small-muted">'+escapeHtml(msg.fileName||'Sending...')+'</div><span class="uploading-badge">Sending...</span><span class="timestamp '+(isSelf?'':'friend')+'">'+new Date(msg.timestamp).toLocaleString()+'</span>';
@@ -321,8 +333,6 @@ function sendMessage(){
   const msgObj={ sender:currentUserUid, receiver:currentChatFriendUid, text:text, timestamp:Date.now() };
   chatInput.value='';
   const newMsgRef = db.ref('chats/'+chatId+'/messages').push(msgObj);
-
-  // mark unread for receiver
   db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+newMsgRef.key).set(true);
 }
 
@@ -351,7 +361,3 @@ function escapeHtml(text){ return text.replace(/[&<>"']/g, m=>({ '&':'&amp;', '<
 
 </body>
 </html>
-
-
-
-
