@@ -103,6 +103,7 @@ let currentChatFriendUid = "";
 let currentChatListener = null;
 const unreadCounters = {};
 const lastChatTimestamps = {};
+const localPreviewMap = {};
 let typingTimeout;
 
 // ===== Auth =====
@@ -243,13 +244,11 @@ function openChat(friendUid,friendName){
     addOrUpdateMessageToChat(msg);
     lastChatTimestamps[friendUid] = msg.timestamp;
 
-    // Increment unread only if chat with sender is not open
-    if(msg.receiver===currentUserUid && msg.sender!==currentChatFriendUid){
+    // Only handle unread if current user is receiver
+    if(msg.receiver === currentUserUid && msg.sender !== currentUserUid){
       const unreadRef = db.ref('unread/'+currentUserUid+'/'+msg.sender);
       unreadRef.transaction(current => (current || 0) + 1);
-      unreadCounters[msg.sender] = (unreadCounters[msg.sender] || 0) + 1;
       flashUserRow(msg.sender);
-      updateFriendListBadges();
     }
   });
   currentChatListener.on('child_changed', snap=>{
