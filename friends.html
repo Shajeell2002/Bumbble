@@ -21,11 +21,11 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 .badge { background:#9b59b6; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
 #chatModal { position:fixed; bottom:0; right:20px; width:360px; max-height:70vh; border:1px solid #ccc; background:#d8cce5; border-radius:10px 10px 0 0; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); resize:both; overflow:hidden; z-index:1000; }
 #chatHeader { background:#d8cce5; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; border-radius:10px 10px 0 0; cursor:move; }
-#chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:#fdfdfd; scroll-behavior:smooth; }
+#chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:#f8f6fb; scroll-behavior:smooth; }
 #typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
 .message { max-width:80%; padding:8px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
-.message.self { background:#b39ddb; color:white; align-self:flex-end; }
-.message.friend { background:#f5f5f5; color:#111; align-self:flex-start; } /* lighter bubble */
+.message.self { background:#9b59b6; color:white; align-self:flex-end; }
+.message.friend { background:#ece6f2; color:#111; align-self:flex-start; }
 .timestamp { font-size:10px; color:#666; margin-top:6px; text-align:right; display:block; }
 .timestamp.friend { color:#666; }
 .uploading-badge { font-size:11px; color:#444; margin-top:6px; display:inline-block; background:#e6e0f0; padding:3px 6px; border-radius:6px; border:1px solid #d0c4e0; }
@@ -36,7 +36,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 .friends-container::-webkit-scrollbar { width:6px; }
 .friends-container::-webkit-scrollbar-thumb { background:#b39ddb; border-radius:3px; }
 .friends-container::-webkit-scrollbar-track { background:#f0e6fa; }
-.img-debug { max-width:120px; display:block; margin-top:6px; }
 .error-banner { background:#f2e6ff; color:#800; padding:8px 12px; border:1px solid #d8b3ff; margin:10px; border-radius:6px; }
 </style>
 
@@ -110,7 +109,6 @@ let unreadCounters = {};
 const lastChatTimestamps = {};
 let typingTimeout;
 
-// Error handling
 window.addEventListener('error', function(ev){
   const msg = ev && ev.message ? ev.message : String(ev);
   showError("Runtime error: " + msg);
@@ -273,17 +271,20 @@ function addOrUpdateMessageToChat(msg){
   let el=document.getElementById(id);
   const isSelf=(msg.sender===currentUserUid);
   if(!el){ el=document.createElement('div'); el.id=id; el.className='message '+(isSelf?'self':'friend'); chatMessages.appendChild(el); }
-  
+
   if(msg.fileData){
     let isImage=false;
     if(msg.fileType && msg.fileType.indexOf('image/')===0) isImage=true;
     if(!isImage && msg.fileName && /\.(jpg|jpeg|png|gif)$/i.test(msg.fileName)) isImage=true;
 
     if(isImage){
-  el.innerHTML = `
-    <img class="chat-image" src="${msg.fileData}" alt="${msg.fileName||'image'}" />
-    <span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>
-  `;
+      el.innerHTML = `
+        <div style="display:flex; flex-direction:column; align-items:flex-start; gap:4px;">
+          <img src="${msg.fileData}" alt="${msg.fileName||'image'}" style="max-width:100%; height:auto;" />
+          <a href="${msg.fileData}" download="${msg.fileName||'image'}" style="font-size:14px; text-decoration:none; color:#333;">⬇️ Download</a>
+        </div>
+        <span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>
+      `;
     } else {
       el.innerHTML = `
         <a href="${msg.fileData}" download="${msg.fileName||'file'}" style="text-decoration:none; font-size:18px;">⬇️</a>
@@ -346,5 +347,3 @@ function escapeHtml(text){ return text.replace(/[&<>"']/g, m=>({ '&':'&amp;', '<
 
 </body>
 </html>
-
-
