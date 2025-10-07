@@ -5,102 +5,39 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Friends & Chat</title>
 <style>
-body { 
-    font-family: Arial, sans-serif; 
-    margin:0; 
-    background: #e0f7fa; 
-    color:#333; 
-    display:flex; 
-    min-height:100vh; 
-    flex-direction: column; 
-}
-header { 
-    display:flex; 
-    justify-content:space-between; 
-    align-items:center; 
-    padding:15px 20px; 
-    background:#4dd0e1; 
-    box-shadow:0 3px 6px rgba(0,0,0,0.1); 
-    position:fixed; top:0; left:0; right:0; 
-    z-index:500; 
-}
-header h1{ font-size:24px; margin:0; color:#fff; }
-nav a{ margin-left:10px; font-weight:bold; color:#fff; text-decoration:none; }
-nav a:hover{ text-decoration:underline; }
-
-.friends-container { 
-    width:250px; 
-    background:#b2ebf2; 
-    border-right:1px solid #81d4fa; 
-    padding:10px; 
-    overflow-y:auto; 
-    position:fixed; 
-    top:60px; bottom:0; left:0; 
-}
+body { font-family: Arial, sans-serif; margin:0; background:#f8f6fb; color:#333; display:flex; min-height:100vh; flex-direction: column; }
+header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#d8cce5; box-shadow:0 3px 6px rgba(0,0,0,0.1); position:fixed; top:0; left:0; right:0; z-index:500; }
+header h1{ font-size:24px; margin:0; }
+nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
+.friends-container { width:250px; background:#e6e0f0; border-right:1px solid #ccc; padding:10px; overflow-y:auto; position:fixed; top:60px; bottom:0; left:0; }
+.main-content { flex:1; margin-left:250px; padding:80px 20px 20px 20px; }
 .user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
-.user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #81d4fa; cursor:pointer; transition:0.2s; }
-.user-row:hover, .user-row.active { background:#b2ebf2; }
-.user-row.flash { animation:flashBlue 0.5s; }
-@keyframes flashBlue { 0%{background:#4dd0e1;} 100%{background:#b2ebf2;} }
-
+.user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #ccc; cursor:pointer; transition:0.2s; }
+.user-row:hover, .user-row.active { background:#ddd6f3; }
+.user-row.flash { animation:flashLavender 0.5s; }
+@keyframes flashLavender { 0%{background:#e0b3ff;} 100%{background:#ddd6f3;} }
 .status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
-.online { background:green; } 
-.offline { background:red; }
-
-.badge { background:#00796b; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
-
-#chatModal { 
-    position:fixed; bottom:0; right:20px; width:360px; max-height:70vh; 
-    border:1px solid #ccc; 
-    background:#e0f7fa; 
-    border-radius:10px 10px 0 0; 
-    display:none; 
-    flex-direction:column; 
-    box-shadow:0 4px 12px rgba(0,0,0,0.2); 
-    resize:both; 
-    overflow:hidden; 
-    z-index:1000; 
-}
-#chatHeader { 
-    background:#4dd0e1; 
-    padding:10px; 
-    font-weight:bold; 
-    display:flex; 
-    justify-content:space-between; 
-    align-items:center; 
-    border-radius:10px 10px 0 0; 
-    cursor:move; 
-    color:#fff;
-}
-#chatMessages { 
-    flex:1; 
-    padding:10px; 
-    overflow-y:auto; 
-    display:flex; 
-    flex-direction:column; 
-    gap:8px; 
-    background:#e0f7fa; 
-    scroll-behavior:smooth; 
-}
+.online { background:green; } .offline { background:red; }
+.badge { background:#9b59b6; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
+#chatModal { position:fixed; bottom:0; right:20px; width:360px; max-height:70vh; border:1px solid #ccc; background:#d8cce5; border-radius:10px 10px 0 0; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); resize:both; overflow:hidden; z-index:1000; }
+#chatHeader { background:#d8cce5; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; border-radius:10px 10px 0 0; cursor:move; }
+#chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:#f8f6fb; scroll-behavior:smooth; }
 #typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
 .message { max-width:80%; padding:8px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
-.message.self { background:#26a69a; color:white; align-self:flex-end; }
-.message.friend { background:#b2ebf2; color:#111; align-self:flex-start; }
-.timestamp { font-size:10px; color:#eee; margin-top:6px; text-align:right; display:block; }
-.timestamp.friend { color:#555; }
-.uploading-badge { font-size:11px; color:#444; margin-top:6px; display:inline-block; background:#b2dfdb; padding:3px 6px; border-radius:6px; border:1px solid #80cbc4; }
-
-#chatInputContainer { display:flex; border-top:1px solid #81d4fa; align-items:center; gap:6px; padding:8px; }
-#chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:8px; background:#e0f7fa; }
-#sendBtn, #fileBtn { padding:8px 12px; border:none; background:#4dd0e1; cursor:pointer; border-radius:8px; color:#fff; }
-#sendBtn:hover, #fileBtn:hover { background:#26c6da; }
-
+.message.self { background:#9b59b6; color:white; align-self:flex-end; }
+.message.friend { background:#ece6f2; color:#111; align-self:flex-start; }
+.timestamp { font-size:10px; color:#666; margin-top:6px; text-align:right; display:block; }
+.timestamp.friend { color:#666; }
+.uploading-badge { font-size:11px; color:#444; margin-top:6px; display:inline-block; background:#e6e0f0; padding:3px 6px; border-radius:6px; border:1px solid #d0c4e0; }
+#chatInputContainer { display:flex; border-top:1px solid #ccc; align-items:center; gap:6px; padding:8px; background:#e6e0f0; }
+#chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:8px; background:#f0e6fa; }
+#sendBtn, #fileBtn { padding:8px 12px; border:none; background:#b39ddb; cursor:pointer; border-radius:8px; color:white; font-weight:bold; }
+#sendBtn:hover, #fileBtn:hover { background:#9775c2; }
 .friends-container::-webkit-scrollbar { width:6px; }
-.friends-container::-webkit-scrollbar-thumb { background:#26c6da; border-radius:3px; }
-.friends-container::-webkit-scrollbar-track { background:#b2ebf2; }
-
+.friends-container::-webkit-scrollbar-thumb { background:#b39ddb; border-radius:3px; }
+.friends-container::-webkit-scrollbar-track { background:#f0e6fa; }
 .img-debug { max-width:120px; display:block; margin-top:6px; }
-.error-banner { background:#ffdddd; color:#800; padding:8px 12px; border:1px solid #f5b3b3; margin:10px; border-radius:6px; }
+.error-banner { background:#f2e6ff; color:#800; padding:8px 12px; border:1px solid #d8b3ff; margin:10px; border-radius:6px; }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -141,7 +78,6 @@ nav a:hover{ text-decoration:underline; }
 </div>
 
 <script>
-// Firebase config & init
 const firebaseConfig = {
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
   authDomain:"bumbble-c061f.firebaseapp.com",
@@ -155,7 +91,6 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-// DOM
 const nav = document.getElementById("navLinks");
 const userList = document.getElementById("userList");
 const chatModal = document.getElementById("chatModal");
@@ -175,12 +110,17 @@ let unreadCounters = {};
 const lastChatTimestamps = {};
 let typingTimeout;
 
-// Error
-window.addEventListener('error', ev=>showError("Runtime error: " + (ev.message||String(ev))));
-function showError(text){ errorArea.innerHTML = '<div class="error-banner">' + escapeHtml(text) + '</div>'; }
+// Error handling
+window.addEventListener('error', function(ev){
+  const msg = ev && ev.message ? ev.message : String(ev);
+  showError("Runtime error: " + msg);
+  console.error(ev.error || ev);
+});
+function showError(text){
+  errorArea.innerHTML = '<div class="error-banner">' + escapeHtml(text) + '</div>';
+}
 
-// Auth
-auth.onAuthStateChanged(user=>{
+auth.onAuthStateChanged(user => {
   if(user && user.emailVerified){
     currentUserUid = user.uid;
     nav.innerHTML = `
@@ -195,21 +135,23 @@ auth.onAuthStateChanged(user=>{
       db.ref('users/'+currentUserUid+'/public/online').set(false);
       localStorage.removeItem("lastChatFriendUid");
       localStorage.removeItem("lastChatFriendName");
-      auth.signOut().then(()=>window.location.href="login.html");
+      auth.signOut().then(()=> window.location.href="login.html");
     });
+
     setupOnlineStatus();
     loadUsersRealtime();
     setupUnreadListener();
+
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
     if(lastUid && lastName) openChat(lastUid, lastName);
+
   } else {
     nav.innerHTML = '<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>';
     document.querySelector(".friends-container").innerHTML = "<p style='padding:12px'>Please login to view users.</p>";
   }
 });
 
-// Online
 function setupOnlineStatus(){
   if(!currentUserUid) return;
   const userStatusRef = db.ref('users/'+currentUserUid+'/public/online');
@@ -221,17 +163,16 @@ function setupOnlineStatus(){
   });
 }
 
-// Load users
 function loadUsersRealtime(){
   db.ref('users').on('value', snapshot=>{
     const usersData = snapshot.val() || {};
     const friends = Object.keys(usersData)
-      .filter(uid=>uid!==currentUserUid)
+      .filter(uid => uid !== currentUserUid)
       .map(uid=>{
-        const u=usersData[uid].public||{};
-        return { uid, name:u.name||"Unknown", gender:u.gender||"N/A", online:!!u.online };
+        const u = usersData[uid].public || {};
+        return { uid, name: u.name||"Unknown", gender:u.gender||"N/A", online:!!u.online };
       });
-    friends.sort((a,b)=>(lastChatTimestamps[b.uid]||0)-(lastChatTimestamps[a.uid]||0)||a.name.localeCompare(b.name));
+    friends.sort((a,b)=>(lastChatTimestamps[b.uid]||0) - (lastChatTimestamps[a.uid]||0) || a.name.localeCompare(b.name));
     userList.innerHTML='';
     friends.forEach(f=>{
       const row=document.createElement('div');
@@ -246,12 +187,13 @@ function loadUsersRealtime(){
   });
 }
 
-// Unread
 function setupUnreadListener(){
   db.ref('unread/'+currentUserUid).on('value', snap=>{
-    unreadCounters={};
-    const data = snap.val()||{};
-    Object.keys(data).forEach(uid=>unreadCounters[uid]=Object.keys(data[uid]||{}).length);
+    unreadCounters = {};
+    const data = snap.val() || {};
+    Object.keys(data).forEach(senderUid=>{
+      unreadCounters[senderUid] = Object.keys(data[senderUid]||{}).length;
+    });
     updateFriendListBadges();
   });
 }
@@ -262,7 +204,7 @@ function updateFriendListBadges(){
     let badge=row.querySelector('.badge');
     const count=Number(unreadCounters[uid]||0);
     if(count>0){
-      if(!badge){ badge=document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge);}
+      if(!badge){ badge=document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge); }
       badge.textContent=count;
     } else if(badge) badge.remove();
   });
@@ -270,14 +212,14 @@ function updateFriendListBadges(){
 
 function flashUserRow(uid){
   const row=document.querySelector('.user-row[data-uid="'+uid+'"]');
-  if(row){ row.classList.add('flash'); setTimeout(()=>row.classList.remove('flash'),800);}
+  if(row){ row.classList.add('flash'); setTimeout(()=>row.classList.remove('flash'),800); }
 }
 
-// Chat
 function openChat(friendUid, friendName){
   document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
   const activeRow=document.querySelector('.user-row[data-uid="'+friendUid+'"]');
   if(activeRow) activeRow.classList.add('active');
+
   currentChatFriendUid=friendUid;
   chatWith.textContent=friendName;
   localStorage.setItem("lastChatFriendUid",friendUid);
@@ -285,6 +227,7 @@ function openChat(friendUid, friendName){
   chatModal.style.display='flex';
   chatMessages.innerHTML='';
   typingIndicator.textContent='';
+
   db.ref('unread/'+currentUserUid+'/'+friendUid).remove();
   delete unreadCounters[friendUid];
   updateFriendListBadges();
@@ -292,8 +235,8 @@ function openChat(friendUid, friendName){
   const chatId=getChatId(currentUserUid,friendUid);
   if(currentChatListener) currentChatListener.off();
   db.ref('chats/'+chatId+'/members').update({ [currentUserUid]: true, [friendUid]: true });
-  const chatRef=db.ref('chats/'+chatId+'/messages');
 
+  const chatRef=db.ref('chats/'+chatId+'/messages');
   chatRef.once('value', snap=>{
     const msgs=snap.val()||{};
     Object.keys(msgs).sort((a,b)=>msgs[a].timestamp-msgs[b].timestamp).forEach(k=>{
@@ -329,7 +272,7 @@ function addOrUpdateMessageToChat(msg){
   const id='msg-'+msg._key;
   let el=document.getElementById(id);
   const isSelf=(msg.sender===currentUserUid);
-  if(!el){ el=document.createElement('div'); el.id=id; el.className='message '+(isSelf?'self':'friend'); chatMessages.appendChild(el);}
+  if(!el){ el=document.createElement('div'); el.id=id; el.className='message '+(isSelf?'self':'friend'); chatMessages.appendChild(el); }
   
   if(msg.fileData){
     let isImage=false;
@@ -406,4 +349,3 @@ function escapeHtml(text){ return text.replace(/[&<>"']/g, m=>({ '&':'&amp;', '<
 
 </body>
 </html>
-
