@@ -13,7 +13,7 @@ body {
     display: flex;
     min-height: 100vh;
     flex-direction: column;
-    background: linear-gradient(135deg, #d6e6f2 0%, #c0d9ec 50%, #e3f0fb 100%);
+    background: linear-gradient(135deg, #a0e7e5 0%, #7dd6d3 50%, #b2f7ef 100%);
     background-attachment: fixed;
 }
 body::before {
@@ -21,7 +21,7 @@ body::before {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
     pointer-events: none;
-    background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px);
     background-size: 20px 20px;
     z-index: 0;
 }
@@ -32,7 +32,7 @@ header {
     justify-content: space-between;
     align-items: center;
     padding: 15px 20px;
-    background: rgba(173,216,230,0.9);
+    background: rgba(0,255,255,0.9); /* aqua header */
     box-shadow: 0 3px 6px rgba(0,0,0,0.1);
     position: fixed;
     top: 0; left: 0; right: 0; z-index: 500;
@@ -44,7 +44,7 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 /* ----- Friends Sidebar ----- */
 .friends-container {
     width: 250px;
-    background: rgba(240,248,255,0.85);
+    background: rgba(173,216,230,0.85); /* light aqua sidebar */
     border-right: 1px solid #eee;
     padding: 10px;
     overflow-y: auto;
@@ -54,7 +54,7 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 }
 .user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
 .user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #eee; cursor:pointer; transition:0.2s; }
-.user-row:hover, .user-row.active { background:#cce6f7; }
+.user-row:hover, .user-row.active { background:#81e6e6; }
 .status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
 .online { background:green; } .offline { background:red; }
 
@@ -66,7 +66,7 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 }
 .user-row.active .status-dot {
     animation: heartbeat 1.5s infinite;
-    box-shadow: 0 0 6px rgba(0,150,255,0.5);
+    box-shadow: 0 0 6px rgba(0,255,255,0.5);
 }
 
 /* ----- Badge ----- */
@@ -93,7 +93,7 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
     z-index: 1000;
 }
 #chatHeader {
-    background:#add8e6;
+    background:#00ffff; /* aqua chat header */
     padding:10px;
     font-weight:bold;
     display:flex;
@@ -123,11 +123,11 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 
 #chatInputContainer { display:flex; border-top:1px solid #ddd; align-items:center; gap:6px; padding:8px; }
 #chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:8px; background:#fafafa; }
-#sendBtn, #fileBtn { padding:8px 12px; border:none; background:#add8e6; cursor:pointer; border-radius:8px; }
-#sendBtn:hover, #fileBtn:hover { background:#8fcce6; }
+#sendBtn, #fileBtn { padding:8px 12px; border:none; background:#00ced1; cursor:pointer; border-radius:8px; }
+#sendBtn:hover, #fileBtn:hover { background:#20b2aa; }
 
 .friends-container::-webkit-scrollbar { width:6px; }
-.friends-container::-webkit-scrollbar-thumb { background:#add8e6; border-radius:3px; }
+.friends-container::-webkit-scrollbar-thumb { background:#00ced1; border-radius:3px; }
 .friends-container::-webkit-scrollbar-track { background:#f1f1f1; }
 
 .img-debug { max-width:120px; display:block; margin-top:6px; }
