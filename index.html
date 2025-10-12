@@ -26,7 +26,7 @@ nav a { margin:0 10px; text-decoration:none; color:white; font-weight:bold; }
 nav a:hover { text-decoration: underline; }
 
 /* Hero Section */
-.hero { display:flex; align-items:center; justify-content:space-around; gap:40px; flex-wrap:wrap; padding:60px 20px; background:#e6e0f0; border-radius:12px; }
+.hero { display:flex; align-items:center; justify-content:center; gap:40px; flex-wrap:wrap; padding:60px 20px; background:#e6e0f0; border-radius:12px; }
 .hero img { max-width:350px; height:auto; }
 .hero-text { max-width:350px; text-align:center; }
 .hero-text h1 { font-size:36px; margin-bottom:10px; color:#4a2e8e; }
@@ -124,9 +124,9 @@ footer { text-align:center; padding:20px; background:#b39ddb; color:white; margi
 </footer>
 
 <script>
-// Dynamic Navigation with sessionStorage
+// Dynamic Navigation
 const nav = document.getElementById("navLinks");
-const currentUser = sessionStorage.getItem("current_user"); // sessionStorage ensures auto logout on browser close
+const currentUser = localStorage.getItem("current_user");
 
 if(currentUser){
     nav.innerHTML = `
@@ -138,7 +138,7 @@ if(currentUser){
         <a href="#" id="logoutBtn">Logout</a>
     `;
     document.getElementById("logoutBtn").addEventListener("click", function(){
-        sessionStorage.removeItem("current_user"); // removes session
+        localStorage.removeItem("current_user");
         alert("✅ Logged out successfully.");
         window.location.href = "login.html";
     });
@@ -175,7 +175,6 @@ document.getElementById('matchBtnInteractive').addEventListener('click', () => {
   confetti({ particleCount:200, spread:70, origin:{ y:0.6 } });
 });
 
-// Live status (placeholder data)
 function updateLiveStatus(){
     const onlineUsersEl = document.getElementById("onlineUsers");
     const recentJoinEl = document.getElementById("recentJoin");
