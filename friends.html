@@ -78,16 +78,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 </div>
 
 <script>
-// Force login check
-const currentUser = sessionStorage.getItem("current_user");
-if(!currentUser){
-    alert("⚠️ Please login first!");
-    window.location.href = "login.html";
-}
-</script>
-
-  
-<script>
 // --- Firebase Init ---
 const firebaseConfig = {
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
@@ -338,4 +328,3 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
-
