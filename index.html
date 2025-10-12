@@ -126,7 +126,7 @@ footer { text-align:center; padding:20px; background:#b39ddb; color:white; margi
 <script>
 // Dynamic Navigation
 const nav = document.getElementById("navLinks");
-const currentUser = localStorage.getItem("current_user");
+const currentUser = sessionStorage.getItem("current_user"); // use sessionStorage
 
 if(currentUser){
     nav.innerHTML = `
@@ -138,7 +138,7 @@ if(currentUser){
         <a href="#" id="logoutBtn">Logout</a>
     `;
     document.getElementById("logoutBtn").addEventListener("click", function(){
-        localStorage.removeItem("current_user");
+        sessionStorage.removeItem("current_user"); // use sessionStorage
         alert("✅ Logged out successfully.");
         window.location.href = "login.html";
     });
@@ -189,3 +189,4 @@ setInterval(updateLiveStatus, 10000);
 
 </body>
 </html>
+
