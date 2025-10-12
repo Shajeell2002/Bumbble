@@ -5,19 +5,94 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Login</title>
 <style>
-body{font-family:Arial,sans-serif;margin:0;background:#fff;}
-header{background:#ffcb2b;padding:15px 30px;display:flex;justify-content:space-between;align-items:center;}
-header h1{margin:0;font-size:24px;font-weight:bold;}
-nav a{margin:0 10px;text-decoration:none;color:#000;font-weight:500;}
-nav a:hover{text-decoration:underline;}
-.container{display:flex;justify-content:center;align-items:center;height:calc(100vh - 70px);}
-.login-form{background:#f9f9f9;padding:30px;border-radius:15px;box-shadow:0 2px 6px rgba(0,0,0,0.1);width:100%;max-width:400px;display:flex;flex-direction:column;gap:15px;}
-.login-form h2{text-align:center;margin-bottom:10px;}
-.login-form input{padding:12px;border-radius:8px;border:1px solid #ccc;font-size:16px;}
-.login-form button{padding:12px;border:none;border-radius:8px;background:#ffcb2b;font-size:18px;font-weight:bold;cursor:pointer;}
-.forgot-password{text-align:right;font-size:14px;margin-top:-5px;}
-.forgot-password a{color:#0073e6;text-decoration:none;}
-.forgot-password a:hover{text-decoration:underline;}
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: #b39ddb; /* Lavender background */
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Header */
+header {
+    background: #b39ddb; /* Lavender header */
+    color: white;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow:0 3px 6px rgba(0,0,0,0.1);
+}
+header h1 { margin:0; font-size:24px; font-weight:bold; color:white; }
+nav a { margin:0 10px; text-decoration:none; color:white; font-weight:500; }
+nav a:hover { text-decoration:underline; }
+
+/* Container */
+.container {
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex:1;
+    padding-top:50px; /* for header offset */
+}
+
+/* Login Form */
+.login-form {
+    background:#fff;
+    padding:30px;
+    border-radius:15px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.1);
+    width:100%;
+    max-width:400px;
+    display:flex;
+    flex-direction:column;
+    gap:15px;
+}
+.login-form h2 {
+    text-align:center;
+    margin-bottom:10px;
+    color:#4a2e8e; /* Lavender text heading */
+}
+.login-form input {
+    padding:12px;
+    border-radius:8px;
+    border:1px solid #ccc;
+    font-size:16px;
+}
+.login-form button {
+    padding:12px;
+    border:none;
+    border-radius:8px;
+    background:#4a2e8e; /* Dark lavender button */
+    font-size:18px;
+    font-weight:bold;
+    cursor:pointer;
+    color:white;
+}
+.login-form button:hover {
+    transform: scale(1.05);
+}
+.forgot-password {
+    text-align:right;
+    font-size:14px;
+    margin-top:-5px;
+}
+.forgot-password a {
+    color:#4a2e8e;
+    text-decoration:none;
+    font-weight:bold;
+}
+.forgot-password a:hover { text-decoration:underline; }
+
+/* Footer */
+footer {
+    text-align:center;
+    padding:20px;
+    background:#b39ddb;
+    color:white;
+    margin-top:auto;
+}
 </style>
 
 <!-- Firebase SDK -->
@@ -39,7 +114,6 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 </script>
-
 </head>
 <body>
 
@@ -69,6 +143,10 @@ const db = firebase.database();
 </form>
 </div>
 
+<footer>
+<p>&copy; 2025 Bumbble. All rights reserved.</p>
+</footer>
+
 <script>
 // Update header dynamically based on auth state
 const nav = document.getElementById("navLinks");
@@ -85,7 +163,7 @@ auth.onAuthStateChanged((user) => {
         `;
         document.getElementById("logoutBtn").addEventListener("click", ()=>{
             auth.signOut();
-            localStorage.removeItem("current_user");
+            sessionStorage.removeItem("current_user"); // auto logout on close
             window.location.href = "login.html";
         });
     }
@@ -110,7 +188,7 @@ document.getElementById("loginForm").addEventListener("submit", function(e){
     // Update lastLogin timestamp
     db.ref('users/' + user.uid).update({ lastLogin: Date.now() });
 
-    localStorage.setItem("current_user", user.uid);
+    sessionStorage.setItem("current_user", user.uid); // auto logout on browser close
 
     alert("✅ Login successful!");
     window.location.href = "friends.html";
@@ -140,4 +218,3 @@ document.getElementById("resetPassword").addEventListener("click", function(e){
 
 </body>
 </html>
-
