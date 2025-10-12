@@ -38,31 +38,11 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 .friends-container::-webkit-scrollbar-track { background:#f0e6fa; }
 .error-banner { background:#f2e6ff; color:#800; padding:8px 12px; border:1px solid #d8b3ff; margin:10px; border-radius:6px; }
 .chat-image { max-width:100%; height:auto; display:block; margin-top:4px; }
-
-/* --- Interactive Elements --- */
-.heart {
-  width:80px; height:80px; background-color:#b39ddb; position:relative; transform:rotate(-45deg); animation:heartbeat 1.5s infinite; margin:auto;
-}
-.heart::before,.heart::after{ content:""; width:80px;height:80px;background-color:#b39ddb; border-radius:50%; position:absolute; }
-.heart::before{ top:-40px; left:0; }
-.heart::after{ left:40px; top:0; }
-@keyframes heartbeat {0%,100%{transform:scale(1) rotate(-45deg);}25%{transform:scale(1.2) rotate(-45deg);}50%{transform:scale(1) rotate(-45deg);}75%{transform:scale(1.2) rotate(-45deg);}}
-
-.chat-bubble {
-  display:inline-block; background:#b39ddb; color:white; padding:8px 12px; border-radius:25px; margin-top:12px; opacity:0; transform:translateY(20px); animation:bubbleAppear 1s forwards;
-}
-@keyframes bubbleAppear { to{opacity:1; transform:translateY(0);} }
-
-#matchBtnInteractive {
-  padding:12px 25px; border:none; border-radius:25px; background:#b39ddb; color:white; font-weight:bold; cursor:pointer; margin-top:12px;
-}
-#matchBtnInteractive:hover{ transform:scale(1.1); box-shadow:0 8px 16px rgba(0,0,0,0.2);}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 </head>
 <body>
 
@@ -95,13 +75,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
     </div>
   </div>
   <div id="errorArea"></div>
-
-  <!-- Interactive Elements -->
-  <div style="text-align:center; margin:20px 0;">
-    <div class="heart"></div>
-    <button id="matchBtnInteractive">Match!</button>
-    <div class="chat-bubble">Hi there! 👋</div>
-  </div>
 </div>
 
 <script>
