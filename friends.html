@@ -38,18 +38,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 .friends-container::-webkit-scrollbar-track { background:#f0e6fa; }
 .error-banner { background:#f2e6ff; color:#800; padding:8px 12px; border:1px solid #d8b3ff; margin:10px; border-radius:6px; }
 .chat-image { max-width:100%; height:auto; display:block; margin-top:4px; }
-
-/* ===== RESIZER – invisible but functional ===== */
-#chatResizer {
-  width: 20px;
-  height: 20px;
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  cursor: se-resize;
-  z-index: 10;
-  background: transparent; /* invisible handle */
-}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -85,7 +73,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
       <button id="sendBtn">Send</button>
       <input type="file" id="chatFileInput" style="display:none;" multiple>
     </div>
-    <div id="chatResizer"></div>
   </div>
   <div id="errorArea"></div>
 </div>
@@ -393,19 +380,19 @@ function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null;
 function getChatId(a,b){ return a<b? a+'_'+b : b+'_'+a; }
 function escapeHtml(text){ return text.replace(/[&<>"']/g, m=>({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[m]); }
 
-// ===== CHAT RESIZER =====
-const chatResizerEl = document.getElementById("chatResizer");
-let isResizing = false;
-let lastX, lastY, lastWidth, lastHeight;
-
-chatResizerEl.addEventListener('mousedown', e=>{
-  isResizing = true;
-  lastX = e.clientX;
-  lastY = e.clientY;
+// ===== CHAT RESIZER (BOTTOM-RIGHT CORNER, INVISIBLE) =====
+let isResizing = false, lastX, lastY, lastWidth, lastHeight;
+chatModal.addEventListener('mousedown', function(e){
   const rect = chatModal.getBoundingClientRect();
-  lastWidth = rect.width;
-  lastHeight = rect.height;
-  document.body.style.userSelect = 'none';
+  const margin = 20; // bottom-right 20x20px zone
+  if(e.clientX >= rect.right - margin && e.clientY >= rect.bottom - margin){
+    isResizing = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    lastWidth = rect.width;
+    lastHeight = rect.height;
+    document.body.style.userSelect = 'none';
+  }
 });
 
 document.addEventListener('mousemove', e=>{
