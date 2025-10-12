@@ -54,6 +54,12 @@
 }
 </script>
 
+<!-- Firebase & Confetti -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
 <style>
 /* Reset & global */
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -86,17 +92,58 @@ footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:auto; }
   .hero img { max-width:90%; }
   .features { flex-direction:column; align-items:center; }
 }
+
+/* --- Chat & Interactive Styles --- */
+.friends-container { width:250px; background:#e6e0f0; border-right:1px solid #ccc; padding:10px; overflow-y:auto; position:fixed; top:60px; bottom:0; left:0; display:none; }
+.user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
+.user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #ccc; cursor:pointer; transition:0.2s; }
+.user-row:hover, .user-row.active { background:#ddd6f3; }
+.user-row.flash { animation:flashLavender 0.5s; }
+@keyframes flashLavender { 0%{background:#e0b3ff;} 100%{background:#ddd6f3;} }
+.status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
+.online { background:green; } .offline { background:red; }
+.badge { background:#9b59b6; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
+
+#chatModal { position:fixed; bottom:0; right:20px; width:360px; height:500px; max-height:80vh; border:1px solid #ccc; background:#d8cce5; border-radius:10px; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); overflow:hidden; z-index:1000; resize:none; }
+#chatHeader { background:#d8cce5; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; cursor:move; }
+#chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:#f8f6fb; scroll-behavior:smooth; }
+#typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
+.message { max-width:80%; padding:8px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
+.message.self { background:#9b59b6; color:white; align-self:flex-end; }
+.message.friend { background:#ece6f2; color:#111; align-self:flex-start; }
+.timestamp { font-size:10px; color:#666; margin-top:6px; text-align:right; display:block; }
+.timestamp.friend { color:#666; }
+.uploading-badge { font-size:11px; color:#444; margin-top:6px; display:inline-block; background:#e6e0f0; padding:3px 6px; border-radius:6px; border:1px solid #d0c4e0; }
+#chatInputContainer { display:flex; border-top:1px solid #ccc; align-items:center; gap:6px; padding:8px; background:#e6e0f0; }
+#chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:8px; background:#f0e6fa; }
+#sendBtn, #fileBtn { padding:8px 12px; border:none; background:#b39ddb; cursor:pointer; border-radius:8px; color:white; font-weight:bold; }
+#sendBtn:hover, #fileBtn:hover { background:#9775c2; }
+.error-banner { background:#f2e6ff; color:#800; padding:8px 12px; border:1px solid #d8b3ff; margin:10px; border-radius:6px; }
+.chat-image { max-width:100%; height:auto; display:block; margin-top:4px; }
+
+/* Interactive Elements */
+.heart { width:80px; height:80px; background-color:#b39ddb; position:relative; transform:rotate(-45deg); animation:heartbeat 1.5s infinite; margin:auto; }
+.heart::before,.heart::after{ content:""; width:80px;height:80px;background-color:#b39ddb; border-radius:50%; position:absolute; }
+.heart::before{ top:-40px; left:0; }
+.heart::after{ left:40px; top:0; }
+@keyframes heartbeat {0%,100%{transform:scale(1) rotate(-45deg);}25%{transform:scale(1.2) rotate(-45deg);}50%{transform:scale(1) rotate(-45deg);}75%{transform:scale(1.2) rotate(-45deg);}}
+
+.chat-bubble { display:inline-block; background:#b39ddb; color:white; padding:8px 12px; border-radius:25px; margin-top:12px; opacity:0; transform:translateY(20px); animation:bubbleAppear 1s forwards; }
+@keyframes bubbleAppear { to{opacity:1; transform:translateY(0);} }
+
+#matchBtnInteractive { padding:12px 25px; border:none; border-radius:25px; background:#b39ddb; color:white; font-weight:bold; cursor:pointer; margin-top:12px; }
+#matchBtnInteractive:hover{ transform:scale(1.1); box-shadow:0 8px 16px rgba(0,0,0,0.2);}
 </style>
 </head>
 
 <body>
+
 <header>
   <h1>Bumbble.in</h1>
-  <nav id="navLinks">
-    <!-- Links inserted dynamically via script -->
-  </nav>
+  <nav id="navLinks"></nav>
 </header>
 
+<!-- Hero Section -->
 <section class="hero">
   <img src="images/hero.png" alt="Two people using phones illustration – Bumbble online friendship and dating app">
   <h1>Meet. Match. Connect.</h1>
@@ -104,6 +151,7 @@ footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:auto; }
   <button onclick="window.location.href='signup.html'">Join Bumbble Now</button>
 </section>
 
+<!-- Features Section -->
 <section class="features">
   <div class="feature-card">
     <h2>Verified Profiles</h2>
@@ -122,6 +170,33 @@ footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:auto; }
     <p>Join community events and share stories to connect with like-minded people.</p>
   </div>
 </section>
+
+<!-- Chat / Friends UI -->
+<div class="friends-container">
+  <div class="user-list" id="userList"></div>
+</div>
+
+<div id="chatModal">
+  <div id="chatHeader">
+    <span id="chatWith">Friend</span>
+    <button onclick="closeChat()">X</button>
+  </div>
+  <div id="chatMessages"></div>
+  <div id="typingIndicator"></div>
+  <div id="chatInputContainer">
+    <button id="fileBtn">📎</button>
+    <input type="text" id="chatInput" placeholder="Type a message">
+    <button id="sendBtn">Send</button>
+    <input type="file" id="chatFileInput" style="display:none;" multiple>
+  </div>
+</div>
+
+<!-- Interactive Heart & Match -->
+<div style="text-align:center; margin:20px 0;">
+  <div class="heart"></div>
+  <button id="matchBtnInteractive">Match!</button>
+  <div class="chat-bubble">Hi there! 👋</div>
+</div>
 
 <footer>
   <p>&copy; 2025 Bumbble.in. All rights reserved.</p>
@@ -159,7 +234,29 @@ if(currentUser){
         <a href="signup.html">Sign Up</a>
     `;
 }
+
+// Firebase Initialization
+const firebaseConfig = {
+  apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+  authDomain:"bumbble-c061f.firebaseapp.com",
+  databaseURL:"https://bumbble-c061f-default-rtdb.firebaseio.com",
+  projectId:"bumbble-c061f",
+  storageBucket:"bumbble-c061f.appspot.com",
+  messagingSenderId:"213165886981",
+  appId:"1:213165886981:web:c18652003444869b1bd66c"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+
+// Confetti on match
+document.getElementById('matchBtnInteractive').addEventListener('click', () => {
+  confetti({ particleCount:200, spread:70, origin:{ y:0.6 } });
+});
+
+// --- Existing Firebase Chat Logic Placeholder ---
+// Implement: auth state change, load users, open chat, send messages, typing, file upload, unread message count, draggable chat, etc.
 </script>
+
 </body>
 </html>
-
