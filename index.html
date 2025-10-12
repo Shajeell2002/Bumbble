@@ -50,10 +50,21 @@ nav a:hover { text-decoration: underline; }
 #liveStatus p { font-size:16px; margin:4px 0; }
 
 /* Features Section */
-.features { display:flex; flex-wrap:wrap; justify-content:center; padding:40px 20px; background:#fff; }
-.feature-card { flex:1 1 250px; margin:15px; padding:20px; border:1px solid #ddd; border-radius:10px; text-align:center; }
-.feature-card h2 { font-size:22px; margin-bottom:10px; }
-.feature-card p { font-size:16px; }
+<style>
+body { font-family: Arial, sans-serif; margin:0; background:#f8f6fb; color:#333; display:flex; min-height:100vh; flex-direction: column; }
+header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#d8cce5; box-shadow:0 3px 6px rgba(0,0,0,0.1); position:fixed; top:0; left:0; right:0; z-index:500; }
+header h1{ font-size:24px; margin:0; }
+nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
+.friends-container { width:250px; background:#e6e0f0; border-right:1px solid #ccc; padding:10px; overflow-y:auto; position:fixed; top:60px; bottom:0; left:0; }
+.main-content { flex:1; margin-left:250px; padding:80px 20px 20px 20px; }
+.user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
+.user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #ccc; cursor:pointer; transition:0.2s; }
+.user-row:hover, .user-row.active { background:#ddd6f3; }
+.user-row.flash { animation:flashLavender 0.5s; }
+@keyframes flashLavender { 0%{background:#e0b3ff;} 100%{background:#ddd6f3;} }
+.status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
+.online { background:green; } .offline { background:red; }
+.badge { background:#9b59b6; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
 
 /* Footer */
 footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:auto; }
