@@ -172,11 +172,6 @@ document.getElementById('matchBtnInteractive').addEventListener('click', () => {
   confetti({ particleCount:200, spread:70, origin:{ y:0.6 } });
 });
 
-// Live activity simulation
-const onlineUsersEl = document.getElementById('onlineUsers');
-const recentJoinEl = document.getElementById('recentJoin');
-let onlineUsers = ["Alice","Bob","Charlie"];
-let recentJoins = ["David","Eva"];
 
 function updateLiveStatus(){
     onlineUsersEl.innerText = "Online Users: " + onlineUsers.length;
@@ -187,3 +182,4 @@ setInterval(updateLiveStatus, 10000);
 </script>
 </body>
 </html>
+
