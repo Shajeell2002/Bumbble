@@ -5,21 +5,71 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Profile</title>
 <style>
-body { font-family: Arial,sans-serif; background:#fff; color:#333; margin:0; display:flex; flex-direction:column; min-height:100vh; }
-header { display:flex; justify-content:space-between; align-items:center; padding:20px; background:#ffcb2b; }
-header h1 { font-size:24px; }
-nav a { margin:0 10px; text-decoration:none; color:#333; font-weight:bold; }
-.profile-container { flex:1; max-width:400px; margin:30px auto; padding:20px; border-radius:10px; border:1px solid #ddd; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
-.profile-container h2 { text-align:center; margin-bottom:20px; }
+body {
+    font-family: Arial, sans-serif;
+    background: #b39ddb; /* Lavender background */
+    color: #333;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Header */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: #b39ddb; /* Lavender header */
+    color: white;
+    box-shadow:0 3px 6px rgba(0,0,0,0.1);
+}
+header h1 { font-size: 24px; color:white; }
+nav a { margin: 0 10px; text-decoration: none; color: white; font-weight: bold; }
+nav a:hover { text-decoration: underline; }
+
+/* Profile Container */
+.profile-container {
+    flex: 1;
+    max-width: 400px;
+    margin: 30px auto;
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    background: #fff; /* white card on lavender background */
+}
+.profile-container h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #4a2e8e; /* lavender heading */
+}
 .profile-container input[type=text],
 .profile-container input[type=number],
 .profile-container input[type=email],
-.profile-container select { width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:5px; }
-.profile-container input[type=file] { margin:8px 0; }
-.profile-container button { width:100%; padding:10px; margin-top:10px; background:#ffcb2b; border:none; border-radius:5px; font-weight:bold; cursor:pointer; }
-.profile-container button:hover { background:#f1b800; }
-.error-msg { color:red; font-size:14px; margin-top:5px; }
-#profilePreview { width:100px; height:100px; border-radius:50%; object-fit:cover; margin:10px 0; }
+.profile-container select {
+    width: 100%;
+    padding: 8px;
+    margin: 8px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+.profile-container input[type=file] { margin: 8px 0; }
+.profile-container button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    background: #4a2e8e; /* dark lavender button */
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    color: white;
+}
+.profile-container button:hover { background: #3b2370; }
+.error-msg { color: red; font-size: 14px; margin-top: 5px; }
+#profilePreview { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin: 10px 0; }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -81,7 +131,12 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
-    document.getElementById("logoutBtn").addEventListener("click", ()=>{ auth.signOut().then(()=>window.location.href="login.html"); });
+    document.getElementById("logoutBtn").addEventListener("click", ()=>{
+      auth.signOut().then(()=>{
+        sessionStorage.removeItem("current_user"); // auto logout on close
+        window.location.href="login.html";
+      });
+    });
     setupRealtimeProfile(user.uid);
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
@@ -89,7 +144,7 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-// Compress image ~64KB
+// Image compression & upload
 function compressImage(file, maxDim=150, maxSizeKB=64, callback){
   const reader = new FileReader();
   reader.onload = function(evt){
@@ -117,7 +172,6 @@ function compressImage(file, maxDim=150, maxSizeKB=64, callback){
   reader.readAsDataURL(file);
 }
 
-// Profile pic upload
 document.getElementById("profilePic").addEventListener("change", e=>{
   const file = e.target.files[0];
   if(!file) return;
@@ -178,4 +232,3 @@ async function updateProfile(){
 </script>
 </body>
 </html>
-
