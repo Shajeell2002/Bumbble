@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Bumbble.in | Safe Online Friendship App in India</title>
 <meta name="description" content="Join Bumbble.in – the safest online dating and friendship app in India. Meet new friends, find love, and connect safely with verified profiles.">
 <meta name="keywords" content="Bumbble.in, online dating India, friendship app India, safe dating app, meet new friends, verified profiles, privacy protection">
@@ -41,6 +40,7 @@ nav a:hover { text-decoration: underline; }
 .heart::after{ left:40px; top:0; }
 @keyframes heartbeat {0%,100%{transform:scale(1) rotate(-45deg);}25%{transform:scale(1.2) rotate(-45deg);}50%{transform:scale(1) rotate(-45deg);}75%{transform:scale(1.2) rotate(-45deg);}}
 
+/* Match Button */
 #matchBtnInteractive { padding:12px 25px; border:none; border-radius:25px; background:#b39ddb; color:white; font-weight:bold; cursor:pointer; }
 #matchBtnInteractive:hover { transform:scale(1.1); box-shadow:0 8px 16px rgba(0,0,0,0.2); }
 
@@ -50,21 +50,10 @@ nav a:hover { text-decoration: underline; }
 #liveStatus p { font-size:16px; margin:4px 0; }
 
 /* Features Section */
-<style>
-body { font-family: Arial, sans-serif; margin:0; background:#f8f6fb; color:#333; display:flex; min-height:100vh; flex-direction: column; }
-header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#d8cce5; box-shadow:0 3px 6px rgba(0,0,0,0.1); position:fixed; top:0; left:0; right:0; z-index:500; }
-header h1{ font-size:24px; margin:0; }
-nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
-.friends-container { width:250px; background:#e6e0f0; border-right:1px solid #ccc; padding:10px; overflow-y:auto; position:fixed; top:60px; bottom:0; left:0; }
-.main-content { flex:1; margin-left:250px; padding:80px 20px 20px 20px; }
-.user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
-.user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #ccc; cursor:pointer; transition:0.2s; }
-.user-row:hover, .user-row.active { background:#ddd6f3; }
-.user-row.flash { animation:flashLavender 0.5s; }
-@keyframes flashLavender { 0%{background:#e0b3ff;} 100%{background:#ddd6f3;} }
-.status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
-.online { background:green; } .offline { background:red; }
-.badge { background:#9b59b6; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
+.features { display:flex; flex-wrap:wrap; gap:20px; justify-content:center; padding:40px 20px; background:#f9f8fc; }
+.feature-card { background:#fff; padding:20px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1); flex:1 1 200px; max-width:250px; text-align:center; transition:transform 0.3s; }
+.feature-card:hover { transform:translateY(-5px); box-shadow:0 6px 18px rgba(0,0,0,0.2); }
+.feature-card div { margin-top:10px; padding:10px; background:#e0d4f7; border-radius:8px; }
 
 /* Footer */
 footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:auto; }
@@ -111,19 +100,22 @@ footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:auto; }
 <section class="features">
   <div class="feature-card">
     <h2>Verified Profiles</h2>
-    <p>Every user is verified to ensure authenticity and safety on the platform.</p>
+    <div>Every user is verified to ensure authenticity and safety on the platform.</div>
   </div>
+
   <div class="feature-card">
     <h2>Private Detector</h2>
-    <p>Automatically blur potentially explicit images for safe viewing.</p>
+    <div>Automatically blur potentially explicit images for safe viewing.</div>
   </div>
+
   <div class="feature-card">
     <h2>Block & Report</h2>
-    <p>Easily block or report users to maintain a safe and friendly environment.</p>
+    <div>Easily block or report users to maintain a safe and friendly environment.</div>
   </div>
+
   <div class="feature-card">
     <h2>Events & Stories</h2>
-    <p>Join community events and share stories to connect with like-minded people.</p>
+    <div>Join community events and share stories to connect with like-minded people.</div>
   </div>
 </section>
 
@@ -183,14 +175,17 @@ document.getElementById('matchBtnInteractive').addEventListener('click', () => {
   confetti({ particleCount:200, spread:70, origin:{ y:0.6 } });
 });
 
-
 function updateLiveStatus(){
+    const onlineUsersEl = document.getElementById("onlineUsers");
+    const recentJoinEl = document.getElementById("recentJoin");
+    const onlineUsers = ["User1","User2"]; // Replace with dynamic Firebase data
+    const recentJoins = ["User3"]; // Replace with dynamic Firebase data
     onlineUsersEl.innerText = "Online Users: " + onlineUsers.length;
     recentJoinEl.innerText = "Recent Join: " + recentJoins.join(", ");
 }
 updateLiveStatus();
 setInterval(updateLiveStatus, 10000);
 </script>
+
 </body>
 </html>
-
