@@ -144,11 +144,22 @@ footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:auto; }
 </header>
 
 <!-- Hero Section -->
-<section class="hero">
+<section class="hero" style="display:flex; align-items:center; justify-content:center; gap:40px; flex-wrap:wrap;">
+  <!-- Hero Image -->
   <img src="images/hero.png" alt="Two people using phones illustration – Bumbble online friendship and dating app">
-  <h1>Meet. Match. Connect.</h1>
-  <p>Start your journey to meaningful connections today with verified profiles and safety features.</p>
-  <button onclick="window.location.href='signup.html'">Join Bumbble Now</button>
+
+  <!-- Heart + Match Button -->
+  <div style="display:flex; flex-direction:column; align-items:center; gap:20px;">
+    <div class="heart"></div>
+    <button id="matchBtnInteractive">Match!</button>
+  </div>
+
+  <!-- Optional Hero Text -->
+  <div style="max-width:350px; text-align:center;">
+    <h1>Meet. Match. Connect.</h1>
+    <p>Start your journey to meaningful connections today with verified profiles and safety features.</p>
+    <button onclick="window.location.href='signup.html'">Join Bumbble Now</button>
+  </div>
 </section>
 
 <!-- Features Section -->
