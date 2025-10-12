@@ -12,6 +12,7 @@ body {
   color:#333;
   display:flex;
   min-height:100vh;
+  flex-direction: column;
 }
 header {
   display:flex;
@@ -21,11 +22,14 @@ header {
   background:#d8cce5;
   box-shadow:0 3px 6px rgba(0,0,0,0.1);
   position:fixed;
-  top:0; left:0; right:0;
+  top:0;
+  left:0;
+  right:0;
   z-index:500;
 }
-header h1 { font-size:24px; margin:0; }
-nav a { margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
+header h1{ font-size:24px; margin:0; }
+nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
+
 .friends-container {
   width:250px;
   background:#e6e0f0;
@@ -33,30 +37,66 @@ nav a { margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
   padding:10px;
   overflow-y:auto;
   position:fixed;
-  top:60px; bottom:0; left:0;
+  top:60px;
+  bottom:0;
+  left:0;
 }
-.main-content {
-  flex:1;
-  margin-left:250px;
-  padding:80px 20px 20px 20px;
-}
+.main-content { flex:1; margin-left:250px; padding:80px 20px 20px 20px; }
+
 .user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
-.user-row {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:6px 8px;
-  border-bottom:1px solid #ccc;
-  cursor:pointer;
-  transition:0.2s;
-}
+.user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #ccc; cursor:pointer; transition:0.2s; }
 .user-row:hover, .user-row.active { background:#ddd6f3; }
 .user-row.flash { animation:flashLavender 0.5s; }
 @keyframes flashLavender { 0%{background:#e0b3ff;} 100%{background:#ddd6f3;} }
+
 .status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
-.online { background:green; } .offline { background:red; }
+.online { background:green; }
+.offline { background:red; }
 .badge { background:#9b59b6; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
-#errorArea .error-banner { background:#f2e6ff; color:#800; padding:8px 12px; border:1px solid #d8b3ff; margin:10px; border-radius:6px; }
+
+#errorArea { margin-top:10px; }
+.error-banner { background:#f2e6ff; color:#800; padding:8px 12px; border:1px solid #d8b3ff; border-radius:6px; }
+
+#chatModal {
+  position:fixed;
+  bottom:0;
+  right:20px;
+  width:360px;
+  height:500px;
+  max-height:70vh;
+  border:1px solid #ccc;
+  background:#d8cce5;
+  border-radius:10px;
+  display:none;
+  flex-direction:column;
+  box-shadow:0 4px 12px rgba(0,0,0,0.2);
+  overflow:hidden;
+  z-index:1000;
+}
+
+#chatHeader {
+  background:#d8cce5;
+  padding:10px;
+  font-weight:bold;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-radius:10px 10px 0 0;
+  cursor:move;
+}
+
+#chatMessages {
+  flex:1;
+  padding:10px;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  background:#f8f6fb;
+  scroll-behavior:smooth;
+}
+
+#typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
 
 .message { max-width:80%; padding:8px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
 .message.self { background:#9b59b6; color:white; align-self:flex-end; }
@@ -66,40 +106,14 @@ nav a { margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 .uploading-badge { font-size:11px; color:#444; margin-top:6px; display:inline-block; background:#e6e0f0; padding:3px 6px; border-radius:6px; border:1px solid #d0c4e0; }
 .chat-image { max-width:100%; height:auto; display:block; margin-top:4px; }
 
-/* CHAT MODAL */
-#chatModal {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 360px;
-  height: 500px;
-  border: 1px solid #ccc;
-  background: #d8cce5;
-  border-radius: 10px;
-  display: none;
-  flex-direction: column;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  z-index:1000;
-  min-width: 300px;
-  min-height: 200px;
-  max-width: calc(100vw - 40px);
-  max-height: calc(100vh - 40px);
-  overflow: hidden;
-  resize: both;
-}
-#chatHeader {
-  background:#d8cce5;
-  padding:10px;
-  font-weight:bold;
+#chatInputContainer {
   display:flex;
-  justify-content:space-between;
+  border-top:1px solid #ccc;
   align-items:center;
-  cursor:move;
-  user-select:none;
+  gap:6px;
+  padding:8px;
+  background:#e6e0f0;
 }
-#chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:#f8f6fb; scroll-behavior:smooth; }
-#typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
-#chatInputContainer { display:flex; border-top:1px solid #ccc; align-items:center; gap:6px; padding:8px; background:#e6e0f0; }
 #chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:8px; background:#f0e6fa; }
 #sendBtn, #fileBtn { padding:8px 12px; border:none; background:#b39ddb; cursor:pointer; border-radius:8px; color:white; font-weight:bold; }
 #sendBtn:hover, #fileBtn:hover { background:#9775c2; }
@@ -143,7 +157,6 @@ nav a { margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 </div>
 
 <script>
-// ===== FIREBASE INIT =====
 const firebaseConfig = {
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
   authDomain:"bumbble-c061f.firebaseapp.com",
@@ -154,83 +167,66 @@ const firebaseConfig = {
   appId:"1:213165886981:web:c18652003444869b1bd66c"
 };
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.database();
+const auth=firebase.auth(), db=firebase.database();
 
-// ===== DOM ELEMENTS =====
-const nav = document.getElementById("navLinks");
-const userList = document.getElementById("userList");
-const chatModal = document.getElementById("chatModal");
-const chatMessages = document.getElementById("chatMessages");
-const chatWith = document.getElementById("chatWith");
-const chatInput = document.getElementById("chatInput");
-const sendBtn = document.getElementById("sendBtn");
-const fileBtn = document.getElementById("fileBtn");
-const chatFileInput = document.getElementById("chatFileInput");
-const typingIndicator = document.getElementById("typingIndicator");
-const errorArea = document.getElementById("errorArea");
+const nav=document.getElementById("navLinks");
+const userList=document.getElementById("userList");
+const chatModal=document.getElementById("chatModal");
+const chatMessages=document.getElementById("chatMessages");
+const chatWith=document.getElementById("chatWith");
+const chatInput=document.getElementById("chatInput");
+const sendBtn=document.getElementById("sendBtn");
+const fileBtn=document.getElementById("fileBtn");
+const chatFileInput=document.getElementById("chatFileInput");
+const typingIndicator=document.getElementById("typingIndicator");
+const errorArea=document.getElementById("errorArea");
 
-// ===== STATE =====
-let currentUserUid = "";
-let currentChatFriendUid = "";
-let currentChatListener = null;
-let unreadCounters = {};
-const lastChatTimestamps = {};
-let typingTimeout;
+let currentUserUid="", currentChatFriendUid="", currentChatListener=null, unreadCounters={}, lastChatTimestamps={}, typingTimeout;
 
-// ===== ERROR HANDLING =====
-window.addEventListener('error', e=>{ showError(e.message||'Unknown error'); });
+// ===== ERROR =====
+window.addEventListener('error', e=>{ showError(e.message||e); });
 function showError(text){ errorArea.innerHTML='<div class="error-banner">'+escapeHtml(text)+'</div>'; }
 
 // ===== AUTH =====
 auth.onAuthStateChanged(user=>{
   if(user && user.emailVerified){
     currentUserUid=user.uid;
-    nav.innerHTML = `
-      <a href="index.html">Home</a>
-      <a href="friends.html">Friends</a>
-      <a href="stories.html">Stories</a>
-      <a href="events.html">Events</a>
-      <a href="safety.html">Safety</a>
-      <a href="profile.html">Profile</a>
-      <a href="#" id="logoutBtn">Logout</a>`;
-    document.getElementById("logoutBtn").addEventListener('click', ()=>{
+    nav.innerHTML=`<a href="index.html">Home</a><a href="friends.html">Friends</a><a href="profile.html">Profile</a><a href="#" id="logoutBtn">Logout</a>`;
+    document.getElementById("logoutBtn").addEventListener("click", ()=>{
       db.ref('users/'+currentUserUid+'/public/online').set(false);
       localStorage.removeItem("lastChatFriendUid");
       localStorage.removeItem("lastChatFriendName");
-      auth.signOut().then(()=> window.location.href="login.html");
+      auth.signOut().then(()=>window.location.href="login.html");
     });
-    setupOnlineStatus();
-    loadUsersRealtime();
-    setupUnreadListener();
-
-    const lastUid = localStorage.getItem("lastChatFriendUid");
-    const lastName = localStorage.getItem("lastChatFriendName");
-    if(lastUid && lastName) openChat(lastUid, lastName);
+    setupOnlineStatus(); loadUsersRealtime(); setupUnreadListener();
+    const lastUid=localStorage.getItem("lastChatFriendUid");
+    const lastName=localStorage.getItem("lastChatFriendName");
+    if(lastUid && lastName) openChat(lastUid,lastName);
   } else {
     nav.innerHTML='<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>';
-    document.querySelector(".friends-container").innerHTML="<p style='padding:12px'>Please login to view users.</p>";
+    userList.innerHTML="<p style='padding:12px'>Please login to view users.</p>";
   }
 });
 
-// ===== ONLINE STATUS =====
+// ===== ONLINE =====
 function setupOnlineStatus(){
   if(!currentUserUid) return;
   const userStatusRef=db.ref('users/'+currentUserUid+'/public/online');
   db.ref('.info/connected').on('value', snap=>{
-    if(snap.val()===true){ userStatusRef.set(true); userStatusRef.onDisconnect().set(false); }
+    if(snap.val()===true){
+      userStatusRef.set(true);
+      userStatusRef.onDisconnect().set(false);
+    }
   });
 }
 
 // ===== USERS LIST =====
 function loadUsersRealtime(){
   db.ref('users').on('value', snap=>{
-    const users=snap.val()||{};
-    const friends=Object.keys(users).filter(uid=>uid!==currentUserUid).map(uid=>{
-      const u=users[uid].public||{};
-      return {uid,name:u.name||"Unknown",gender:u.gender||"N/A",online:!!u.online};
-    });
-    friends.sort((a,b)=>(lastChatTimestamps[b.uid]||0)-(lastChatTimestamps[a.uid]||0) || a.name.localeCompare(b.name));
+    const usersData=snap.val()||{};
+    const friends=Object.keys(usersData).filter(uid=>uid!==currentUserUid)
+      .map(uid=>{ const u=usersData[uid].public||{}; return {uid,name:u.name||"Unknown",gender:u.gender||"N/A",online:!!u.online}; });
+    friends.sort((a,b)=>(lastChatTimestamps[b.uid]||0)-(lastChatTimestamps[a.uid]||0)||a.name.localeCompare(b.name));
     userList.innerHTML='';
     friends.forEach(f=>{
       const row=document.createElement('div');
@@ -290,7 +286,6 @@ function openChat(friendUid, friendName){
   if(currentChatListener) currentChatListener.off();
   db.ref('chats/'+chatId+'/members').update({ [currentUserUid]: true, [friendUid]: true });
   const chatRef=db.ref('chats/'+chatId+'/messages');
-
   chatRef.once('value', snap=>{
     const msgs=snap.val()||{};
     Object.keys(msgs).sort((a,b)=>msgs[a].timestamp-msgs[b].timestamp).forEach(k=>addOrUpdateMessageToChat(Object.assign({}, msgs[k], {_key:k})));
@@ -302,7 +297,6 @@ function openChat(friendUid, friendName){
     const msg=snap.val(); msg._key=snap.key;
     addOrUpdateMessageToChat(msg);
     lastChatTimestamps[friendUid]=msg.timestamp;
-
     if(msg.receiver===currentUserUid && msg.sender!==currentUserUid){
       if(currentChatFriendUid!==msg.sender){
         db.ref('unread/'+currentUserUid+'/'+msg.sender+'/'+msg._key).set(true);
@@ -370,35 +364,26 @@ chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); }
 // ===== FILE UPLOAD =====
 fileBtn.addEventListener('click', ()=>chatFileInput.click());
 chatFileInput.addEventListener('change', function(e){
-  const files = Array.from(e.target.files);
+  const files=Array.from(e.target.files);
   files.forEach(f=>{
-    const chatId = getChatId(currentUserUid, currentChatFriendUid);
-    const tempMsgRef = db.ref('chats/'+chatId+'/messages').push({
-      sender: currentUserUid,
-      receiver: currentChatFriendUid,
-      uploading: true,
-      fileName: f.name,
-      timestamp: Date.now()
-    });
-    const reader = new FileReader();
-    reader.onload = function(ev){
-      let isImage = f.type.startsWith('image/') || /\.(jpg|jpeg|png|gif)$/i.test(f.name);
+    const chatId=getChatId(currentUserUid,currentChatFriendUid);
+    const tempMsgRef=db.ref('chats/'+chatId+'/messages').push({ sender:currentUserUid, receiver:currentChatFriendUid, uploading:true, fileName:f.name, timestamp:Date.now() });
+    const reader=new FileReader();
+    reader.onload=function(ev){
+      let isImage=f.type.startsWith('image/')||/\.(jpg|jpeg|png|gif)$/i.test(f.name);
       if(isImage){
-        const img = new Image();
-        img.onload = function(){
-          const canvas = document.createElement('canvas');
-          const maxWidth = 800;
-          const scale = Math.min(maxWidth/img.width,1);
-          canvas.width = img.width*scale;
-          canvas.height = img.height*scale;
+        const img=new Image();
+        img.onload=function(){
+          const canvas=document.createElement('canvas');
+          const scale=Math.min(800/img.width,1);
+          canvas.width=img.width*scale; canvas.height=img.height*scale;
           canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
-          let quality=0.8;
-          let dataUrl=canvas.toDataURL('image/jpeg',quality);
+          let quality=0.8; let dataUrl=canvas.toDataURL('image/jpeg',quality);
           while(dataUrl.length/1024>256 && quality>0.1){ quality-=0.1; dataUrl=canvas.toDataURL('image/jpeg',quality); }
           tempMsgRef.update({ uploading:false, fileData:dataUrl, fileType:'image/jpeg' });
           db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempMsgRef.key).set(true);
         };
-        img.src = ev.target.result;
+        img.src=ev.target.result;
       } else {
         tempMsgRef.update({ uploading:false, fileData:ev.target.result, fileType:f.type });
         db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempMsgRef.key).set(true);
@@ -414,9 +399,9 @@ function getChatId(a,b){ return a<b? a+'_'+b : b+'_'+a; }
 function escapeHtml(text){ return text.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
 // ===== DRAG CHAT =====
-let isDragging=false,dragOffsetX=0,dragOffsetY=0;
-const header = document.getElementById('chatHeader');
-header.addEventListener('mousedown', e=>{
+let isDragging=false, dragOffsetX=0, dragOffsetY=0;
+const chatHeader=document.getElementById("chatHeader");
+chatHeader.addEventListener('mousedown', e=>{
   isDragging=true;
   dragOffsetX=e.clientX-chatModal.offsetLeft;
   dragOffsetY=e.clientY-chatModal.offsetTop;
@@ -424,12 +409,31 @@ header.addEventListener('mousedown', e=>{
 });
 document.addEventListener('mousemove', e=>{
   if(isDragging){
-    chatModal.style.left = Math.min(Math.max(e.clientX-dragOffsetX,0), window.innerWidth-chatModal.offsetWidth)+'px';
-    chatModal.style.top = Math.min(Math.max(e.clientY-dragOffsetY,0), window.innerHeight-chatModal.offsetHeight)+'px';
+    chatModal.style.left=Math.min(Math.max(e.clientX-dragOffsetX,0), window.innerWidth-chatModal.offsetWidth)+'px';
+    chatModal.style.top=Math.min(Math.max(e.clientY-dragOffsetY,0), window.innerHeight-chatModal.offsetHeight)+'px';
   }
 });
 document.addEventListener('mouseup', ()=>{ isDragging=false; document.body.style.userSelect='auto'; });
 
+// ===== RESIZE CHAT ANYWHERE =====
+let isResizing=false;
+chatModal.addEventListener('mousedown', e=>{
+  if(e.target.closest('#chatInputContainer') || e.target.closest('#chatHeader')) return;
+  isResizing=true;
+  const startX=e.clientX, startY=e.clientY;
+  const startWidth=chatModal.offsetWidth, startHeight=chatModal.offsetHeight;
+  function doResize(ev){
+    if(!isResizing) return;
+    let newWidth=startWidth + (ev.clientX-startX);
+    let newHeight=startHeight + (ev.clientY-startY);
+    chatModal.style.width=Math.min(Math.max(newWidth,300),window.innerWidth-20)+'px';
+    chatModal.style.height=Math.min(Math.max(newHeight,200),window.innerHeight-20)+'px';
+  }
+  function stopResize(){ isResizing=false; document.removeEventListener('mousemove',doResize); document.removeEventListener('mouseup',stopResize);}
+  document.addEventListener('mousemove',doResize);
+  document.addEventListener('mouseup',stopResize);
+});
 </script>
+
 </body>
 </html>
