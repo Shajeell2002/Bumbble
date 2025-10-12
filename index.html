@@ -4,55 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- Optimized Title & Meta -->
-<title>Bumbble.in | Safe Online Dating & Friendship App in India</title>
+<title>Bumbble.in | Safe Online Friendship App in India</title>
 <meta name="description" content="Join Bumbble.in – the safest online dating and friendship app in India. Meet new friends, find love, and connect safely with verified profiles.">
 <meta name="keywords" content="Bumbble.in, online dating India, friendship app India, safe dating app, meet new friends, verified profiles, privacy protection">
 <meta name="robots" content="index, follow">
-<meta name="author" content="Bumbble.in">
-
-<!-- Canonical URL -->
-<link rel="canonical" href="https://www.bumbble.in/">
-
-<!-- Open Graph -->
-<meta property="og:title" content="Bumbble.in | Safe Online Dating & Friendship App in India">
-<meta property="og:description" content="Meet new friends, find love, and connect safely on Bumbble.in – India's trusted dating and friendship app.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://www.bumbble.in/">
-<meta property="og:image" content="https://www.bumbble.in/images/hero.png">
-<meta property="og:site_name" content="Bumbble.in">
-
-<!-- Twitter Card -->
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Bumbble.in | Safe Online Dating & Friendship App in India">
-<meta name="twitter:description" content="Join Bumbble.in – the safest online dating and friendship app in India. Meet new people and make meaningful connections.">
-<meta name="twitter:image" content="https://www.bumbble.in/images/hero.png">
-<meta name="twitter:site" content="@BumbbleIn">
-
-<!-- Structured Data -->
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "WebSite",
-      "name": "Bumbble.in",
-      "url": "https://www.bumbble.in/",
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": "https://www.bumbble.in/search?q={search_term_string}",
-        "query-input": "required name=search_term_string"
-      }
-    },
-    {
-      "@type": "Organization",
-      "name": "Bumbble.in",
-      "url": "https://www.bumbble.in/",
-      "logo": "https://www.bumbble.in/images/hero.png"
-    }
-  ]
-}
-</script>
 
 <!-- Firebase & Confetti -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -72,11 +27,27 @@ nav a { margin:0 10px; text-decoration:none; color:#333; font-weight:bold; }
 nav a:hover { text-decoration: underline; }
 
 /* Hero Section */
-.hero { display:flex; flex-direction:column; align-items:center; text-align:center; padding:60px 20px; background:#fefefe; }
-.hero img { max-width:350px; height:auto; margin-bottom:20px; }
-.hero h1 { font-size:40px; margin-bottom:10px; }
-.hero p { font-size:20px; margin-bottom:20px; }
-.hero button { background:#ffcb2b; border:none; padding:15px 30px; font-size:18px; font-weight:bold; cursor:pointer; border-radius:30px; }
+.hero { display:flex; align-items:center; justify-content:center; gap:40px; flex-wrap:wrap; padding:60px 20px; background:#fefefe; }
+.hero img { max-width:350px; height:auto; }
+.hero-text { max-width:350px; text-align:center; }
+.hero-text h1 { font-size:36px; margin-bottom:10px; }
+.hero-text p { font-size:18px; margin-bottom:20px; }
+.hero-text button { background:#ffcb2b; border:none; padding:15px 30px; font-size:18px; font-weight:bold; cursor:pointer; border-radius:30px; }
+
+/* Heart + Match */
+.heart { width:80px; height:80px; background-color:#b39ddb; position:relative; transform:rotate(-45deg); animation:heartbeat 1.5s infinite; margin:auto; }
+.heart::before,.heart::after{ content:""; width:80px;height:80px;background-color:#b39ddb; border-radius:50%; position:absolute; }
+.heart::before{ top:-40px; left:0; }
+.heart::after{ left:40px; top:0; }
+@keyframes heartbeat {0%,100%{transform:scale(1) rotate(-45deg);}25%{transform:scale(1.2) rotate(-45deg);}50%{transform:scale(1) rotate(-45deg);}75%{transform:scale(1.2) rotate(-45deg);}}
+
+#matchBtnInteractive { padding:12px 25px; border:none; border-radius:25px; background:#b39ddb; color:white; font-weight:bold; cursor:pointer; }
+#matchBtnInteractive:hover { transform:scale(1.1); box-shadow:0 8px 16px rgba(0,0,0,0.2); }
+
+/* Live Activity */
+#liveStatus { text-align:center; background:#f0e6fa; padding:15px 20px; border-radius:10px; margin-top:20px; }
+#liveStatus h2 { font-size:22px; margin-bottom:10px; }
+#liveStatus p { font-size:16px; margin:4px 0; }
 
 /* Features Section */
 .features { display:flex; flex-wrap:wrap; justify-content:center; padding:40px 20px; background:#fff; }
@@ -89,50 +60,9 @@ footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:auto; }
 
 /* Responsive */
 @media(max-width:768px) {
+  .hero { flex-direction:column; }
   .hero img { max-width:90%; }
-  .features { flex-direction:column; align-items:center; }
 }
-
-/* --- Chat & Interactive Styles --- */
-.friends-container { width:250px; background:#e6e0f0; border-right:1px solid #ccc; padding:10px; overflow-y:auto; position:fixed; top:60px; bottom:0; left:0; display:none; }
-.user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
-.user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #ccc; cursor:pointer; transition:0.2s; }
-.user-row:hover, .user-row.active { background:#ddd6f3; }
-.user-row.flash { animation:flashLavender 0.5s; }
-@keyframes flashLavender { 0%{background:#e0b3ff;} 100%{background:#ddd6f3;} }
-.status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
-.online { background:green; } .offline { background:red; }
-.badge { background:#9b59b6; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
-
-#chatModal { position:fixed; bottom:0; right:20px; width:360px; height:500px; max-height:80vh; border:1px solid #ccc; background:#d8cce5; border-radius:10px; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); overflow:hidden; z-index:1000; resize:none; }
-#chatHeader { background:#d8cce5; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; cursor:move; }
-#chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:#f8f6fb; scroll-behavior:smooth; }
-#typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
-.message { max-width:80%; padding:8px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
-.message.self { background:#9b59b6; color:white; align-self:flex-end; }
-.message.friend { background:#ece6f2; color:#111; align-self:flex-start; }
-.timestamp { font-size:10px; color:#666; margin-top:6px; text-align:right; display:block; }
-.timestamp.friend { color:#666; }
-.uploading-badge { font-size:11px; color:#444; margin-top:6px; display:inline-block; background:#e6e0f0; padding:3px 6px; border-radius:6px; border:1px solid #d0c4e0; }
-#chatInputContainer { display:flex; border-top:1px solid #ccc; align-items:center; gap:6px; padding:8px; background:#e6e0f0; }
-#chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:8px; background:#f0e6fa; }
-#sendBtn, #fileBtn { padding:8px 12px; border:none; background:#b39ddb; cursor:pointer; border-radius:8px; color:white; font-weight:bold; }
-#sendBtn:hover, #fileBtn:hover { background:#9775c2; }
-.error-banner { background:#f2e6ff; color:#800; padding:8px 12px; border:1px solid #d8b3ff; margin:10px; border-radius:6px; }
-.chat-image { max-width:100%; height:auto; display:block; margin-top:4px; }
-
-/* Interactive Elements */
-.heart { width:80px; height:80px; background-color:#b39ddb; position:relative; transform:rotate(-45deg); animation:heartbeat 1.5s infinite; margin:auto; }
-.heart::before,.heart::after{ content:""; width:80px;height:80px;background-color:#b39ddb; border-radius:50%; position:absolute; }
-.heart::before{ top:-40px; left:0; }
-.heart::after{ left:40px; top:0; }
-@keyframes heartbeat {0%,100%{transform:scale(1) rotate(-45deg);}25%{transform:scale(1.2) rotate(-45deg);}50%{transform:scale(1) rotate(-45deg);}75%{transform:scale(1.2) rotate(-45deg);}}
-
-.chat-bubble { display:inline-block; background:#b39ddb; color:white; padding:8px 12px; border-radius:25px; margin-top:12px; opacity:0; transform:translateY(20px); animation:bubbleAppear 1s forwards; }
-@keyframes bubbleAppear { to{opacity:1; transform:translateY(0);} }
-
-#matchBtnInteractive { padding:12px 25px; border:none; border-radius:25px; background:#b39ddb; color:white; font-weight:bold; cursor:pointer; margin-top:12px; }
-#matchBtnInteractive:hover{ transform:scale(1.1); box-shadow:0 8px 16px rgba(0,0,0,0.2);}
 </style>
 </head>
 
@@ -144,23 +74,27 @@ footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:auto; }
 </header>
 
 <!-- Hero Section -->
-<section class="hero" style="display:flex; align-items:center; justify-content:center; gap:40px; flex-wrap:wrap;">
-  <!-- Hero Image -->
+<section class="hero">
   <img src="images/hero.png" alt="Two people using phones illustration – Bumbble online friendship and dating app">
 
-  <!-- Heart + Match Button -->
   <div style="display:flex; flex-direction:column; align-items:center; gap:20px;">
     <div class="heart"></div>
     <button id="matchBtnInteractive">Match!</button>
   </div>
 
-  <!-- Optional Hero Text -->
-  <div style="max-width:350px; text-align:center;">
+  <div class="hero-text">
     <h1>Meet. Match. Connect.</h1>
     <p>Start your journey to meaningful connections today with verified profiles and safety features.</p>
     <button onclick="window.location.href='signup.html'">Join Bumbble Now</button>
   </div>
 </section>
+
+<!-- Live Activity -->
+<div id="liveStatus">
+  <h2>Live Activity</h2>
+  <p id="onlineUsers">Online Users: 0</p>
+  <p id="recentJoin">Recent Join: None</p>
+</div>
 
 <!-- Features Section -->
 <section class="features">
@@ -182,39 +116,12 @@ footer { text-align:center; padding:20px; background:#f1f1f1; margin-top:auto; }
   </div>
 </section>
 
-<!-- Chat / Friends UI -->
-<div class="friends-container">
-  <div class="user-list" id="userList"></div>
-</div>
-
-<div id="chatModal">
-  <div id="chatHeader">
-    <span id="chatWith">Friend</span>
-    <button onclick="closeChat()">X</button>
-  </div>
-  <div id="chatMessages"></div>
-  <div id="typingIndicator"></div>
-  <div id="chatInputContainer">
-    <button id="fileBtn">📎</button>
-    <input type="text" id="chatInput" placeholder="Type a message">
-    <button id="sendBtn">Send</button>
-    <input type="file" id="chatFileInput" style="display:none;" multiple>
-  </div>
-</div>
-
-<!-- Interactive Heart & Match -->
-<div style="text-align:center; margin:20px 0;">
-  <div class="heart"></div>
-  <button id="matchBtnInteractive">Match!</button>
-  <div class="chat-bubble">Hi there! 👋</div>
-</div>
-
 <footer>
   <p>&copy; 2025 Bumbble.in. All rights reserved.</p>
 </footer>
 
 <script>
-// Dynamic navigation
+// Dynamic Navigation
 const nav = document.getElementById("navLinks");
 const currentUser = localStorage.getItem("current_user");
 
@@ -232,7 +139,7 @@ if(currentUser){
         alert("✅ Logged out successfully.");
         window.location.href = "login.html";
     });
-    const joinBtn = document.querySelector(".hero button");
+    const joinBtn = document.querySelector(".hero-text button");
     if(joinBtn) joinBtn.style.display = "none";
 } else {
     nav.innerHTML = `
@@ -245,18 +152,6 @@ if(currentUser){
         <a href="signup.html">Sign Up</a>
     `;
 }
-
-/* Heart animation */
-.heart { width:80px; height:80px; background-color:#b39ddb; position:relative; transform:rotate(-45deg); animation:heartbeat 1.5s infinite; }
-.heart::before,.heart::after{ content:""; width:80px;height:80px;background-color:#b39ddb; border-radius:50%; position:absolute; }
-.heart::before{ top:-40px; left:0; }
-.heart::after{ left:40px; top:0; }
-@keyframes heartbeat {0%,100%{transform:scale(1) rotate(-45deg);}25%{transform:scale(1.2) rotate(-45deg);}50%{transform:scale(1) rotate(-45deg);}75%{transform:scale(1.2) rotate(-45deg);}}
-
-#matchBtnInteractive { padding:12px 25px; border:none; border-radius:25px; background:#b39ddb; color:white; font-weight:bold; cursor:pointer; }
-#matchBtnInteractive:hover { transform:scale(1.1); box-shadow:0 8px 16px rgba(0,0,0,0.2); }
-
-
 
 // Firebase Initialization
 const firebaseConfig = {
@@ -277,9 +172,18 @@ document.getElementById('matchBtnInteractive').addEventListener('click', () => {
   confetti({ particleCount:200, spread:70, origin:{ y:0.6 } });
 });
 
-// --- Existing Firebase Chat Logic Placeholder ---
-// Implement: auth state change, load users, open chat, send messages, typing, file upload, unread message count, draggable chat, etc.
-</script>
+// Live activity simulation
+const onlineUsersEl = document.getElementById('onlineUsers');
+const recentJoinEl = document.getElementById('recentJoin');
+let onlineUsers = ["Alice","Bob","Charlie"];
+let recentJoins = ["David","Eva"];
 
+function updateLiveStatus(){
+    onlineUsersEl.innerText = "Online Users: " + onlineUsers.length;
+    recentJoinEl.innerText = "Recent Join: " + recentJoins.join(", ");
+}
+updateLiveStatus();
+setInterval(updateLiveStatus, 10000);
+</script>
 </body>
 </html>
