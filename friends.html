@@ -1,51 +1,138 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Friends & Chat</title>
 <style>
-  body { font-family: Arial, sans-serif; margin:0; background:#f8f6fb; color:#333; display:flex; min-height:100vh; flex-direction: column; }
-  header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#d8cce5; box-shadow:0 3px 6px rgba(0,0,0,0.1); position:fixed; top:0; left:0; right:0; z-index:500; }
-  header h1{ font-size:24px; margin:0; }
-  nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
-  .friends-container { width:250px; background:#e6e0f0; border-right:1px solid #ccc; padding:10px; overflow-y:auto; position:fixed; top:60px; bottom:0; left:0; }
-  .main-content { flex:1; margin-left:250px; padding:80px 20px 20px 20px; }
-  .user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
-  .user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #ccc; cursor:pointer; transition:0.2s; }
-  .user-row:hover, .user-row.active { background:#ddd6f3; }
-  .user-row.flash { animation:flashLavender 0.5s; }
-  @keyframes flashLavender { 0%{background:#e0b3ff;} 100%{background:#ddd6f3;} }
-  .status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
-  .online { background:green; } .offline { background:red; }
-  .badge { background:#9b59b6; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
-  /* Chat window */
-  #chatModal { position:fixed; bottom:20px; right:20px; width:360px; height:480px; max-height:90vh; border:1px solid #ccc; background:#d8cce5; border-radius:10px; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); overflow:hidden; z-index:1000; }
-  #chatHeader { background:#d8cce5; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; cursor:move; }
-  #chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:#f8f6fb; scroll-behavior:smooth; }
-  #typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
-  .message { max-width:80%; padding:8px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
-  .message.self { background:#9b59b6; color:white; align-self:flex-end; }
-  .message.friend { background:#ece6f2; color:#111; align-self:flex-start; }
-  .timestamp { font-size:10px; color:#666; margin-top:6px; text-align:right; display:block; }
-  .uploading-badge { font-size:11px; color:#444; margin-top:6px; display:inline-block; background:#e6e0f0; padding:3px 6px; border-radius:6px; border:1px solid #d0c4e0; }
-  #chatInputContainer { display:flex; border-top:1px solid #ccc; align-items:center; gap:6px; padding:8px; background:#e6e0f0; }
-  #chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:8px; background:#f0e6fa; }
-  #sendBtn, #fileBtn { padding:8px 12px; border:none; background:#b39ddb; cursor:pointer; border-radius:8px; color:white; font-weight:bold; }
-  #sendBtn:hover, #fileBtn:hover { background:#9775c2; }
-  .friends-container::-webkit-scrollbar { width:6px; }
-  .friends-container::-webkit-scrollbar-thumb { background:#b39ddb; border-radius:3px; }
-  .friends-container::-webkit-scrollbar-track { background:#f0e6fa; }
-  .error-banner { background:#f2e6ff; color:#800; padding:8px 12px; border:1px solid #d8b3ff; margin:10px; border-radius:6px; }
-  .chat-image { max-width:100%; height:auto; display:block; margin-top:4px; border-radius:8px; }
-  .resizer { width:12px; height:12px; background:#9775c2; border-radius:50%; position:absolute; z-index:10; }
-  #resBR { bottom:8px; right:8px; cursor:se-resize; }
-  #resBL { bottom:8px; left:8px; cursor:sw-resize; }
-  #resTR { top:8px; right:8px; cursor:ne-resize; }
-  #resTL { top:8px; left:8px; cursor:nw-resize; }
-  .small-muted{ color:#666; font-size:13px; }
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #f8f6fb;
+  color: #333;
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: #d8cce5;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 500;
+}
+header h1 { font-size: 24px; margin: 0; }
+nav a { margin-left: 10px; font-weight: bold; color: #333; text-decoration: none; }
+.friends-container {
+  width: 250px;
+  background: #e6e0f0;
+  border-right: 1px solid #ccc;
+  padding: 10px;
+  overflow-y: auto;
+  position: fixed;
+  top: 60px;
+  bottom: 0;
+  left: 0;
+}
+.main-content {
+  flex: 1;
+  margin-left: 250px;
+  padding: 80px 20px 20px 20px;
+}
+.user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+}
+.user-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  border-bottom: 1px solid #ccc;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.user-row:hover, .user-row.active { background: #ddd6f3; }
+.user-row.flash { animation: flashLavender 0.5s; }
+@keyframes flashLavender { 0%{background:#e0b3ff;} 100%{background:#ddd6f3;} }
+.status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.online { background: green; } .offline { background: red; }
+.badge {
+  background: #9b59b6; color: white; font-size: 10px; font-weight: bold;
+  padding: 1px 5px; border-radius: 10px; margin-left: 6px;
+}
+#chatModal {
+  position: fixed;
+  bottom: 0;
+  right: 20px;
+  width: 360px;
+  height: 500px;
+  max-height: 70vh;
+  min-width: 300px;
+  min-height: 250px;
+  resize: both;
+  overflow: auto;
+  border: 1px solid #ccc;
+  background: #d8cce5;
+  border-radius: 10px 10px 0 0;
+  display: none;
+  flex-direction: column;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
+#chatHeader {
+  background: #d8cce5;
+  padding: 10px;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 10px 10px 0 0;
+  cursor: move;
+}
+#chatMessages {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f8f6fb;
+  scroll-behavior: smooth;
+}
+#typingIndicator { font-size: 12px; color: #555; padding-left: 10px; height: 18px; }
+.message { max-width: 80%; padding: 8px 10px; border-radius: 10px; position: relative; word-wrap: break-word; }
+.message.self { background: #9b59b6; color: white; align-self: flex-end; }
+.message.friend { background: #ece6f2; color: #111; align-self: flex-start; }
+.timestamp { font-size: 10px; color: #666; margin-top: 6px; text-align: right; display: block; }
+.uploading-badge { font-size: 11px; color: #444; margin-top: 6px; background: #e6e0f0; padding: 3px 6px; border-radius: 6px; border: 1px solid #d0c4e0; display:inline-block; }
+#chatInputContainer { display: flex; border-top: 1px solid #ccc; align-items: center; gap: 6px; padding: 8px; background: #e6e0f0; }
+#chatInput { flex: 1; padding: 8px; border: none; outline: none; border-radius: 8px; background: #f0e6fa; }
+#sendBtn, #fileBtn {
+  padding: 8px 12px;
+  border: none;
+  background: #b39ddb;
+  cursor: pointer;
+  border-radius: 8px;
+  color: white;
+  font-weight: bold;
+}
+#sendBtn:hover, #fileBtn:hover { background: #9775c2; }
+.friends-container::-webkit-scrollbar { width: 6px; }
+.friends-container::-webkit-scrollbar-thumb { background: #b39ddb; border-radius: 3px; }
+.friends-container::-webkit-scrollbar-track { background: #f0e6fa; }
+.error-banner { background: #f2e6ff; color: #800; padding: 8px 12px; border: 1px solid #d8b3ff; margin: 10px; border-radius: 6px; }
+.chat-image { max-width: 100%; height: auto; display: block; margin-top: 4px; border-radius: 6px; }
 </style>
-<!-- Firebase libs -->
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -66,29 +153,24 @@
 </div>
 
 <div class="main-content">
-  <div id="chatModal" role="dialog" aria-label="Chat window">
-    <div id="chatHeader"><span id="chatWith">Friend</span><button id="closeChatBtn">X</button></div>
+  <div id="chatModal">
+    <div id="chatHeader">
+      <span id="chatWith">Friend</span>
+      <button onclick="closeChat()">X</button>
+    </div>
     <div id="chatMessages"></div>
     <div id="typingIndicator"></div>
     <div id="chatInputContainer">
       <button id="fileBtn">📎</button>
-      <input id="chatInput" type="text" placeholder="Type a message" />
+      <input type="text" id="chatInput" placeholder="Type a message">
       <button id="sendBtn">Send</button>
-      <input id="chatFileInput" type="file" style="display:none" multiple accept="image/*,application/*" />
+      <input type="file" id="chatFileInput" style="display:none;" multiple>
     </div>
-
-    <!-- Resizers -->
-    <div id="resBR" class="resizer" aria-hidden="true"></div>
-    <div id="resBL" class="resizer" aria-hidden="true"></div>
-    <div id="resTR" class="resizer" aria-hidden="true"></div>
-    <div id="resTL" class="resizer" aria-hidden="true"></div>
   </div>
-
   <div id="errorArea"></div>
 </div>
 
 <script>
-/* ========== Firebase init (same config) ========== */
 const firebaseConfig = {
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
   authDomain:"bumbble-c061f.firebaseapp.com",
@@ -102,468 +184,193 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-/* ========== Elements & state ========== */
-const nav = document.getElementById('navLinks');
-const userList = document.getElementById('userList');
-const chatModal = document.getElementById('chatModal');
-const chatHeader = document.getElementById('chatHeader');
-const chatWith = document.getElementById('chatWith');
-const chatMessages = document.getElementById('chatMessages');
-const typingIndicator = document.getElementById('typingIndicator');
-const chatInput = document.getElementById('chatInput');
-const sendBtn = document.getElementById('sendBtn');
-const fileBtn = document.getElementById('fileBtn');
-const chatFileInput = document.getElementById('chatFileInput');
-const closeChatBtn = document.getElementById('closeChatBtn');
-const resBR = document.getElementById('resBR');
-const resBL = document.getElementById('resBL');
-const resTR = document.getElementById('resTR');
-const resTL = document.getElementById('resTL');
-const errorArea = document.getElementById('errorArea');
+const userList = document.getElementById("userList");
+const chatModal = document.getElementById("chatModal");
+const chatMessages = document.getElementById("chatMessages");
+const chatWith = document.getElementById("chatWith");
+const chatInput = document.getElementById("chatInput");
+const sendBtn = document.getElementById("sendBtn");
+const fileBtn = document.getElementById("fileBtn");
+const chatFileInput = document.getElementById("chatFileInput");
+const typingIndicator = document.getElementById("typingIndicator");
+const errorArea = document.getElementById("errorArea");
+const nav = document.getElementById("navLinks");
 
-let currentUserUid = "";
-let currentChatFriendUid = "";
-let currentChatListener = null;
-let unreadCounters = {};
-const lastChatTimestamps = {};
-let typingTimeout = null;
+let currentUserUid="", currentChatFriendUid="", currentChatListener=null;
+let unreadCounters={}, typingTimeout;
 
-/* ========== helpers ========== */
-function showError(text){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(text)+'</div>'; }
-function escapeHtml(text){ return String(text||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-function getChatId(a,b){ return a < b ? a + '_' + b : b + '_' + a; }
-
-/* ========== Auth state ========== */
 auth.onAuthStateChanged(user=>{
   if(user && user.emailVerified){
-    currentUserUid = user.uid;
-    nav.innerHTML = `
-      <a href="index.html">Home</a>
-      <a href="friends.html">Friends</a>
-      <a href="stories.html">Stories</a>
-      <a href="events.html">Events</a>
-      <a href="safety.html">Safety</a>
-      <a href="profile.html">Profile</a>
-      <a href="#" id="logoutBtn">Logout</a>`;
-    document.getElementById('logoutBtn').addEventListener('click', ()=>{
-      db.ref('users/'+currentUserUid+'/public/online').set(false);
-      localStorage.removeItem('lastChatFriendUid');
-      localStorage.removeItem('lastChatFriendName');
-      auth.signOut().then(()=> window.location.href='login.html');
-    });
-
-    setupOnlineStatus();
-    loadUsersRealtime();
-    setupUnreadListener();
-
-    const lastUid = localStorage.getItem('lastChatFriendUid');
-    const lastName = localStorage.getItem('lastChatFriendName');
-    if(lastUid && lastName) openChat(lastUid, lastName);
+    currentUserUid=user.uid;
+    nav.innerHTML=`<a href="index.html">Home</a><a href="friends.html">Friends</a><a href="profile.html">Profile</a><a href="#" id="logoutBtn">Logout</a>`;
+    document.getElementById("logoutBtn").addEventListener("click",()=>auth.signOut());
+    setupOnlineStatus(); loadUsersRealtime(); setupUnreadListener();
   } else {
-    nav.innerHTML = '<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>';
-    document.querySelector('.friends-container').innerHTML = '<p style="padding:12px">Please login to view users.</p>';
+    nav.innerHTML=`<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
   }
 });
 
-/* ========== Online presence ========== */
 function setupOnlineStatus(){
-  if(!currentUserUid) return;
-  const userStatusRef = db.ref('users/'+currentUserUid+'/public/online');
-  db.ref('.info/connected').on('value', snap=>{
-    if(snap && snap.val()===true){
-      userStatusRef.set(true);
-      userStatusRef.onDisconnect().set(false);
-    }
+  if(!currentUserUid)return;
+  const ref=db.ref('users/'+currentUserUid+'/public/online');
+  db.ref('.info/connected').on('value',snap=>{
+    if(snap.val()===true){ ref.set(true); ref.onDisconnect().set(false); }
   });
 }
 
-/* ========== Users list ========== */
 function loadUsersRealtime(){
-  db.ref('users').on('value', snapshot=>{
-    const usersData = snapshot.val() || {};
-    const friends = Object.keys(usersData)
-      .filter(uid => uid !== currentUserUid)
-      .map(uid=>{
-        const u = usersData[uid].public || {};
-        return { uid, name: u.name || 'Unknown', gender: u.gender || 'N/A', online: !!u.online };
-      });
-    friends.sort((a,b)=>(lastChatTimestamps[b.uid]||0)-(lastChatTimestamps[a.uid]||0) || a.name.localeCompare(b.name));
-    userList.innerHTML = '';
-    friends.forEach(f=>{
-      const row = document.createElement('div');
-      row.className = 'user-row';
-      row.dataset.uid = f.uid;
-      row.dataset.name = f.name;
-      row.innerHTML = `<div><span class="status-dot ${f.online?'online':'offline'}"></span>${escapeHtml(f.name)} (${escapeHtml(f.gender)})</div>`;
-      row.addEventListener('click', ()=> openChat(f.uid, f.name));
+  db.ref('users').on('value',snap=>{
+    const users=snap.val()||{};
+    const list=Object.keys(users).filter(u=>u!==currentUserUid).map(uid=>{
+      const p=users[uid].public||{};
+      return {uid,name:p.name||"Unknown",online:!!p.online};
+    });
+    userList.innerHTML="";
+    list.forEach(u=>{
+      const row=document.createElement('div');
+      row.className='user-row';
+      row.dataset.uid=u.uid;
+      row.innerHTML=`<div><span class="status-dot ${u.online?'online':'offline'}"></span>${u.name}</div>`;
+      row.onclick=()=>openChat(u.uid,u.name);
       userList.appendChild(row);
     });
     updateFriendListBadges();
   });
 }
 
-/* ========== Unread badges ========== */
 function setupUnreadListener(){
-  if(!currentUserUid) return;
-  db.ref('unread/'+currentUserUid).on('value', snap=>{
-    unreadCounters = {};
-    const data = snap.val() || {};
-    Object.keys(data).forEach(senderUid=>{
-      unreadCounters[senderUid] = Object.keys(data[senderUid]||{}).length;
+  db.ref('unread/'+currentUserUid).on('value',snap=>{
+    unreadCounters={};
+    const data=snap.val()||{};
+    Object.keys(data).forEach(uid=>{
+      unreadCounters[uid]=Object.keys(data[uid]||{}).length;
     });
     updateFriendListBadges();
   });
 }
 function updateFriendListBadges(){
   document.querySelectorAll('.user-row').forEach(row=>{
-    const uid = row.dataset.uid;
-    let badge = row.querySelector('.badge');
-    const count = Number(unreadCounters[uid]||0);
+    const uid=row.dataset.uid;
+    const count=unreadCounters[uid]||0;
+    let badge=row.querySelector('.badge');
     if(count>0){
-      if(!badge){ badge = document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge); }
-      badge.textContent = count;
+      if(!badge){ badge=document.createElement('span'); badge.className='badge'; row.querySelector('div').appendChild(badge); }
+      badge.textContent=count;
     } else if(badge) badge.remove();
   });
 }
-function flashUserRow(uid){
-  const row = document.querySelector('.user-row[data-uid="'+uid+'"]');
-  if(row){ row.classList.add('flash'); setTimeout(()=>row.classList.remove('flash'),800); }
-}
 
-/* ========== Open chat ========== */
-function openChat(friendUid, friendName){
-  document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
-  const activeRow = document.querySelector('.user-row[data-uid="'+friendUid+'"]');
-  if(activeRow) activeRow.classList.add('active');
+function openChat(uid,name){
+  currentChatFriendUid=uid;
+  chatWith.textContent=name;
+  chatModal.style.display='flex';
+  chatMessages.innerHTML="";
+  typingIndicator.textContent="";
+  db.ref('unread/'+currentUserUid+'/'+uid).remove();
 
-  currentChatFriendUid = friendUid;
-  chatWith.textContent = friendName;
-  localStorage.setItem('lastChatFriendUid', friendUid);
-  localStorage.setItem('lastChatFriendName', friendName);
-  chatModal.style.display = 'flex';
-  chatMessages.innerHTML = '';
-  typingIndicator.textContent = '';
-
-  // clear unread
-  db.ref('unread/'+currentUserUid+'/'+friendUid).remove();
-  delete unreadCounters[friendUid];
-  updateFriendListBadges();
-
-  const chatId = getChatId(currentUserUid, friendUid);
+  const chatId=getChatId(currentUserUid,uid);
   if(currentChatListener) currentChatListener.off();
-  db.ref('chats/'+chatId+'/members').update({ [currentUserUid]: true, [friendUid]: true });
-
-  const chatRef = db.ref('chats/'+chatId+'/messages');
-  chatRef.once('value', snap=>{
-    const msgs = snap.val() || {};
-    Object.keys(msgs).sort((a,b)=>msgs[a].timestamp - msgs[b].timestamp).forEach(k=>{
-      addOrUpdateMessageToChat(Object.assign({}, msgs[k], {_key:k}));
-    });
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  });
-
-  currentChatListener = chatRef;
-  chatRef.on('child_added', snap=>{
-    const msg = snap.val(); msg._key = snap.key;
-    addOrUpdateMessageToChat(msg);
-    lastChatTimestamps[friendUid] = msg.timestamp;
-    if(msg.receiver === currentUserUid && msg.sender !== currentUserUid){
-      if(currentChatFriendUid !== msg.sender){
-        db.ref('unread/'+currentUserUid+'/'+msg.sender+'/'+msg._key).set(true);
-        flashUserRow(msg.sender);
-      } else {
-        db.ref('unread/'+currentUserUid+'/'+msg.sender).remove();
-        delete unreadCounters[msg.sender];
-        updateFriendListBadges();
-      }
-    }
-  });
-  chatRef.on('child_changed', snap => addOrUpdateMessageToChat(Object.assign({}, snap.val(), {_key:snap.key})));
-  listenTyping(friendUid);
+  const ref=db.ref('chats/'+chatId+'/messages');
+  ref.on('child_added',snap=>addMessage(snap.key,snap.val()));
+  currentChatListener=ref;
 }
 
-/* ========== Add/update message UI ========== */
-function addOrUpdateMessageToChat(msg){
-  if(!msg || !msg._key) return;
-  const id = 'msg-'+msg._key;
-  let el = document.getElementById(id);
-  const isSelf = (msg.sender === currentUserUid);
-  if(!el){
-    el = document.createElement('div');
-    el.id = id;
-    el.className = 'message ' + (isSelf ? 'self' : 'friend');
-    chatMessages.appendChild(el);
-  }
-
+function addMessage(key,msg){
+  const isSelf=(msg.sender===currentUserUid);
+  const el=document.createElement('div');
+  el.className='message '+(isSelf?'self':'friend');
   if(msg.fileData){
-    let isImage = false;
-    if(msg.fileType && msg.fileType.indexOf('image/') === 0) isImage = true;
-    if(!isImage && msg.fileName && /\.(jpg|jpeg|png|gif)$/i.test(msg.fileName)) isImage = true;
-
-    if(isImage){
-      el.innerHTML = `<img class="chat-image" src="${msg.fileData}" alt="${escapeHtml(msg.fileName||'image')}"/><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
-    } else {
-      el.innerHTML = `<a href="${msg.fileData}" download="${escapeHtml(msg.fileName||'file')}" style="text-decoration:none; font-size:16px;">⬇️ Download</a><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`;
-    }
-  } else if(msg.uploading){
-    el.innerHTML = '<span class="uploading-badge">Sending '+escapeHtml(msg.fileName||'...')+'</span><span class="timestamp '+(isSelf?'':'friend')+'">'+new Date(msg.timestamp).toLocaleString()+'</span>';
+    if(msg.fileType.includes('image'))
+      el.innerHTML=`<img class="chat-image" src="${msg.fileData}"><span class="timestamp">${new Date(msg.timestamp).toLocaleString()}</span>`;
+    else el.innerHTML=`<a href="${msg.fileData}" download="${msg.fileName}">⬇️ ${msg.fileName}</a>`;
   } else if(msg.text){
-    el.innerHTML = escapeHtml(msg.text) + '<div class="timestamp '+(isSelf?'':'friend')+'">' + new Date(msg.timestamp).toLocaleString() + '</div>';
-  } else {
-    el.innerHTML = '<div class="small-muted">Unknown message</div>';
+    el.innerHTML=msg.text+`<div class="timestamp">${new Date(msg.timestamp).toLocaleString()}</div>`;
   }
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+  chatMessages.appendChild(el);
+  chatMessages.scrollTop=chatMessages.scrollHeight;
 }
 
-/* ========== Typing indicator ========== */
-chatInput.addEventListener('input', function(){
-  if(!currentChatFriendUid) return;
-  db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).set(true);
-  clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(()=> db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove(), 1000);
-});
-function listenTyping(friendUid){
-  db.ref('typing/'+currentUserUid+'/'+friendUid).on('value', snap=>{
-    typingIndicator.textContent = snap.exists() ? chatWith.textContent + ' is typing...' : '';
-  });
-}
+sendBtn.onclick=sendMessage;
+chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter')sendMessage(); });
 
-/* ========== Send message ========== */
 function sendMessage(){
-  const text = chatInput.value.trim();
-  if(!text || !currentChatFriendUid) return;
-  const chatId = getChatId(currentUserUid, currentChatFriendUid);
-  const newMsgRef = db.ref('chats/'+chatId+'/messages').push();
-  newMsgRef.set({ sender: currentUserUid, receiver: currentChatFriendUid, text: text, timestamp: Date.now() });
-  db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+newMsgRef.key).set(true);
-  chatInput.value = '';
+  const text=chatInput.value.trim();
+  if(!text||!currentChatFriendUid)return;
+  const chatId=getChatId(currentUserUid,currentChatFriendUid);
+  db.ref('chats/'+chatId+'/messages').push({
+    sender:currentUserUid,receiver:currentChatFriendUid,text, timestamp:Date.now()
+  });
+  chatInput.value="";
 }
-sendBtn.addEventListener('click', sendMessage);
-chatInput.addEventListener('keypress', e => { if(e.key === 'Enter') sendMessage(); });
 
-/* ========== Image resize helper (<=256KB) ========== */
-function resizeImageToLimit(file, maxKB = 256, maxWidth = 800){
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error('Failed to read file'));
-    reader.onload = () => {
-      const img = new Image();
-      img.onerror = () => reject(new Error('Invalid image'));
-      img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-        if(width > maxWidth){
-          const scale = maxWidth / width;
-          width = Math.round(width * scale);
-          height = Math.round(height * scale);
+// -------- Image resize before upload ----------
+fileBtn.onclick=()=>chatFileInput.click();
+chatFileInput.onchange=async function(){
+  if(!this.files.length||!currentChatFriendUid)return;
+  for(const file of this.files){
+    let dataUrl=await resizeImage(file,256*1024);
+    const chatId=getChatId(currentUserUid,currentChatFriendUid);
+    db.ref('chats/'+chatId+'/messages').push({
+      sender:currentUserUid,receiver:currentChatFriendUid,
+      fileData:dataUrl,fileType:file.type,fileName:file.name,timestamp:Date.now()
+    });
+  }
+  this.value="";
+};
+
+async function resizeImage(file,maxSize){
+  return new Promise(resolve=>{
+    if(!file.type.startsWith('image/')){
+      const reader=new FileReader();
+      reader.onload=e=>resolve(e.target.result);
+      reader.readAsDataURL(file);
+      return;
+    }
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const canvas=document.createElement('canvas');
+        const ctx=canvas.getContext('2d');
+        let w=img.width,h=img.height;
+        const maxDim=800;
+        if(w>h&&w>maxDim){ h*=maxDim/w; w=maxDim; }
+        else if(h>w&&h>maxDim){ w*=maxDim/h; h=maxDim; }
+        canvas.width=w; canvas.height=h;
+        ctx.drawImage(img,0,0,w,h);
+        let quality=0.9, result=canvas.toDataURL('image/jpeg',quality);
+        while(result.length>maxSize && quality>0.2){
+          quality-=0.1;
+          result=canvas.toDataURL('image/jpeg',quality);
         }
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-
-        function toDataURL(q){
-          canvas.width = width;
-          canvas.height = height;
-          ctx.clearRect(0,0,canvas.width,canvas.height);
-          ctx.drawImage(img, 0, 0, width, height);
-          return canvas.toDataURL('image/jpeg', q);
-        }
-
-        let quality = 0.9;
-        let dataUrl = toDataURL(quality);
-        function approxKB(durl){ return Math.round((durl.length * 3 / 4) / 1024); }
-
-        if(approxKB(dataUrl) <= maxKB) return resolve(dataUrl);
-
-        const minQuality = 0.25;
-        const qualityStep = 0.1;
-
-        function tryReduceQuality(){
-          while(quality > minQuality){
-            quality = Math.max(minQuality, quality - qualityStep);
-            dataUrl = toDataURL(quality);
-            if(approxKB(dataUrl) <= maxKB) return resolve(dataUrl);
-          }
-          reduceDimensionsAndRetry();
-        }
-
-        function reduceDimensionsAndRetry(){
-          if(width <= 200 || height <= 200) return resolve(dataUrl);
-          width = Math.round(width * 0.8);
-          height = Math.round(height * 0.8);
-          quality = 0.85;
-          dataUrl = toDataURL(quality);
-          if(approxKB(dataUrl) <= maxKB) return resolve(dataUrl);
-          tryReduceQuality();
-        }
-
-        tryReduceQuality();
+        resolve(result);
       };
-      img.src = reader.result;
+      img.src=e.target.result;
     };
     reader.readAsDataURL(file);
   });
 }
+// ------------------------------------------------
 
-/* ========== File upload (uses resize for images) ========== */
-fileBtn.addEventListener('click', ()=> chatFileInput.click());
-chatFileInput.addEventListener('change', function(evt){
-  const files = Array.from(evt.target.files || []);
-  if(!files.length) return;
-  if(!currentChatFriendUid){ showError('Open a chat first'); this.value=''; return; }
+function closeChat(){ chatModal.style.display='none'; if(currentChatListener){ currentChatListener.off(); currentChatListener=null; } }
 
-  files.forEach(file=>{
-    const chatId = getChatId(currentUserUid, currentChatFriendUid);
-    const tempRef = db.ref('chats/'+chatId+'/messages').push({
-      sender: currentUserUid, receiver: currentChatFriendUid, uploading: true, fileName: file.name, timestamp: Date.now()
-    });
+function getChatId(a,b){ return [a,b].sort().join('_'); }
 
-    if(file.type.startsWith('image/')){
-      resizeImageToLimit(file, 256, 800).then(dataUrl=>{
-        tempRef.update({ uploading:false, fileData: dataUrl, fileType: 'image/jpeg' });
-        db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempRef.key).set(true);
-      }).catch(err=>{
-        // fallback: upload original
-        const r = new FileReader();
-        r.onload = e => {
-          tempRef.update({ uploading:false, fileData: e.target.result, fileType: file.type });
-          db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempRef.key).set(true);
-        };
-        r.readAsDataURL(file);
-      });
-    } else {
-      // non-image: simple size limit (10MB) in this demo
-      if(file.size > 10*1024*1024){ tempRef.remove(); showError('Non-image file too large (max 10MB)'); return; }
-      const r = new FileReader();
-      r.onload = e => {
-        tempRef.update({ uploading:false, fileData: e.target.result, fileType: file.type });
-        db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempRef.key).set(true);
-      };
-      r.readAsDataURL(file);
-    }
-  });
-
-  this.value = ''; // reset input
+// Drag to move
+const chatHeader=document.getElementById('chatHeader');
+let drag=false,offX,offY;
+chatHeader.addEventListener('mousedown',e=>{
+  if(e.target.tagName==='BUTTON')return;
+  drag=true;const r=chatModal.getBoundingClientRect();
+  offX=e.clientX-r.left; offY=e.clientY-r.top;
 });
-
-/* ========== Close chat ========== */
-function closeChat(){ chatModal.style.display = 'none'; currentChatFriendUid = null; if(currentChatListener){ currentChatListener.off(); currentChatListener = null; } }
-closeChatBtn.addEventListener('click', closeChat);
-
-/* ========== Resizers (BR, BL, TR, TL) implemented reliably ========== */
-(function initResizers(){
-  const resizers = [
-    {el: resBR, mode: 'br'},
-    {el: resBL, mode: 'bl'},
-    {el: resTR, mode: 'tr'},
-    {el: resTL, mode: 'tl'},
-  ];
-  const minW = 300, minH = 200;
-  const maxW = () => Math.max(300, window.innerWidth - 40);
-  const maxH = () => Math.max(300, window.innerHeight - 60);
-
-  resizers.forEach(rinfo=>{
-    const el = rinfo.el;
-    let dragging = false;
-    let startX = 0, startY = 0;
-    let startWidth = 0, startHeight = 0;
-    let startLeft = 0, startTop = 0;
-
-    el.addEventListener('mousedown', e=>{
-      e.preventDefault();
-      dragging = true;
-      const rect = chatModal.getBoundingClientRect();
-      startX = e.clientX; startY = e.clientY;
-      startWidth = rect.width; startHeight = rect.height;
-      startLeft = rect.left; startTop = rect.top;
-      document.body.style.userSelect = 'none';
-
-      function onMove(ev){
-        if(!dragging) return;
-        const dx = ev.clientX - startX;
-        const dy = ev.clientY - startY;
-
-        let newW = startWidth, newH = startHeight, newLeft = startLeft, newTop = startTop;
-
-        if(rinfo.mode === 'br'){
-          newW = startWidth + dx;
-          newH = startHeight + dy;
-        } else if(rinfo.mode === 'bl'){
-          newW = startWidth - dx;
-          newH = startHeight + dy;
-          newLeft = startLeft + dx;
-        } else if(rinfo.mode === 'tr'){
-          newW = startWidth + dx;
-          newH = startHeight - dy;
-          newTop = startTop + dy;
-        } else if(rinfo.mode === 'tl'){
-          newW = startWidth - dx;
-          newH = startHeight - dy;
-          newLeft = startLeft + dx;
-          newTop = startTop + dy;
-        }
-
-        newW = Math.min(Math.max(newW, minW), maxW());
-        newH = Math.min(Math.max(newH, minH), maxH());
-
-        // apply width/height
-        chatModal.style.width = newW + 'px';
-        chatModal.style.height = newH + 'px';
-
-        // if left/top changed (for bl, tl, tr) move the modal (ensure within viewport)
-        if(newLeft !== startLeft || newTop !== startTop){
-          // clamp within viewport
-          const clampedLeft = Math.min(Math.max(newLeft, 0), window.innerWidth - newW);
-          const clampedTop = Math.min(Math.max(newTop, 40), window.innerHeight - newH);
-          chatModal.style.left = clampedLeft + 'px';
-          chatModal.style.top = clampedTop + 'px';
-          // switch to absolute positioning if not already set
-          if(getComputedStyle(chatModal).position !== 'fixed'){
-            chatModal.style.position = 'fixed';
-          }
-        }
-      }
-
-      function onUp(){
-        dragging = false;
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
-        document.body.style.userSelect = 'auto';
-      }
-
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
-    });
-  });
-})();
-
-/* ========== Make chat header draggable ========== */
-(function makeDraggable(){
-  let dragging = false, startX=0, startY=0, startLeft=0, startTop=0;
-  chatHeader.addEventListener('mousedown', e=>{
-    if(e.target.tagName === 'BUTTON') return;
-    dragging = true;
-    const rect = chatModal.getBoundingClientRect();
-    startX = e.clientX; startY = e.clientY;
-    startLeft = rect.left; startTop = rect.top;
-    document.body.style.userSelect = 'none';
-  });
-  document.addEventListener('mousemove', e=>{
-    if(!dragging) return;
-    let left = startLeft + (e.clientX - startX);
-    let top = startTop + (e.clientY - startY);
-    left = Math.min(Math.max(left, 0), window.innerWidth - chatModal.offsetWidth);
-    top = Math.min(Math.max(top, 40), window.innerHeight - chatModal.offsetHeight);
-    chatModal.style.left = left + 'px';
-    chatModal.style.top = top + 'px';
-    chatModal.style.position = 'fixed';
-  });
-  document.addEventListener('mouseup', ()=>{ dragging = false; document.body.style.userSelect = 'auto'; });
-})();
-
-/* ========== Global error capture ========== */
-window.addEventListener('error', ev => {
-  console.error('Runtime error', ev);
-  showError('Runtime error: ' + (ev.message || ev.toString()));
+document.addEventListener('mouseup',()=>drag=false);
+document.addEventListener('mousemove',e=>{
+  if(!drag)return;
+  let l=e.clientX-offX,t=e.clientY-offY;
+  l=Math.max(0,Math.min(l,window.innerWidth-chatModal.offsetWidth));
+  t=Math.max(0,Math.min(t,window.innerHeight-chatModal.offsetHeight));
+  chatModal.style.left=l+'px'; chatModal.style.top=t+'px';
 });
 </script>
 </body>
