@@ -307,13 +307,7 @@ fileBtn.onclick = () => chatFileInput.click();
 chatFileInput.addEventListener('change', async e => {
   if (!currentChatFriendUid) return;
   
-  const files = Array.from(e.target.files);
-  for (const f of files) {
-    if (!f.type.startsWith('image/')) continue; // only images
-
-    const reader = new FileReader();
-    reader.onload = async function(ev) {
-      const imageData = ev.target.result;});
+  
   });
  });
 
@@ -344,6 +338,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
