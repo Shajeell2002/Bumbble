@@ -304,7 +304,7 @@ chatFileInput.addEventListener('change', async e=>{
         const hentaiScore = predictions.find(p => p.className === 'Hentai')?.probability || 0;
         const sexyScore = predictions.find(p => p.className === 'Sexy')?.probability || 0;
 
-        if(pornScore>0.7 || hentaiScore>0.7){ alert("Explicit content detected! Upload blocked."); return; }
+        if(pornScore>0.8 || hentaiScore>0.8){ alert("Explicit content detected! Upload blocked."); return; }
         if(sexyScore>0.85){ if(!confirm("This image may be suggestive. Do you still want to upload?")) return; }
       }
 
@@ -349,4 +349,5 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 </script>
 </body>
 </html>
+
 
