@@ -302,9 +302,6 @@ chatFileInput.addEventListener('change', async e => {
   Array.from(e.target.files).forEach(f=>{
     const chatId=getChatId(currentUserUid,currentChatFriendUid);
     const tempMsgRef=db.ref('chats/'+chatId+'/messages').push({sender:currentUserUid,receiver:currentChatFriendUid,uploading:true,fileName:f.name,timestamp:Date.now()});
-    const reader=new FileReader();
-    reader.onload=function(ev){
-      const data=ev.target.result;
       tempMsgRef.update({uploading:false,fileData:data,fileType:f.type});
       db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempMsgRef.key).set(true);
     };
@@ -339,4 +336,5 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
