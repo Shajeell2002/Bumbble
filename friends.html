@@ -301,11 +301,19 @@ chatFileInput.addEventListener('change', e=>{
   });
  });
 
-  // --- File Upload with Nudity Moderation ---
- 
+// --- File Upload with Nudity Moderation ---
+fileBtn.onclick = () => chatFileInput.click();
+
+chatFileInput.addEventListener('change', async e => {
+  if (!currentChatFriendUid) return;
+  
   const files = Array.from(e.target.files);
+  for (const f of files) {
+    if (!f.type.startsWith('image/')) continue; // only images
+
     const reader = new FileReader();
-});
+    reader.onload = async function(ev) {
+      const imageData = ev.target.result;});
   });
 
 // --- Close Chat ---
@@ -335,6 +343,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
