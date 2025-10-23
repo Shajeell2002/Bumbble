@@ -40,11 +40,15 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 .chat-image { max-width:100%; height:auto; display:block; margin-top:4px; }
 </style>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/nsfwjs"></script>
+
+<!-- NSFWJS -->
+<script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.0/dist/nsfwjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+
 </head>
 <body>
 
@@ -109,10 +113,13 @@ const errorArea = document.getElementById("errorArea");
 
 let currentUserUid = "", currentChatFriendUid = "", currentChatListener = null;
 let unreadCounters = {}, lastChatTimestamps = {}, typingTimeout;
-let nsfwModel = null;
 
-// --- Load NSFWJS ---
-(async () => { nsfwModel = await nsfwjs.load(); console.log("NSFWJS loaded"); })();
+// --- NSFWJS ---
+let nsfwModel = null;
+(async () => { 
+  nsfwModel = await nsfwjs.load();
+  console.log("NSFWJS model loaded");
+})();
 
 // --- Error Handling ---
 window.addEventListener('error', e=>{ showError(e.message || e); });
@@ -139,6 +146,7 @@ auth.onAuthStateChanged(user=>{
     setupOnlineStatus();
     loadUsersRealtime();
     setupUnreadListener();
+
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
     if(lastUid && lastName) openChat(lastUid,lastName);
@@ -293,41 +301,45 @@ chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); }
 // --- File Upload with NSFWJS ---
 fileBtn.onclick=()=>chatFileInput.click();
 chatFileInput.addEventListener('change', async e=>{
+  if(!nsfwModel){ alert("NSFW model not loaded yet"); return; }
   const files = Array.from(e.target.files);
+
   for(const file of files){
-    const img = new Image();
-    img.src = URL.createObjectURL(file);
-    img.onload = async ()=>{
-      if(nsfwModel){
-        const predictions = await nsfwModel.classify(img);
-        const pornScore = predictions.find(p => p.className === 'Porn')?.probability || 0;
-        const hentaiScore = predictions.find(p => p.className === 'Hentai')?.probability || 0;
-        const sexyScore = predictions.find(p => p.className === 'Sexy')?.probability || 0;
+    const reader = new FileReader();
+    reader.onload = async ev=>{
+      const img = new Image();
+      img.src = ev.target.result;
+      img.onload = async ()=>{
+        const predictions = await nsfwModel.classify(img, {size:299});
+        const pornScore = predictions.find(p=>p.className==='Porn')?.probability||0;
+        const hentaiScore = predictions.find(p=>p.className==='Hentai')?.probability||0;
+        const sexyScore = predictions.find(p=>p.className==='Sexy')?.probability||0;
 
-        if(pornScore>0.2 || hentaiScore>0.2){ alert("Explicit content detected! Upload blocked."); return; }
-        if(sexyScore>0.2){ if(!confirm("This image may be suggestive. Do you still want to upload?")) return; }
-      }
+        if(pornScore>0.7 || hentaiScore>0.7){ alert("Explicit content detected! Upload blocked."); return; }
+        if(sexyScore>0.6){ if(!confirm("This image may be suggestive. Continue?")) return; }
 
-      // Upload
-      const chatId=getChatId(currentUserUid,currentChatFriendUid);
-      const tempMsgRef=db.ref('chats/'+chatId+'/messages').push({sender:currentUserUid,receiver:currentChatFriendUid,uploading:true,fileName:file.name,timestamp:Date.now()});
-      const reader=new FileReader();
-      reader.onload=function(ev){
-        tempMsgRef.update({uploading:false,fileData:ev.target.result,fileType:file.type});
-        db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempMsgRef.key).set(true);
+        // ✅ Proceed with existing upload logic
+        uploadFileToChat(file, ev.target.result);
       };
-      reader.readAsDataURL(file);
     };
+    reader.readAsDataURL(file);
   }
   chatFileInput.value="";
 });
+
+function uploadFileToChat(file, dataURL){
+  const chatId=getChatId(currentUserUid,currentChatFriendUid);
+  const tempMsgRef=db.ref('chats/'+chatId+'/messages').push({sender:currentUserUid,receiver:currentChatFriendUid,uploading:true,fileName:file.name,timestamp:Date.now()});
+  tempMsgRef.update({uploading:false,fileData:dataURL,fileType:file.type});
+  db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempMsgRef.key).set(true);
+}
 
 // --- Close Chat ---
 function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null; if(currentChatListener) currentChatListener.off(); }
 function getChatId(a,b){ return a<b? a+'_'+b : b+'_'+a; }
 function escapeHtml(str){ return str.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-// --- Resizable Chat ---
+// --- Resizable Chat Anywhere ---
 let isResizing=false,lastX,lastY,lastWidth,lastHeight;
 chatModal.addEventListener('mousedown', e=>{
   if(e.target!==chatInput && e.target.tagName!=='BUTTON'){
@@ -345,11 +357,7 @@ document.addEventListener('mousemove', e=>{
   chatModal.style.width=newWidth+'px'; chatModal.style.height=newHeight+'px';
 });
 document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; document.body.style.userSelect='auto'; } });
-
 </script>
+
 </body>
 </html>
-
-
-
-
