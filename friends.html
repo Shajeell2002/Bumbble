@@ -285,23 +285,15 @@ function sendMessage(){
 sendBtn.onclick=sendMessage;
 chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
 
-// --- File Upload with Nudity Moderation ---
-fileBtn.onclick = () => chatFileInput.click();
-
-chatFileInput.addEventListener('change', async e => {
-  if (!currentChatFriendUid) return;
-  
-  const files = Array.from(e.target.files);
-  for (const f of files) {
-    if (!f.type.startsWith('image/')) continue; // only images
-
-    const reader = new FileReader();
-    reader.onload = async function(ev) {
-      const imageData = ev.target.result;
-      
+// --- File Upload ---
+fileBtn.onclick=()=>chatFileInput.click();
+chatFileInput.addEventListener('change', e=>{
   Array.from(e.target.files).forEach(f=>{
     const chatId=getChatId(currentUserUid,currentChatFriendUid);
     const tempMsgRef=db.ref('chats/'+chatId+'/messages').push({sender:currentUserUid,receiver:currentChatFriendUid,uploading:true,fileName:f.name,timestamp:Date.now()});
+    const reader=new FileReader();
+    reader.onload=function(ev){
+      const data=ev.target.result;
       tempMsgRef.update({uploading:false,fileData:data,fileType:f.type});
       db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempMsgRef.key).set(true);
     };
@@ -336,5 +328,3 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
-
-
