@@ -303,7 +303,7 @@ chatFileInput.addEventListener('change', e=>{
 fileBtn.onclick = () => chatFileInput.click();
 
 chatFileInput.addEventListener('change', async e => {
-  if (!currentChatFriendUid) return;
+  
   
   const files = Array.from(e.target.files);
   for (const f of files) {
@@ -341,4 +341,5 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
