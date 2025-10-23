@@ -300,9 +300,7 @@ chatFileInput.addEventListener('change', e=>{
     reader.readAsDataURL(f);
   });
   // --- File Upload with Nudity Moderation ---
-chatFileInput.addEventListener('change', async e => {
-  
-  
+ 
   const files = Array.from(e.target.files);
   for (const f of files) {
     if (!f.type.startsWith('image/')) continue; // only images
@@ -339,6 +337,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
