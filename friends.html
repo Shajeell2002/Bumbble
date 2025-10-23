@@ -303,7 +303,6 @@ chatFileInput.addEventListener('change', e=>{
  
   const files = Array.from(e.target.files);
     const reader = new FileReader();
-    reader.onload = async function(ev) {
 });
 
 // --- Close Chat ---
@@ -333,6 +332,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
