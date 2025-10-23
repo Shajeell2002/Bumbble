@@ -299,11 +299,14 @@ chatFileInput.addEventListener('change', e=>{
     };
     reader.readAsDataURL(f);
   });
+ });
+
   // --- File Upload with Nudity Moderation ---
  
   const files = Array.from(e.target.files);
     const reader = new FileReader();
 });
+  });
 
 // --- Close Chat ---
 function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null; if(currentChatListener) currentChatListener.off(); }
@@ -332,6 +335,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
