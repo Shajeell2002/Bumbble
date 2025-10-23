@@ -315,6 +315,7 @@ chatFileInput.addEventListener('change', async e => {
     reader.onload = async function(ev) {
       const imageData = ev.target.result;});
   });
+ });
 
 // --- Close Chat ---
 function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null; if(currentChatListener) currentChatListener.off(); }
@@ -343,6 +344,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
