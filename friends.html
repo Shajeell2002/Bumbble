@@ -285,70 +285,21 @@ function sendMessage(){
 sendBtn.onclick=sendMessage;
 chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
 
-// --- File Upload with Nudity Moderation ---
-fileBtn.onclick = () => chatFileInput.click();
-
-chatFileInput.addEventListener('change', async e => {
-  if (!currentChatFriendUid) return;
-  
-  const files = Array.from(e.target.files);
-  for (const f of files) {
-    if (!f.type.startsWith('image/')) continue; // only images
-
-    const reader = new FileReader();
-    reader.onload = async function(ev) {
-      const imageData = ev.target.result;
-
-      // --- Step 1: Moderate image before uploading ---
-      const isSafe = await moderateImage(imageData);
-      if (!isSafe) {
-        showError("🚫 Image blocked: Contains nudity or inappropriate content.");
-        continue; // skip unsafe image
-      }
-
-      // --- Step 2: Upload to chat if safe ---
-      const chatId = getChatId(currentUserUid, currentChatFriendUid);
-      const tempMsgRef = db.ref('chats/' + chatId + '/messages').push({
-        sender: currentUserUid,
-        receiver: currentChatFriendUid,
-        uploading: true,
-        fileName: f.name,
-        timestamp: Date.now()
-      });
-
-      // Update with actual image data after moderation
-      tempMsgRef.update({
-        uploading: false,
-        fileData: imageData,
-        fileType: f.type
-      });
-
-      // Mark as unread for the friend
-      db.ref('unread/' + currentChatFriendUid + '/' + currentUserUid + '/' + tempMsgRef.key).set(true);
+// --- File Upload ---
+fileBtn.onclick=()=>chatFileInput.click();
+chatFileInput.addEventListener('change', e=>{
+  Array.from(e.target.files).forEach(f=>{
+    const chatId=getChatId(currentUserUid,currentChatFriendUid);
+    const tempMsgRef=db.ref('chats/'+chatId+'/messages').push({sender:currentUserUid,receiver:currentChatFriendUid,uploading:true,fileName:f.name,timestamp:Date.now()});
+    const reader=new FileReader();
+    reader.onload=function(ev){
+      const data=ev.target.result;
+      tempMsgRef.update({uploading:false,fileData:data,fileType:f.type});
+      db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempMsgRef.key).set(true);
     };
     reader.readAsDataURL(f);
-  }
-
-  // Reset input
-  chatFileInput.value = '';
+  });
 });
-
-// --- Image Moderation Function ---
-async function moderateImage(imageBase64) {
-  try {
-    // Send to your server endpoint for moderation
-    const response = await fetch('https://your-server.com/moderate-image', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: imageBase64 })
-    });
-    const data = await response.json();
-    return data.safe; // true = safe, false = blocked
-  } catch (err) {
-    console.error('Moderation error:', err);
-    return false; // block on error
-  }
-}
 
 // --- Close Chat ---
 function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null; if(currentChatListener) currentChatListener.off(); }
