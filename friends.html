@@ -308,9 +308,13 @@ chatFileInput.addEventListener('change', e => {
         const pornScore = predictions.find(p => p.className === 'Porn')?.probability || 0;
         const hentaiScore = predictions.find(p => p.className === 'Hentai')?.probability || 0;
         const sexyScore = predictions.find(p => p.className === 'Sexy')?.probability || 0;
-        if(pornScore > 0.9 || hentaiScore > 0.9 || sexyScore > 0.9){
+        if(pornScore > 0.9 || hentaiScore > 0.9){
           alert("Explicit content detected! Upload blocked.");
           return;
+        }
+          if(sexyScore > 0.85){
+    if(!confirm("This image may be suggestive. Do you still want to upload?")) return;
+}
         }
 
         const chatId = getChatId(currentUserUid,currentChatFriendUid);
@@ -361,5 +365,6 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
