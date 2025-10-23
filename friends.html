@@ -303,8 +303,7 @@ chatFileInput.addEventListener('change', e=>{
  
   const files = Array.from(e.target.files);
   for (const f of files) {
-    if (!f.type.startsWith('image/')) continue; // only images
-
+  
     const reader = new FileReader();
     reader.onload = async function(ev) {
 });
@@ -336,6 +335,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
