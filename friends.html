@@ -40,15 +40,11 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 .chat-image { max-width:100%; height:auto; display:block; margin-top:4px; }
 </style>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-<!-- NSFWJS -->
-<script src="https://cdn.jsdelivr.net/npm/nsfwjs"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/nsfwjs"></script>
 </head>
 <body>
 
@@ -113,6 +109,10 @@ const errorArea = document.getElementById("errorArea");
 
 let currentUserUid = "", currentChatFriendUid = "", currentChatListener = null;
 let unreadCounters = {}, lastChatTimestamps = {}, typingTimeout;
+let nsfwModel = null;
+
+// --- Load NSFWJS ---
+(async () => { nsfwModel = await nsfwjs.load(); console.log("NSFWJS loaded"); })();
 
 // --- Error Handling ---
 window.addEventListener('error', e=>{ showError(e.message || e); });
@@ -139,7 +139,6 @@ auth.onAuthStateChanged(user=>{
     setupOnlineStatus();
     loadUsersRealtime();
     setupUnreadListener();
-
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
     if(lastUid && lastName) openChat(lastUid,lastName);
@@ -291,46 +290,36 @@ function sendMessage(){
 sendBtn.onclick=sendMessage;
 chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
 
-// --- NSFWJS Model Load ---
-let nsfwModel = null;
-(async () => { nsfwModel = await nsfwjs.load(); console.log("NSFWJS model loaded"); })();
-
-// --- File Upload with NSFW Check ---
-fileBtn.onclick = () => chatFileInput.click();
-chatFileInput.addEventListener('change', e => {
-  Array.from(e.target.files).forEach(async f => {
-    if (!nsfwModel) { alert("NSFW model not loaded yet."); return; }
+// --- File Upload with NSFWJS ---
+fileBtn.onclick=()=>chatFileInput.click();
+chatFileInput.addEventListener('change', async e=>{
+  const files = Array.from(e.target.files);
+  for(const file of files){
     const img = new Image();
-    img.src = URL.createObjectURL(f);
-    img.onload = async () => {
-      try {
+    img.src = URL.createObjectURL(file);
+    img.onload = async ()=>{
+      if(nsfwModel){
         const predictions = await nsfwModel.classify(img);
         const pornScore = predictions.find(p => p.className === 'Porn')?.probability || 0;
         const hentaiScore = predictions.find(p => p.className === 'Hentai')?.probability || 0;
-        if(pornScore > 0.99 || hentaiScore > 0.99){
-          alert("Explicit content detected! Upload blocked.");
-          return;
-        }
+        const sexyScore = predictions.find(p => p.className === 'Sexy')?.probability || 0;
 
-        const chatId = getChatId(currentUserUid,currentChatFriendUid);
-        const tempMsgRef = db.ref('chats/' + chatId + '/messages').push({
-          sender: currentUserUid,
-          receiver: currentChatFriendUid,
-          uploading: true,
-          fileName: f.name,
-          timestamp: Date.now()
-        });
+        if(pornScore>0.9 || hentaiScore>0.9){ alert("Explicit content detected! Upload blocked."); return; }
+        if(sexyScore>0.85){ if(!confirm("This image may be suggestive. Do you still want to upload?")) return; }
+      }
 
-        const reader = new FileReader();
-        reader.onload = function(ev){
-          tempMsgRef.update({ uploading:false, fileData:ev.target.result, fileType:f.type });
-          db.ref('unread/' + currentChatFriendUid + '/' + currentUserUid + '/' + tempMsgRef.key).set(true);
-        };
-        reader.readAsDataURL(f);
-      } catch(err){ console.error(err); alert("Error processing image."); }
+      // Upload
+      const chatId=getChatId(currentUserUid,currentChatFriendUid);
+      const tempMsgRef=db.ref('chats/'+chatId+'/messages').push({sender:currentUserUid,receiver:currentChatFriendUid,uploading:true,fileName:file.name,timestamp:Date.now()});
+      const reader=new FileReader();
+      reader.onload=function(ev){
+        tempMsgRef.update({uploading:false,fileData:ev.target.result,fileType:file.type});
+        db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempMsgRef.key).set(true);
+      };
+      reader.readAsDataURL(file);
     };
-  });
-  chatFileInput.value = "";
+  }
+  chatFileInput.value="";
 });
 
 // --- Close Chat ---
@@ -356,10 +345,7 @@ document.addEventListener('mousemove', e=>{
   chatModal.style.width=newWidth+'px'; chatModal.style.height=newHeight+'px';
 });
 document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; document.body.style.userSelect='auto'; } });
-</script>
 
+</script>
 </body>
 </html>
-
-
-
