@@ -5,12 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Friends & Chat</title>
 
-<!-- TensorFlow.js (required for NSFWJS) -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
-
-<!-- NSFWJS library -->
-<script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.2/dist/nsfwjs.min.js"></script>
-
 <style>
 body { font-family: Arial, sans-serif; margin:0; background:#f8f6fb; color:#333; display:flex; min-height:100vh; flex-direction: column; }
 header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#d8cce5; box-shadow:0 3px 6px rgba(0,0,0,0.1); position:fixed; top:0; left:0; right:0; z-index:500; }
@@ -47,9 +41,17 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 .chat-image { max-width:100%; height:auto; display:block; margin-top:4px; }
 </style>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<!-- TensorFlow.js (required for NSFWJS) -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
+
+<!-- NSFWJS library -->
+<script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.2/dist/nsfwjs.min.js"></script>
+
 </head>
 <body>
 
@@ -85,7 +87,11 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 </div>
 
 <script>
-// --- Firebase Init ---
+let nsfwModel = null;
+
+// Load NSFWJS model
+nsfwjs.load().then(model => { nsfwModel = model; console.log("NSFW model loaded"); }).catch(err => console.error(err));
+
 const firebaseConfig = {
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
   authDomain:"bumbble-c061f.firebaseapp.com",
@@ -99,7 +105,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-// --- DOM ---
+// DOM elements
 const nav = document.getElementById("navLinks");
 const userList = document.getElementById("userList");
 const chatModal = document.getElementById("chatModal");
@@ -115,16 +121,11 @@ const errorArea = document.getElementById("errorArea");
 let currentUserUid = "", currentChatFriendUid = "", currentChatListener = null;
 let unreadCounters = {}, lastChatTimestamps = {}, typingTimeout;
 
-// --- NSFW Model ---
-let nsfwModel = null;
-nsfwjs.load().then(model=>{ nsfwModel = model; console.log("NSFW model loaded"); })
-.catch(err=>showError("NSFW filter failed: "+err));
-
-// --- Error Handling ---
+// Error handling
 window.addEventListener('error', e=>{ showError(e.message || e); });
 function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(msg)+'</div>'; }
 
-// --- Auth ---
+// --- Auth & Users setup ---
 auth.onAuthStateChanged(user=>{
   if(user && user.emailVerified){
     currentUserUid = user.uid;
@@ -145,7 +146,6 @@ auth.onAuthStateChanged(user=>{
     setupOnlineStatus();
     loadUsersRealtime();
     setupUnreadListener();
-
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
     if(lastUid && lastName) openChat(lastUid,lastName);
@@ -155,7 +155,7 @@ auth.onAuthStateChanged(user=>{
   }
 });
 
-// --- Online Status ---
+// --- Online status ---
 function setupOnlineStatus(){
   if(!currentUserUid) return;
   const statusRef = db.ref('users/'+currentUserUid+'/public/online');
@@ -164,7 +164,7 @@ function setupOnlineStatus(){
   });
 }
 
-// --- Users List ---
+// --- Load users ---
 function loadUsersRealtime(){
   db.ref('users').on('value', snap=>{
     const users = snap.val() || {};
@@ -187,7 +187,7 @@ function loadUsersRealtime(){
   });
 }
 
-// --- Unread Badges ---
+// --- Unread badges ---
 function setupUnreadListener(){
   db.ref('unread/'+currentUserUid).on('value', snap=>{
     unreadCounters={};
@@ -212,7 +212,7 @@ function flashUserRow(uid){
   if(row){ row.classList.add('flash'); setTimeout(()=>row.classList.remove('flash'),800); }
 }
 
-// --- Open Chat ---
+// --- Open chat ---
 function openChat(uid,name){
   document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
   const activeRow = document.querySelector(`.user-row[data-uid="${uid}"]`);
@@ -284,7 +284,7 @@ chatInput.addEventListener('input', ()=>{
 });
 function listenTyping(uid){ db.ref('typing/'+currentUserUid+'/'+uid).on('value', snap=>{ typingIndicator.textContent = snap.exists()? chatWith.textContent+' is typing...' : ''; }); }
 
-// --- Send Message ---
+// --- Send message ---
 function sendMessage(){
   const text=chatInput.value.trim();
   if(!text||!currentChatFriendUid) return;
@@ -297,13 +297,13 @@ function sendMessage(){
 sendBtn.onclick=sendMessage;
 chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
 
-// --- File Upload with NSFW Check ---
+// --- File Upload with NSFW Blocking ---
 fileBtn.onclick=()=>chatFileInput.click();
+
 chatFileInput.addEventListener('change', async e=>{
   for(const f of e.target.files){
-    let blocked = false;
     if(f.type.startsWith('image/') && nsfwModel){
-      blocked = await new Promise(resolve=>{
+      const blocked = await new Promise(resolve=>{
         const reader = new FileReader();
         reader.onload = ev=>{
           const img = new Image();
@@ -311,20 +311,25 @@ chatFileInput.addEventListener('change', async e=>{
           img.onload = async ()=>{
             try{
               const predictions = await nsfwModel.classify(img);
-              const pornScore = predictions.find(p=>['porn','sexy'].includes(p.className.toLowerCase()))?.probability || 0;
-              resolve(pornScore > 0.7); // block if >70%
+              const top = predictions.reduce((a,b)=>a.probability>b.probability?a:b);
+              resolve(top.className !== "Neutral"); // Block if not Neutral
             }catch(err){ resolve(false); }
           };
         };
         reader.readAsDataURL(f);
       });
+      if(blocked){ showError("Image blocked: NSFW or inappropriate content detected"); continue; }
     }
-    if(blocked){
-      showError("Image blocked: NSFW content detected");
-      continue;
-    }
+
     const chatId = getChatId(currentUserUid,currentChatFriendUid);
-    const tempMsgRef = db.ref('chats/'+chatId+'/messages').push({sender:currentUserUid,receiver:currentChatFriendUid,uploading:true,fileName:f.name,timestamp:Date.now()});
+    const tempMsgRef = db.ref('chats/'+chatId+'/messages').push({
+      sender:currentUserUid,
+      receiver:currentChatFriendUid,
+      uploading:true,
+      fileName:f.name,
+      timestamp:Date.now()
+    });
+
     const reader2 = new FileReader();
     reader2.onload = function(ev){
       const data = ev.target.result;
@@ -335,12 +340,12 @@ chatFileInput.addEventListener('change', async e=>{
   }
 });
 
-// --- Close Chat ---
+// --- Close chat ---
 function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null; if(currentChatListener) currentChatListener.off(); }
 function getChatId(a,b){ return a<b? a+'_'+b : b+'_'+a; }
 function escapeHtml(str){ return str.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-// --- Resizable Chat Anywhere ---
+// --- Resizable chat ---
 let isResizing=false,lastX,lastY,lastWidth,lastHeight;
 chatModal.addEventListener('mousedown', e=>{
   if(e.target!==chatInput && e.target.tagName!=='BUTTON'){
@@ -355,7 +360,8 @@ document.addEventListener('mousemove', e=>{
   const dx=e.clientX-lastX, dy=e.clientY-lastY;
   const newWidth=Math.min(Math.max(lastWidth+dx,300),window.innerWidth-40);
   const newHeight=Math.min(Math.max(lastHeight+dy,200),window.innerHeight-60);
-  chatModal.style.width=newWidth+'px'; chatModal.style.height=newHeight+'px';
+  chatModal.style.width=newWidth+'px';
+  chatModal.style.height=newHeight+'px';
 });
 document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; document.body.style.userSelect='auto'; } });
 </script>
