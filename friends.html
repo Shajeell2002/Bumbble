@@ -40,15 +40,9 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 .chat-image { max-width:100%; height:auto; display:block; margin-top:4px; }
 </style>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-<!-- NSFWJS -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.0/dist/nsfwjs.min.js"></script>
-
 </head>
 <body>
 
@@ -113,18 +107,6 @@ const errorArea = document.getElementById("errorArea");
 
 let currentUserUid = "", currentChatFriendUid = "", currentChatListener = null;
 let unreadCounters = {}, lastChatTimestamps = {}, typingTimeout;
-let nsfwModel = null;
-
-// --- Load NSFW Model ---
-(async function loadNSFWModel() {
-    try {
-        nsfwModel = await nsfwjs.load();
-        console.log("NSFW model loaded");
-    } catch(e) {
-        console.error("Failed to load NSFW model:", e);
-        showError("NSFW filter failed to load. Uploads won't be filtered!");
-    }
-})();
 
 // --- Error Handling ---
 window.addEventListener('error', e=>{ showError(e.message || e); });
@@ -303,37 +285,20 @@ function sendMessage(){
 sendBtn.onclick=sendMessage;
 chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
 
-// --- File Upload with NSFW Filter ---
+// --- File Upload ---
 fileBtn.onclick=()=>chatFileInput.click();
-chatFileInput.addEventListener('change', async e => {
-  if(!nsfwModel){ showError("NSFW model not loaded yet"); return; }
-  const files = Array.from(e.target.files);
-
-  for(const f of files){
-    if(!f.type.startsWith('image/')) continue;
-
-    const reader = new FileReader();
-    reader.onload = async function(ev){
-      const data = ev.target.result;
-      const img = new Image();
-      img.src = data;
-      img.onload = async () => {
-          try {
-              const predictions = await nsfwModel.classify(img);
-              const pornScore = predictions.find(p => p.className.toLowerCase().includes('porn') || p.className.toLowerCase().includes('hentai'))?.probability || 0;
-              if(pornScore > 0.6){ showError(`Upload blocked: "${f.name}" may contain nudity.`); return; }
-
-              // Safe image, upload
-              const chatId = getChatId(currentUserUid, currentChatFriendUid);
-              const tempMsgRef = db.ref('chats/'+chatId+'/messages').push({sender: currentUserUid, receiver: currentChatFriendUid, uploading: true, fileName: f.name, timestamp: Date.now()});
-              tempMsgRef.update({ uploading: false, fileData: data, fileType: f.type });
-              db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempMsgRef.key).set(true);
-
-          } catch(err){ showError("Error checking image: " + err.message); }
-      };
+chatFileInput.addEventListener('change', e=>{
+  Array.from(e.target.files).forEach(f=>{
+    const chatId=getChatId(currentUserUid,currentChatFriendUid);
+    const tempMsgRef=db.ref('chats/'+chatId+'/messages').push({sender:currentUserUid,receiver:currentChatFriendUid,uploading:true,fileName:f.name,timestamp:Date.now()});
+    const reader=new FileReader();
+    reader.onload=function(ev){
+      const data=ev.target.result;
+      tempMsgRef.update({uploading:false,fileData:data,fileType:f.type});
+      db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempMsgRef.key).set(true);
     };
     reader.readAsDataURL(f);
-  }
+  });
 });
 
 // --- Close Chat ---
