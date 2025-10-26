@@ -45,9 +45,11 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-<!-- TensorFlow + NSFWJS -->
+<!-- TensorFlow.js (required by NSFWJS) -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.0/dist/nsfwjs.min.js"></script>
+
+<!-- NSFWJS library -->
+<script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.2/dist/nsfwjs.min.js"></script>
 
 </head>
 <body>
@@ -84,21 +86,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 </div>
 
 <script>
-// --- Firebase Init ---
-const firebaseConfig = {
-  apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
-  authDomain:"bumbble-c061f.firebaseapp.com",
-  databaseURL:"https://bumbble-c061f-default-rtdb.firebaseio.com",
-  projectId:"bumbble-c061f",
-  storageBucket:"bumbble-c061f.appspot.com",
-  messagingSenderId:"213165886981",
-  appId:"1:213165886981:web:c18652003444869b1bd66c"
-};
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.database();
-
-// --- DOM ---
 const nav = document.getElementById("navLinks");
 const userList = document.getElementById("userList");
 const chatModal = document.getElementById("chatModal");
@@ -111,42 +98,42 @@ const chatFileInput = document.getElementById("chatFileInput");
 const typingIndicator = document.getElementById("typingIndicator");
 const errorArea = document.getElementById("errorArea");
 
-let currentUserUid = "", currentChatFriendUid = "", currentChatListener = null;
-let unreadCounters = {}, lastChatTimestamps = {}, typingTimeout;
-
-// --- NSFW Model ---
+let currentUserUid="", currentChatFriendUid="", currentChatListener=null;
 let nsfwModel = null;
-nsfwjs.load('https://cdn.jsdelivr.net/npm/nsfwjs@2.4.0/dist/model/').then(model => {
+let unreadCounters={}, lastChatTimestamps={}, typingTimeout;
+
+// --- Load NSFWJS model ---
+nsfwjs.load().then(model=>{
   nsfwModel = model;
   console.log("NSFW model loaded");
-}).catch(err => showError("NSFW filter failed: " + err));
+}).catch(err=>{
+  showError("NSFW filter failed: "+err);
+});
 
-// --- Error Handling ---
-window.addEventListener('error', e=>{ showError(e.message || e); });
 function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(msg)+'</div>'; }
+function escapeHtml(str){ return str.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
 // --- NSFW Image Check ---
 async function isNSFWImage(file){
   if(!nsfwModel) return false;
   return new Promise(resolve=>{
     const reader = new FileReader();
-    reader.onload = async ev=>{
+    reader.onload = ev=>{
       const img = new Image();
       img.src = ev.target.result;
       img.onload = async ()=>{
         try{
           const predictions = await nsfwModel.classify(img);
           const pornScore = predictions.find(p=>['porn','sexy'].includes(p.className.toLowerCase()))?.probability || 0;
-          resolve(pornScore > 0.6);
+          resolve(pornScore>0.6);
         } catch(e){ resolve(false); }
       };
     };
-    reader.onerror = ()=>resolve(false);
     reader.readAsDataURL(file);
   });
 }
 
-// --- File Upload (Images, GIFs, Video) ---
+// --- File Upload ---
 fileBtn.onclick = ()=>chatFileInput.click();
 
 chatFileInput.addEventListener('change', async e=>{
@@ -184,14 +171,14 @@ chatFileInput.addEventListener('change', async e=>{
 
     if(blocked){ showError("NSFW content blocked!"); continue; }
 
-    // --- Upload to Firebase ---
+    // Upload normally to Firebase
     const chatId = getChatId(currentUserUid,currentChatFriendUid);
     const tempMsgRef = db.ref('chats/'+chatId+'/messages').push({
       sender: currentUserUid,
       receiver: currentChatFriendUid,
-      uploading: true,
+      uploading:true,
       fileName: f.name,
-      timestamp: Date.now()
+      timestamp:Date.now()
     });
 
     const reader = new FileReader();
@@ -203,11 +190,10 @@ chatFileInput.addEventListener('change', async e=>{
   }
 });
 
-// --- Close Chat / Helpers ---
+// --- Close Chat ---
 function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null; if(currentChatListener) currentChatListener.off(); }
 function getChatId(a,b){ return a<b? a+'_'+b : b+'_'+a; }
-function escapeHtml(str){ return str.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-
 </script>
+
 </body>
 </html>
