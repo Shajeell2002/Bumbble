@@ -125,13 +125,10 @@ nsfwjs.load('https://cdn.jsdelivr.net/npm/nsfwjs@2.4.0/dist/model/').then(model 
 window.addEventListener('error', e=>{ showError(e.message || e); });
 function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(msg)+'</div>'; }
 
-// --- Auth, Online Status, Users, Chat, Messages, Typing ---
-// Keep all your previous Firebase auth and chat logic here (same as before)
-
-// --- NSFW Check Function ---
+// --- NSFW Image Check ---
 async function isNSFWImage(file){
   if(!nsfwModel) return false;
-  return new Promise((resolve)=>{
+  return new Promise(resolve=>{
     const reader = new FileReader();
     reader.onload = async ev=>{
       const img = new Image();
@@ -149,16 +146,46 @@ async function isNSFWImage(file){
   });
 }
 
-// --- File Upload ---
+// --- File Upload (Images, GIFs, Video) ---
 fileBtn.onclick = ()=>chatFileInput.click();
+
 chatFileInput.addEventListener('change', async e=>{
   for(const f of e.target.files){
+    let blocked = false;
+
     if(f.type.startsWith('image/')){
-      const blocked = await isNSFWImage(f);
-      if(blocked){ showError("NSFW content blocked!"); continue; }
+      blocked = await isNSFWImage(f);
+    } else if(f.type.startsWith('video/') || f.name.match(/\.gif$/i)){
+      blocked = await new Promise(resolve=>{
+        const url = URL.createObjectURL(f);
+        const video = document.createElement('video');
+        video.src = url;
+        video.muted = true;
+        video.currentTime = 0.1;
+        video.onloadeddata = async ()=>{
+          try{
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video,0,0,canvas.width,canvas.height);
+            const img = new Image();
+            img.src = canvas.toDataURL();
+            img.onload = async ()=>{
+              const predictions = await nsfwModel.classify(img);
+              const pornScore = predictions.find(p=>['porn','sexy'].includes(p.className.toLowerCase()))?.probability || 0;
+              resolve(pornScore>0.6);
+            };
+          } catch(err){ resolve(false); }
+        };
+        video.onerror = ()=>resolve(false);
+      });
     }
-    // proceed to upload same as your previous code
-    const chatId = getChatId(currentUserUid, currentChatFriendUid);
+
+    if(blocked){ showError("NSFW content blocked!"); continue; }
+
+    // --- Upload to Firebase ---
+    const chatId = getChatId(currentUserUid,currentChatFriendUid);
     const tempMsgRef = db.ref('chats/'+chatId+'/messages').push({
       sender: currentUserUid,
       receiver: currentChatFriendUid,
@@ -166,6 +193,7 @@ chatFileInput.addEventListener('change', async e=>{
       fileName: f.name,
       timestamp: Date.now()
     });
+
     const reader = new FileReader();
     reader.onload = ev=>{
       tempMsgRef.update({ uploading:false, fileData: ev.target.result, fileType: f.type });
@@ -175,10 +203,11 @@ chatFileInput.addEventListener('change', async e=>{
   }
 });
 
-// --- Close Chat, Resizable, Escape HTML ---
+// --- Close Chat / Helpers ---
 function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null; if(currentChatListener) currentChatListener.off(); }
 function getChatId(a,b){ return a<b? a+'_'+b : b+'_'+a; }
 function escapeHtml(str){ return str.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
 </script>
 </body>
 </html>
