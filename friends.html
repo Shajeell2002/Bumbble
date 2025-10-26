@@ -1,96 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bumbble - Friends & Chat</title>
-<style>
-/* --- Styles unchanged from your original code --- */
-body { font-family: Arial, sans-serif; margin:0; background:#f8f6fb; color:#333; display:flex; min-height:100vh; flex-direction: column; }
-header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#d8cce5; box-shadow:0 3px 6px rgba(0,0,0,0.1); position:fixed; top:0; left:0; right:0; z-index:500; }
-header h1{ font-size:24px; margin:0; }
-nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
-.friends-container { width:250px; background:#e6e0f0; border-right:1px solid #ccc; padding:10px; overflow-y:auto; position:fixed; top:60px; bottom:0; left:0; }
-.main-content { flex:1; margin-left:250px; padding:80px 20px 20px 20px; }
-.user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
-.user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #ccc; cursor:pointer; transition:0.2s; }
-.user-row:hover, .user-row.active { background:#ddd6f3; }
-.user-row.flash { animation:flashLavender 0.5s; }
-@keyframes flashLavender { 0%{background:#e0b3ff;} 100%{background:#ddd6f3;} }
-.status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
-.online { background:green; } .offline { background:red; }
-.badge { background:#9b59b6; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
-#chatModal { position:fixed; bottom:0; right:20px; width:360px; height:500px; max-height:80vh; border:1px solid #ccc; background:#d8cce5; border-radius:10px; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); overflow:hidden; z-index:1000; resize:none; }
-#chatHeader { background:#d8cce5; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; cursor:move; }
-#chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:#f8f6fb; scroll-behavior:smooth; }
-#typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
-.message { max-width:80%; padding:8px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
-.message.self { background:#9b59b6; color:white; align-self:flex-end; }
-.message.friend { background:#ece6f2; color:#111; align-self:flex-start; }
-.timestamp { font-size:10px; color:#666; margin-top:6px; text-align:right; display:block; }
-.timestamp.friend { color:#666; }
-.uploading-badge { font-size:11px; color:#444; margin-top:6px; display:inline-block; background:#e6e0f0; padding:3px 6px; border-radius:6px; border:1px solid #d0c4e0; }
-#chatInputContainer { display:flex; border-top:1px solid #ccc; align-items:center; gap:6px; padding:8px; background:#e6e0f0; }
-#chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:8px; background:#f0e6fa; }
-#sendBtn, #fileBtn { padding:8px 12px; border:none; background:#b39ddb; cursor:pointer; border-radius:8px; color:white; font-weight:bold; }
-#sendBtn:hover, #fileBtn:hover { background:#9775c2; }
-.friends-container::-webkit-scrollbar { width:6px; }
-.friends-container::-webkit-scrollbar-thumb { background:#b39ddb; border-radius:3px; }
-.friends-container::-webkit-scrollbar-track { background:#f0e6fa; }
-.error-banner { background:#f2e6ff; color:#800; padding:8px 12px; border:1px solid #d8b3ff; margin:10px; border-radius:6px; }
-.chat-image { max-width:100%; height:auto; display:block; margin-top:4px; }
-#modelStatus { background:#f2e6ff; text-align:center; padding:6px; font-size:13px; color:#333; border-bottom:1px solid #d8b3ff; display:flex; align-items:center; justify-content:center; gap:8px; }
-#modelRetry { background:#9775c2; color:white; border:none; padding:6px 8px; border-radius:6px; cursor:pointer; display:none; }
-</style>
-
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-<!-- IMPORTANT: use TFJS v3 for NSFWJS compatibility -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
-<!-- nsfwjs stable for TFJS v3 -->
-<script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.0"></script>
-
-</head>
-<body>
-
-<header>
-  <h1>Bumbble</h1>
-  <nav id="navLinks">
-    <a href="index.html">Home</a>
-    <a href="login.html">Login</a>
-    <a href="signup.html">Sign Up</a>
-  </nav>
-</header>
-
-<div id="modelStatus">🧠 Loading content filter... <button id="modelRetry">Retry</button></div>
-
-<div class="friends-container">
-  <div class="user-list" id="userList"></div>
-</div>
-
-<div class="main-content">
-  <div id="chatModal">
-    <div id="chatHeader">
-      <span id="chatWith">Friend</span>
-      <button onclick="closeChat()">X</button>
-    </div>
-    <div id="chatMessages"></div>
-    <div id="typingIndicator"></div>
-    <div id="chatInputContainer">
-      <button id="fileBtn" disabled style="opacity:0.6;cursor:not-allowed;">📎</button>
-      <input type="text" id="chatInput" placeholder="Type a message">
-      <button id="sendBtn">Send</button>
-      <input type="file" id="chatFileInput" style="display:none;" multiple>
-    </div>
-  </div>
-  <div id="errorArea"></div>
-</div>
-
 <script>
-// ---- Firebase Init (unchanged) ----
+// --- Firebase Init ---
 const firebaseConfig = {
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
   authDomain:"bumbble-c061f.firebaseapp.com",
@@ -104,7 +13,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-// ---- DOM references ----
+// --- DOM ---
 const nav = document.getElementById("navLinks");
 const userList = document.getElementById("userList");
 const chatModal = document.getElementById("chatModal");
@@ -116,52 +25,28 @@ const fileBtn = document.getElementById("fileBtn");
 const chatFileInput = document.getElementById("chatFileInput");
 const typingIndicator = document.getElementById("typingIndicator");
 const errorArea = document.getElementById("errorArea");
-const modelStatus = document.getElementById("modelStatus");
-const modelRetry = document.getElementById("modelRetry");
 
-let nsfwModel = null;
 let currentUserUid="", currentChatFriendUid="", currentChatListener=null;
 let unreadCounters={}, lastChatTimestamps={}, typingTimeout=null;
 
-// ---- Helper: show error banner ----
-function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(String(msg))+'</div>'; }
-
-// ---- Load model function (callable for retry) ----
-async function loadNsfwModel(){
-  try{
-    modelRetry.style.display = 'none';
-    modelStatus.textContent = '🧠 Loading content filter...';
-    // Allow UI to show update
-    await new Promise(r=>setTimeout(r,50));
-    // nsfwjs.load() from nsfwjs@2.4.0 will work with tfjs@3.x
-    nsfwModel = await nsfwjs.load();
-    console.log('NSFW model loaded', nsfwModel);
-    modelStatus.textContent = '✅ Content filter active';
-    fileBtn.disabled = false;
-    fileBtn.style.opacity = 1;
-    fileBtn.style.cursor = 'pointer';
-  } catch(err){
-    console.error('Failed to load NSFW model:', err);
-    nsfwModel = null;
-    modelStatus.textContent = '⚠️ Content filter failed to load';
-    modelRetry.style.display = 'inline-block';
-    fileBtn.disabled = true;
-    fileBtn.style.opacity = 0.6;
-    fileBtn.style.cursor = 'not-allowed';
-    showError('Content filter failed to initialize. Click Retry or check console for details.');
+// --- NSFWJS Model ---
+let nsfwModel = null;
+async function loadNsfwModel() {
+  try {
+    nsfwModel = await nsfwjs.load(); // default model
+    console.log("✅ NSFWJS model loaded");
+  } catch (err) {
+    console.error("❌ Failed to load NSFW model:", err);
+    showError("Failed to load NSFW image filter. File uploads may not be checked.");
   }
 }
-
-// initial attempt
 loadNsfwModel();
-modelRetry.addEventListener('click', loadNsfwModel);
 
-// ---- Existing app code (unchanged logic) ----
+// --- Error ---
+window.addEventListener('error', e => showError(e.message || e));
+function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(msg)+'</div>'; }
 
-// Error global
-window.addEventListener('error', e => { showError(e.message || e); });
-
-// Auth handling
+// --- Auth ---
 auth.onAuthStateChanged(user=>{
   if(user && user.emailVerified){
     currentUserUid = user.uid;
@@ -182,6 +67,7 @@ auth.onAuthStateChanged(user=>{
     setupOnlineStatus();
     loadUsersRealtime();
     setupUnreadListener();
+
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
     if(lastUid && lastName) openChat(lastUid,lastName);
@@ -191,16 +77,19 @@ auth.onAuthStateChanged(user=>{
   }
 });
 
-// Online status
+// --- Online Status ---
 function setupOnlineStatus(){
   if(!currentUserUid) return;
   const statusRef = db.ref('users/'+currentUserUid+'/public/online');
   db.ref('.info/connected').on('value', snap=>{
-    if(snap && snap.val()){ statusRef.set(true); statusRef.onDisconnect().set(false); }
+    if(snap && snap.val()){ 
+      statusRef.set(true); 
+      statusRef.onDisconnect().set(false); 
+    }
   });
 }
 
-// Users list
+// --- Users List ---
 function loadUsersRealtime(){
   db.ref('users').on('value', snap=>{
     const users = snap.val() || {};
@@ -223,7 +112,7 @@ function loadUsersRealtime(){
   });
 }
 
-// Unread badges
+// --- Unread Badges ---
 function setupUnreadListener(){
   db.ref('unread/'+currentUserUid).on('value', snap=>{
     unreadCounters={};
@@ -248,7 +137,7 @@ function flashUserRow(uid){
   if(row){ row.classList.add('flash'); setTimeout(()=>row.classList.remove('flash'),800); }
 }
 
-// Open chat
+// --- Open Chat ---
 function openChat(uid,name){
   document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
   const activeRow = document.querySelector(`.user-row[data-uid="${uid}"]`);
@@ -293,7 +182,7 @@ function openChat(uid,name){
   listenTyping(uid);
 }
 
-// Messages rendering
+// --- Messages ---
 function addOrUpdateMessageToChat(msg){
   if(!msg||!msg._key) return;
   const id='msg-'+msg._key;
@@ -307,10 +196,11 @@ function addOrUpdateMessageToChat(msg){
     else{ el.innerHTML=`<a href="${msg.fileData}" download="${msg.fileName||'file'}">⬇️</a><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`; }
   } else if(msg.uploading){ el.innerHTML=`<span class="uploading-badge">Sending ${escapeHtml(msg.fileName||'...')}</span><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`; }
   else if(msg.text){ el.innerHTML = escapeHtml(msg.text)+'<div class="timestamp '+(isSelf?'':'friend')+'">'+new Date(msg.timestamp).toLocaleString()+'</div>'; }
+  else{ el.innerHTML='<div class="small-muted">Unknown message</div>'; }
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// Typing
+// --- Typing ---
 chatInput.addEventListener('input', ()=>{
   if(!currentChatFriendUid) return;
   db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).set(true);
@@ -319,7 +209,7 @@ chatInput.addEventListener('input', ()=>{
 });
 function listenTyping(uid){ db.ref('typing/'+currentUserUid+'/'+uid).on('value', snap=>{ typingIndicator.textContent = snap.exists()? chatWith.textContent+' is typing...' : ''; }); }
 
-// Send messages
+// --- Send Message ---
 function sendMessage(){
   const text=chatInput.value.trim();
   if(!text||!currentChatFriendUid) return;
@@ -332,10 +222,8 @@ function sendMessage(){
 sendBtn.onclick=sendMessage;
 chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
 
-// File Upload + NSFW check
-// --- File Upload with NSFWJS (only block nudity) ---
+// --- File Upload (NSFW filter, only blocks nudity) ---
 fileBtn.onclick = () => chatFileInput.click();
-
 chatFileInput.addEventListener('change', async e => {
   const files = Array.from(e.target.files);
   if (!files.length || !currentChatFriendUid) return;
@@ -357,13 +245,13 @@ chatFileInput.addEventListener('change', async e => {
           const pornScore = predictions.find(p => p.className === "Porn")?.probability || 0;
           const hentaiScore = predictions.find(p => p.className === "Hentai")?.probability || 0;
 
-          // 🚫 Block only explicit/nude content
+          // Block only explicit/nude content
           if (pornScore > 0.8 || hentaiScore > 0.8) {
             alert("❌ Image blocked: explicit or nude content detected.");
             return;
           }
 
-          // ✅ Allow safe image upload
+          // Otherwise allow upload
           uploadFileToChat(file, ev.target.result);
 
         } catch (err) {
@@ -377,24 +265,35 @@ chatFileInput.addEventListener('change', async e => {
   chatFileInput.value = "";
 });
 
+// --- Upload to Chat ---
 function uploadFileToChat(file, dataUrl){
-  if(!currentChatFriendUid){ showError('Open a chat before sending files.'); return; }
   const chatId = getChatId(currentUserUid,currentChatFriendUid);
   const tempMsgRef = db.ref('chats/'+chatId+'/messages').push({sender:currentUserUid,receiver:currentChatFriendUid,uploading:true,fileName:file.name,timestamp:Date.now()});
-  // emulate upload
-  setTimeout(()=> {
-    tempMsgRef.update({uploading:false,fileData:dataUrl,fileType:file.type});
-    db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempMsgRef.key).set(true);
-  }, 600);
+  tempMsgRef.update({uploading:false,fileData:dataUrl,fileType:file.type});
+  db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempMsgRef.key).set(true);
 }
 
-// Close and helpers
+// --- Close Chat ---
 function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null; if(currentChatListener) currentChatListener.off(); }
 function getChatId(a,b){ return a<b? a+'_'+b : b+'_'+a; }
-function escapeHtml(str){ return String(str).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function escapeHtml(str){ return str.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+// --- Resizable Chat ---
+let isResizing=false,lastX,lastY,lastWidth,lastHeight;
+chatModal.addEventListener('mousedown', e=>{
+  if(e.target!==chatInput && e.target.tagName!=='BUTTON'){
+    isResizing=true; lastX=e.clientX; lastY=e.clientY;
+    const rect=chatModal.getBoundingClientRect();
+    lastWidth=rect.width; lastHeight=rect.height;
+    document.body.style.userSelect='none';
+  }
+});
+document.addEventListener('mousemove', e=>{
+  if(!isResizing) return;
+  const dx=e.clientX-lastX, dy=e.clientY-lastY;
+  chatModal.style.width = Math.min(Math.max(lastWidth+dx,300),window.innerWidth-40)+'px';
+  chatModal.style.height = Math.min(Math.max(lastHeight+dy,200),window.innerHeight-60)+'px';
+});
+document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; document.body.style.userSelect='auto'; } });
 
 </script>
-</body>
-</html>
-
-
