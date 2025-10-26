@@ -333,40 +333,48 @@ sendBtn.onclick=sendMessage;
 chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
 
 // File Upload + NSFW check
-fileBtn.onclick=()=>chatFileInput.click();
-chatFileInput.addEventListener('change', async e => { ... })
+// --- File Upload with NSFWJS (only block nudity) ---
+fileBtn.onclick = () => chatFileInput.click();
+
+chatFileInput.addEventListener('change', async e => {
   const files = Array.from(e.target.files);
-  if(!nsfwModel){ alert("Please wait — content filter still loading or failed. Use Retry if necessary."); return; }
-  for(const file of files){
+  if (!files.length || !currentChatFriendUid) return;
+
+  for (const file of files) {
     const reader = new FileReader();
     reader.onload = async ev => {
-      const dataUrl = ev.target.result;
-      if(file.type.startsWith("image/")){
-        const img = new Image();
-        img.src = dataUrl;
-        img.onload = async ()=>{
-          try{
-            const predictions = await nsfwModel.classify(img, {size:299});
-            const pornScore = predictions.find(p=>p.className==='Porn')?.probability||0;
-            const hentaiScore = predictions.find(p=>p.className==='Hentai')?.probability||0;
-            const sexyScore = predictions.find(p=>p.className==='Sexy')?.probability||0;
+      const img = new Image();
+      img.src = ev.target.result;
 
-            if(pornScore>0.95 || hentaiScore>0.95){ alert("Explicit content blocked!"); return; }
-            if(sexyScore>0.85 && !confirm("This image may be suggestive. Upload anyway?")) return;
+      img.onload = async () => {
+        if (!nsfwModel) {
+          alert("NSFW model still loading. Try again in a few seconds.");
+          return;
+        }
 
-            uploadFileToChat(file, dataUrl);
-          }catch(err){
-            console.error('Classification error:',err);
-            showError('Error classifying image. See console for details.');
+        try {
+          const predictions = await nsfwModel.classify(img, { size: 299 });
+          const pornScore = predictions.find(p => p.className === "Porn")?.probability || 0;
+          const hentaiScore = predictions.find(p => p.className === "Hentai")?.probability || 0;
+
+          // 🚫 Block only explicit/nude content
+          if (pornScore > 0.8 || hentaiScore > 0.8) {
+            alert("❌ Image blocked: explicit or nude content detected.");
+            return;
           }
-        };
-      } else {
-        uploadFileToChat(file, dataUrl);
-      }
+
+          // ✅ Allow safe image upload
+          uploadFileToChat(file, ev.target.result);
+
+        } catch (err) {
+          console.error("NSFW check failed:", err);
+          alert("Couldn't verify image safety. Try again later.");
+        }
+      };
     };
     reader.readAsDataURL(file);
   }
-  chatFileInput.value="";
+  chatFileInput.value = "";
 });
 
 function uploadFileToChat(file, dataUrl){
@@ -388,4 +396,5 @@ function escapeHtml(str){ return String(str).replace(/[&<>"']/g,m=>({'&':'&amp;'
 </script>
 </body>
 </html>
+
 
