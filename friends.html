@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Bumbble - Friends & Chat</title>
 <style>
 body { font-family: Arial, sans-serif; margin:0; background:#f8f6fb; color:#333; display:flex; min-height:100vh; flex-direction: column; }
 header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#d8cce5; box-shadow:0 3px 6px rgba(0,0,0,0.1); position:fixed; top:0; left:0; right:0; z-index:500; }
 header h1{ font-size:24px; margin:0; }
 nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
-#modelStatus { background:#f2e6ff; color:#333; text-align:center; padding:4px; font-size:13px; }
-.friends-container { width:250px; background:#e6e0f0; border-right:1px solid #ccc; padding:10px; overflow-y:auto; position:fixed; top:90px; bottom:0; left:0; }
-.main-content { flex:1; margin-left:250px; padding:100px 20px 20px 20px; }
+#modelStatus { background:#f2e6ff; color:#333; text-align:center; padding:6px; font-size:13px; margin-top:60px; }
+.friends-container { width:250px; background:#e6e0f0; border-right:1px solid #ccc; padding:10px; overflow-y:auto; position:fixed; top:120px; bottom:0; left:0; }
+.main-content { flex:1; margin-left:250px; padding:120px 20px 20px 20px; }
 .user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
 .user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #ccc; cursor:pointer; transition:0.2s; }
 .user-row:hover, .user-row.active { background:#ddd6f3; }
@@ -45,9 +45,10 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-<!-- TensorFlow + NSFWJS -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/nsfwjs"></script>
+<!-- IMPORTANT: use TFJS v3 for NSFWJS compatibility -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
+<!-- Use a stable NSFWJS build known to work with TFJS v3 -->
+<script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.0"></script>
 </head>
 <body>
 
@@ -118,26 +119,28 @@ let unreadCounters={}, lastChatTimestamps={}, typingTimeout=null;
 
 // --- NSFWJS Model ---
 let nsfwModel = null;
+
 (async () => {
   try {
-    console.log("Loading NSFWJS model...");
+    console.log("Attempting to load NSFWJS model...");
+    // nsfwjs@2.x will auto-download the bundled model from its package path
     nsfwModel = await nsfwjs.load();
-    console.log("✅ NSFWJS model loaded");
+    console.log("NSFWJS model loaded successfully");
     modelStatus.textContent = "✅ Content filter active";
     fileBtn.disabled = false;
     fileBtn.style.opacity = 1;
     fileBtn.style.cursor = "pointer";
   } catch (err) {
-    console.error("Error loading NSFW model:", err);
+    console.error("Error loading NSFWJS model:", err);
     modelStatus.textContent = "⚠️ Failed to load content filter — uploads disabled";
     fileBtn.disabled = true;
-    showError("Failed to load NSFW model. Image uploads are disabled.");
+    showError("Failed to load NSFW model. Image uploads are disabled. See console for details.");
   }
 })();
 
 // --- Error ---
 window.addEventListener('error', e=>{ showError(e.message || e); });
-function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(msg)+'</div>'; }
+function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(String(msg))+'</div>'; }
 
 // --- Auth ---
 auth.onAuthStateChanged(user=>{
@@ -323,14 +326,18 @@ chatFileInput.addEventListener('change', async e=>{
         img.src = dataUrl;
         img.onload = async () => {
           try {
+            // classify using the model
             const predictions = await nsfwModel.classify(img, { size: 299 });
             const porn = predictions.find(p=>p.className==='Porn')?.probability||0;
             const hentai = predictions.find(p=>p.className==='Hentai')?.probability||0;
             const sexy = predictions.find(p=>p.className==='Sexy')?.probability||0;
+
+            // thresholds (adjustable)
             if(porn>0.95 || hentai>0.95){ alert("🚫 Explicit content blocked!"); return; }
             if(sexy>0.85 && !confirm("⚠️ This image may be suggestive. Upload anyway?")) return;
+
             uploadFileToChat(file,dataUrl);
-          } catch(err){ showError("Error classifying image: "+err.message); }
+          } catch(err){ showError("Error classifying image: "+err.message); console.error(err); }
         };
       } else {
         uploadFileToChat(file,dataUrl);
@@ -342,7 +349,7 @@ chatFileInput.addEventListener('change', async e=>{
 });
 
 function uploadFileToChat(file,dataUrl){
-  if(!currentChatFriendUid) return;
+  if(!currentChatFriendUid) { showError("Open a chat before sending files."); return; }
   const chatId=getChatId(currentUserUid,currentChatFriendUid);
   const tempId='temp-'+Date.now();
   const tempMsg={sender:currentUserUid,receiver:currentChatFriendUid,uploading:true,fileName:file.name,_key:tempId};
@@ -351,7 +358,7 @@ function uploadFileToChat(file,dataUrl){
     const msg={sender:currentUserUid,receiver:currentChatFriendUid,fileData:dataUrl,fileType:file.type,fileName:file.name,timestamp:Date.now()};
     const msgRef=db.ref('chats/'+chatId+'/messages').push(msg);
     db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+msgRef.key).set(true);
-    document.getElementById('msg-'+tempId)?.remove();
+    const el = document.getElementById('msg-'+tempId); if(el) el.remove();
   },800);
 }
 
