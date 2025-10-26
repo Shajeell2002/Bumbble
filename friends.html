@@ -334,7 +334,7 @@ chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); }
 
 // File Upload + NSFW check
 fileBtn.onclick=()=>chatFileInput.click();
-chatFileInput.addEventListener('change', async e=>{
+chatFileInput.addEventListener('change', async e => { ... })
   const files = Array.from(e.target.files);
   if(!nsfwModel){ alert("Please wait — content filter still loading or failed. Use Retry if necessary."); return; }
   for(const file of files){
@@ -388,3 +388,4 @@ function escapeHtml(str){ return String(str).replace(/[&<>"']/g,m=>({'&':'&amp;'
 </script>
 </body>
 </html>
+
