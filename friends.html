@@ -1,3 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bumbble - Friends & Chat</title>
+<style>
+/* --- Styles unchanged from your original code --- */
+body { font-family: Arial, sans-serif; margin:0; background:#f8f6fb; color:#333; display:flex; min-height:100vh; flex-direction: column; }
+header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#d8cce5; box-shadow:0 3px 6px rgba(0,0,0,0.1); position:fixed; top:0; left:0; right:0; z-index:500; }
+header h1{ font-size:24px; margin:0; }
+nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
+.friends-container { width:250px; background:#e6e0f0; border-right:1px solid #ccc; padding:10px; overflow-y:auto; position:fixed; top:60px; bottom:0; left:0; }
+.main-content { flex:1; margin-left:250px; padding:80px 20px 20px 20px; }
+.user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
+.user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #ccc; cursor:pointer; transition:0.2s; }
+.user-row:hover, .user-row.active { background:#ddd6f3; }
+.user-row.flash { animation:flashLavender 0.5s; }
+@keyframes flashLavender { 0%{background:#e0b3ff;} 100%{background:#ddd6f3;} }
+.status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
+.online { background:green; } .offline { background:red; }
+.badge { background:#9b59b6; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
+#chatModal { position:fixed; bottom:0; right:20px; width:360px; height:500px; max-height:80vh; border:1px solid #ccc; background:#d8cce5; border-radius:10px; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); overflow:hidden; z-index:1000; resize:none; }
+#chatHeader { background:#d8cce5; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; cursor:move; }
+#chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:#f8f6fb; scroll-behavior:smooth; }
+#typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
+.message { max-width:80%; padding:8px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
+.message.self { background:#9b59b6; color:white; align-self:flex-end; }
+.message.friend { background:#ece6f2; color:#111; align-self:flex-start; }
+.timestamp { font-size:10px; color:#666; margin-top:6px; text-align:right; display:block; }
+.timestamp.friend { color:#666; }
+.uploading-badge { font-size:11px; color:#444; margin-top:6px; display:inline-block; background:#e6e0f0; padding:3px 6px; border-radius:6px; border:1px solid #d0c4e0; }
+#chatInputContainer { display:flex; border-top:1px solid #ccc; align-items:center; gap:6px; padding:8px; background:#e6e0f0; }
+#chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:8px; background:#f0e6fa; }
+#sendBtn, #fileBtn { padding:8px 12px; border:none; background:#b39ddb; cursor:pointer; border-radius:8px; color:white; font-weight:bold; }
+#sendBtn:hover, #fileBtn:hover { background:#9775c2; }
+.friends-container::-webkit-scrollbar { width:6px; }
+.friends-container::-webkit-scrollbar-thumb { background:#b39ddb; border-radius:3px; }
+.friends-container::-webkit-scrollbar-track { background:#f0e6fa; }
+.error-banner { background:#f2e6ff; color:#800; padding:8px 12px; border:1px solid #d8b3ff; margin:10px; border-radius:6px; }
+.chat-image { max-width:100%; height:auto; display:block; margin-top:4px; }
+</style>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<!-- NSFWJS -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nsfwjs"></script>
+
+</head>
+<body>
+
+<header>
+  <h1>Bumbble</h1>
+  <nav id="navLinks">
+    <a href="index.html">Home</a>
+    <a href="login.html">Login</a>
+    <a href="signup.html">Sign Up</a>
+  </nav>
+</header>
+
+<div class="friends-container">
+  <div class="user-list" id="userList"></div>
+</div>
+
+<div class="main-content">
+  <div id="chatModal">
+    <div id="chatHeader">
+      <span id="chatWith">Friend</span>
+      <button onclick="closeChat()">X</button>
+    </div>
+    <div id="chatMessages"></div>
+    <div id="typingIndicator"></div>
+    <div id="chatInputContainer">
+      <button id="fileBtn">📎</button>
+      <input type="text" id="chatInput" placeholder="Type a message">
+      <button id="sendBtn">Send</button>
+      <input type="file" id="chatFileInput" style="display:none;" multiple>
+    </div>
+  </div>
+  <div id="errorArea"></div>
+</div>
+
 <script>
 // --- Firebase Init ---
 const firebaseConfig = {
@@ -31,19 +117,13 @@ let unreadCounters={}, lastChatTimestamps={}, typingTimeout=null;
 
 // --- NSFWJS Model ---
 let nsfwModel = null;
-async function loadNsfwModel() {
-  try {
-    nsfwModel = await nsfwjs.load(); // default model
-    console.log("✅ NSFWJS model loaded");
-  } catch (err) {
-    console.error("❌ Failed to load NSFW model:", err);
-    showError("Failed to load NSFW image filter. File uploads may not be checked.");
-  }
-}
-loadNsfwModel();
+(async () => {
+  nsfwModel = await nsfwjs.load();
+  console.log("NSFWJS model loaded");
+})();
 
 // --- Error ---
-window.addEventListener('error', e => showError(e.message || e));
+window.addEventListener('error', e=>{ showError(e.message || e); });
 function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(msg)+'</div>'; }
 
 // --- Auth ---
@@ -82,10 +162,7 @@ function setupOnlineStatus(){
   if(!currentUserUid) return;
   const statusRef = db.ref('users/'+currentUserUid+'/public/online');
   db.ref('.info/connected').on('value', snap=>{
-    if(snap && snap.val()){ 
-      statusRef.set(true); 
-      statusRef.onDisconnect().set(false); 
-    }
+    if(snap && snap.val()){ statusRef.set(true); statusRef.onDisconnect().set(false); }
   });
 }
 
@@ -222,50 +299,34 @@ function sendMessage(){
 sendBtn.onclick=sendMessage;
 chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
 
-// --- File Upload (NSFW filter, only blocks nudity) ---
-fileBtn.onclick = () => chatFileInput.click();
-chatFileInput.addEventListener('change', async e => {
+// --- File Upload with NSFWJS ---
+fileBtn.onclick=()=>chatFileInput.click();
+chatFileInput.addEventListener('change', async e=>{
   const files = Array.from(e.target.files);
-  if (!files.length || !currentChatFriendUid) return;
-
-  for (const file of files) {
+  for(const file of files){
     const reader = new FileReader();
     reader.onload = async ev => {
       const img = new Image();
       img.src = ev.target.result;
+      img.onload = async ()=>{
+        if(!nsfwModel){ alert("NSFW model not loaded"); return; }
+        const predictions = await nsfwModel.classify(img, {size:299});
+        const pornScore = predictions.find(p=>p.className==='Porn')?.probability||0;
+        const hentaiScore = predictions.find(p=>p.className==='Hentai')?.probability||0;
+        const sexyScore = predictions.find(p=>p.className==='Sexy')?.probability||0;
 
-      img.onload = async () => {
-        if (!nsfwModel) {
-          alert("NSFW model still loading. Try again in a few seconds.");
-          return;
-        }
+        if(pornScore>0.99 || hentaiScore>0.99){ alert("Explicit content blocked!"); return; }
+        if(sexyScore>0.95 && !confirm("This image may be suggestive. Upload anyway?")) return;
 
-        try {
-          const predictions = await nsfwModel.classify(img, { size: 299 });
-          const pornScore = predictions.find(p => p.className === "Porn")?.probability || 0;
-          const hentaiScore = predictions.find(p => p.className === "Hentai")?.probability || 0;
-
-          // Block only explicit/nude content
-          if (pornScore > 0.8 || hentaiScore > 0.8) {
-            alert("❌ Image blocked: explicit or nude content detected.");
-            return;
-          }
-
-          // Otherwise allow upload
-          uploadFileToChat(file, ev.target.result);
-
-        } catch (err) {
-          console.error("NSFW check failed:", err);
-          alert("Couldn't verify image safety. Try again later.");
-        }
+        // Upload message
+        uploadFileToChat(file, ev.target.result);
       };
     };
     reader.readAsDataURL(file);
   }
-  chatFileInput.value = "";
+  chatFileInput.value="";
 });
 
-// --- Upload to Chat ---
 function uploadFileToChat(file, dataUrl){
   const chatId = getChatId(currentUserUid,currentChatFriendUid);
   const tempMsgRef = db.ref('chats/'+chatId+'/messages').push({sender:currentUserUid,receiver:currentChatFriendUid,uploading:true,fileName:file.name,timestamp:Date.now()});
@@ -297,3 +358,5 @@ document.addEventListener('mousemove', e=>{
 document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; document.body.style.userSelect='auto'; } });
 
 </script>
+</body>
+</html>
