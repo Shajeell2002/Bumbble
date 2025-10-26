@@ -45,9 +45,8 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-<!-- NSFWJS -->
+<!-- TFJS -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/nsfwjs/dist/nsfwjs.min.js"></script>
 
 </head>
 <body>
@@ -74,7 +73,7 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
     <div id="chatMessages"></div>
     <div id="typingIndicator"></div>
     <div id="chatInputContainer">
-      <button id="fileBtn">Loading NSFW...</button>
+      <button id="fileBtn" disabled>Loading NSFW...</button>
       <input type="text" id="chatInput" placeholder="Type a message">
       <button id="sendBtn">Send</button>
       <input type="file" id="chatFileInput" style="display:none;" multiple>
@@ -83,7 +82,9 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
   <div id="errorArea"></div>
 </div>
 
-<script>
+<script type="module">
+import * as nsfwjs from 'https://cdn.jsdelivr.net/npm/nsfwjs/dist/nsfwjs.min.js';
+
 // --- Firebase Init ---
 const firebaseConfig = {
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
@@ -113,19 +114,20 @@ const errorArea = document.getElementById("errorArea");
 
 let currentUserUid="", currentChatFriendUid="", currentChatListener=null;
 let unreadCounters={}, lastChatTimestamps={}, typingTimeout=null;
-
-// --- NSFWJS Model ---
 let nsfwModel = null;
+
+// --- NSFWJS ---
 fileBtn.disabled = true;
-nsfwjs.load().then(model => {
+fileBtn.textContent = "Loading NSFW...";
+nsfwjs.load().then(model=>{
   nsfwModel = model;
   fileBtn.disabled = false;
   fileBtn.textContent = "📎";
-  console.log("NSFW filter ready");
-}).catch(err => {
-  console.error("NSFW load failed:", err);
-  fileBtn.disabled = true;
-  fileBtn.textContent = "Filter load failed";
+  console.log("NSFW ready");
+}).catch(err=>{
+  console.error("NSFW load failed:",err);
+  fileBtn.disabled = false;
+  fileBtn.textContent = "📎";
 });
 
 // --- Error ---
@@ -284,84 +286,71 @@ function addOrUpdateMessageToChat(msg){
 }
 
 // --- Typing ---
-chatInput.addEventListener('input', ()=>{
+chatInput.addEventListener('input', e=>{
   if(!currentChatFriendUid) return;
-  db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).set(true);
+  db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).set(chatInput.value ? true : false);
   clearTimeout(typingTimeout);
-  typingTimeout=setTimeout(()=>db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove(),1000);
+  typingTimeout=setTimeout(()=>db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).set(false),2000);
 });
-function listenTyping(uid){ db.ref('typing/'+currentUserUid+'/'+uid).on('value', snap=>{ typingIndicator.textContent = snap.exists()? chatWith.textContent+' is typing...' : ''; }); }
-
-// --- Send Message ---
-function sendMessage(){
-  const text=chatInput.value.trim();
-  if(!text||!currentChatFriendUid) return;
-  const chatId=getChatId(currentUserUid,currentChatFriendUid);
-  const msg={sender:currentUserUid,receiver:currentChatFriendUid,text:text,timestamp:Date.now()};
-  chatInput.value='';
-  const msgRef=db.ref('chats/'+chatId+'/messages').push(msg);
-  db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+msgRef.key).set(true);
+function listenTyping(friendUid){
+  const typingRef=db.ref('typing/'+currentUserUid);
+  typingRef.on('value', snap=>{
+    const data = snap.val()||{};
+    typingIndicator.textContent = Object.keys(data).some(uid=>data[uid]) ? "Typing..." : "";
+  });
 }
-sendBtn.onclick=sendMessage;
-chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
 
-// --- File Upload with NSFW ---
+// --- Send Text ---
+sendBtn.onclick = sendMessage;
+chatInput.addEventListener('keydown', e=>{ if(e.key==='Enter') sendMessage(); });
+function sendMessage(){
+  if(!chatInput.value.trim() || !currentChatFriendUid) return;
+  const chatId=getChatId(currentUserUid,currentChatFriendUid);
+  db.ref('chats/'+chatId+'/messages').push({sender:currentUserUid,receiver:currentChatFriendUid,text:chatInput.value,timestamp:Date.now()});
+  db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid).set(true);
+  chatInput.value='';
+}
+
+// --- File Upload ---
 fileBtn.onclick = ()=>chatFileInput.click();
-chatFileInput.addEventListener("change", async e => {
-  if (!nsfwModel) { alert("NSFW filter still loading."); return; }
+chatFileInput.addEventListener('change', async e=>{
   const files = Array.from(e.target.files);
-  if (!files.length || !currentChatFriendUid) return;
-  for (const file of files) {
+  if(!files.length) return;
+  for(const file of files){
     const reader = new FileReader();
-    reader.onload = async ev => {
-      const img = new Image();
-      img.src = ev.target.result;
-      img.onload = async () => {
-        try {
-          const predictions = await nsfwModel.classify(img,{size:299});
-          const pornScore = predictions.find(p=>p.className==="Porn")?.probability||0;
-          const hentaiScore = predictions.find(p=>p.className==="Hentai")?.probability||0;
-          if(pornScore>0.8||hentaiScore>0.8){ alert("❌ Image blocked: explicit content."); return; }
-          uploadFileToChat(file, ev.target.result);
-        } catch(err){ console.error(err); alert("Could not check image."); }
+    reader.onload = async ev=>{
+      const img = new Image(); img.src=ev.target.result;
+      img.onload = async ()=>{
+        if(nsfwModel){
+          try{
+            const pred = await nsfwModel.classify(img,{size:299});
+            const porn = pred.find(p=>p.className==='Porn')?.probability||0;
+            const hentai = pred.find(p=>p.className==='Hentai')?.probability||0;
+            if(porn>0.8 || hentai>0.8){ alert("❌ Nudity blocked"); return; }
+          }catch(err){ console.error("NSFW check failed",err); }
+        }
+        uploadFileToChat(files[0], ev.target.result);
       };
     };
     reader.readAsDataURL(file);
   }
-  chatFileInput.value="";
+  chatFileInput.value='';
 });
 
-// --- Upload file to chat ---
-function uploadFileToChat(file,dataUrl){
-  const chatId = getChatId(currentUserUid,currentChatFriendUid);
-  const tempMsgRef = db.ref('chats/'+chatId+'/messages').push({sender:currentUserUid,receiver:currentChatFriendUid,uploading:true,fileName:file.name,timestamp:Date.now()});
-  tempMsgRef.update({uploading:false,fileData:dataUrl,fileType:file.type});
-  db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempMsgRef.key).set(true);
+// --- Upload helper ---
+function uploadFileToChat(file, dataUrl){
+  if(!currentUserUid || !currentChatFriendUid) return;
+  const chatId=getChatId(currentUserUid,currentChatFriendUid);
+  const msgRef=db.ref('chats/'+chatId+'/messages').push({sender:currentUserUid,receiver:currentChatFriendUid,uploading:true,fileName:file.name,timestamp:Date.now()});
+  msgRef.update({uploading:false,fileData:dataUrl,fileType:file.type});
+  db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+msgRef.key).set(true);
 }
 
-// --- Close Chat ---
+// --- Helpers ---
+function getChatId(uid1,uid2){ return [uid1,uid2].sort().join("_"); }
 function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null; if(currentChatListener) currentChatListener.off(); }
-function getChatId(a,b){ return a<b? a+'_'+b : b+'_'+a; }
-function escapeHtml(str){ return str.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-
-// --- Resizable Chat ---
-let isResizing=false,lastX,lastY,lastWidth,lastHeight;
-chatModal.addEventListener('mousedown', e=>{
-  if(e.target!==chatInput && e.target.tagName!=='BUTTON'){
-    isResizing=true; lastX=e.clientX; lastY=e.clientY;
-    const rect=chatModal.getBoundingClientRect();
-    lastWidth=rect.width; lastHeight=rect.height;
-    document.body.style.userSelect='none';
-  }
-});
-document.addEventListener('mousemove', e=>{
-  if(!isResizing) return;
-  const dx=e.clientX-lastX, dy=e.clientY-lastY;
-  chatModal.style.width = Math.min(Math.max(lastWidth+dx,300),window.innerWidth-40)+'px';
-  chatModal.style.height = Math.min(Math.max(lastHeight+dy,200),window.innerHeight-60)+'px';
-});
-document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; document.body.style.userSelect='auto'; } });
-
+function escapeHtml(text){ return text.replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
 </script>
+
 </body>
 </html>
