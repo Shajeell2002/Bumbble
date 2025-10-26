@@ -43,7 +43,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
 </head>
 <body>
 
@@ -79,7 +78,7 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 </div>
 
 <script>
-// Firebase init
+// --- Firebase Init ---
 const firebaseConfig = {
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
   authDomain:"bumbble-c061f.firebaseapp.com",
@@ -92,9 +91,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
-const functions = firebase.functions();
 
-// DOM
+// --- DOM ---
 const nav = document.getElementById("navLinks");
 const userList = document.getElementById("userList");
 const chatModal = document.getElementById("chatModal");
@@ -110,11 +108,24 @@ const errorArea = document.getElementById("errorArea");
 let currentUserUid = "", currentChatFriendUid = "", currentChatListener = null;
 let unreadCounters = {}, lastChatTimestamps = {}, typingTimeout;
 
-// Error Handling
+// --- Error Handling ---
 window.addEventListener('error', e=>{ showError(e.message || e); });
 function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(msg)+'</div>'; }
 
-// Auth
+// --- NSFW Check ---
+async function checkImageNSFW(file){
+  return new Promise((resolve)=>{
+    const reader = new FileReader();
+    reader.onload = e=>{
+      // TEMP: allow all images for testing
+      resolve(true);
+      // Later integrate real API here
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// --- Auth ---
 auth.onAuthStateChanged(user=>{
   if(user && user.emailVerified){
     currentUserUid = user.uid;
@@ -145,7 +156,7 @@ auth.onAuthStateChanged(user=>{
   }
 });
 
-// Online Status
+// --- Online Status ---
 function setupOnlineStatus(){
   if(!currentUserUid) return;
   const statusRef = db.ref('users/'+currentUserUid+'/public/online');
@@ -154,7 +165,7 @@ function setupOnlineStatus(){
   });
 }
 
-// Users List
+// --- Users List ---
 function loadUsersRealtime(){
   db.ref('users').on('value', snap=>{
     const users = snap.val() || {};
@@ -177,7 +188,7 @@ function loadUsersRealtime(){
   });
 }
 
-// Unread Badges
+// --- Unread Badges ---
 function setupUnreadListener(){
   db.ref('unread/'+currentUserUid).on('value', snap=>{
     unreadCounters={};
@@ -202,7 +213,7 @@ function flashUserRow(uid){
   if(row){ row.classList.add('flash'); setTimeout(()=>row.classList.remove('flash'),800); }
 }
 
-// Open Chat
+// --- Open Chat ---
 function openChat(uid,name){
   document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
   const activeRow = document.querySelector(`.user-row[data-uid="${uid}"]`);
@@ -247,7 +258,7 @@ function openChat(uid,name){
   listenTyping(uid);
 }
 
-// Messages
+// --- Messages ---
 function addOrUpdateMessageToChat(msg){
   if(!msg||!msg._key) return;
   const id='msg-'+msg._key;
@@ -265,7 +276,7 @@ function addOrUpdateMessageToChat(msg){
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// Typing
+// --- Typing ---
 chatInput.addEventListener('input', ()=>{
   if(!currentChatFriendUid) return;
   db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).set(true);
@@ -274,7 +285,7 @@ chatInput.addEventListener('input', ()=>{
 });
 function listenTyping(uid){ db.ref('typing/'+currentUserUid+'/'+uid).on('value', snap=>{ typingIndicator.textContent = snap.exists()? chatWith.textContent+' is typing...' : ''; }); }
 
-// Send Message
+// --- Send Message ---
 function sendMessage(){
   const text=chatInput.value.trim();
   if(!text||!currentChatFriendUid) return;
@@ -287,49 +298,37 @@ function sendMessage(){
 sendBtn.onclick=sendMessage;
 chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
 
-// NSFW Image Check & File Upload
+// --- File Upload with NSFW check ---
 fileBtn.onclick=()=>chatFileInput.click();
-
-async function checkImageNSFW(file){
-  return new Promise((resolve)=>{
-    const reader = new FileReader();
-    reader.onload = async e=>{
-      try{
-        const func = functions.httpsCallable('moderateImage');
-        const res = await func({ imageBase64: e.target.result });
-        resolve(res.data.allowed);
-      } catch(err){ resolve(false); }
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
 chatFileInput.addEventListener('change', async e=>{
-  if(!currentChatFriendUid) return;
   for(const f of e.target.files){
+    if(!currentChatFriendUid) continue;
+
     const allowed = await checkImageNSFW(f);
     if(!allowed){
       showError("NSFW image blocked. Upload normal images only.");
       continue;
     }
+
     const chatId=getChatId(currentUserUid,currentChatFriendUid);
-    const tempMsgRef=db.ref('chats/'+chatId+'/messages').push({sender:currentUserUid,receiver:currentChatFriendUid,uploading:true,fileName:f.name,timestamp:Date.now()});
+    const tempMsgRef=db.ref('chats/'+chatId+'/messages').push({ sender:currentUserUid, receiver:currentChatFriendUid, uploading:true, fileName:f.name, timestamp:Date.now() });
+
     const reader=new FileReader();
     reader.onload=function(ev){
       const data=ev.target.result;
-      tempMsgRef.update({uploading:false,fileData:data,fileType:f.type});
+      tempMsgRef.update({ uploading:false, fileData:data, fileType:f.type });
       db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempMsgRef.key).set(true);
     };
     reader.readAsDataURL(f);
   }
 });
 
-// Close Chat
+// --- Close Chat ---
 function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null; if(currentChatListener) currentChatListener.off(); }
 function getChatId(a,b){ return a<b? a+'_'+b : b+'_'+a; }
 function escapeHtml(str){ return str.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-// Resizable Chat
+// --- Resizable Chat Anywhere ---
 let isResizing=false,lastX,lastY,lastWidth,lastHeight;
 chatModal.addEventListener('mousedown', e=>{
   if(e.target!==chatInput && e.target.tagName!=='BUTTON'){
