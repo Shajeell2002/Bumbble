@@ -45,12 +45,10 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-<!-- TensorFlow.js & NSFWJS -->
+<!-- TensorFlow.js (required for NSFWJS) -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
+<!-- NSFWJS library -->
 <script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.2/dist/nsfwjs.min.js"></script>
-
-<!-- GIF parser -->
-<script src="https://cdn.jsdelivr.net/npm/gifuct-js/dist/gifuct.min.js"></script>
 </head>
 <body>
 
@@ -76,7 +74,7 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
     <div id="chatMessages"></div>
     <div id="typingIndicator"></div>
     <div id="chatInputContainer">
-      <button id="fileBtn">📎</button>
+      <button id="fileBtn" disabled>📎</button>
       <input type="text" id="chatInput" placeholder="Type a message">
       <button id="sendBtn">Send</button>
       <input type="file" id="chatFileInput" style="display:none;" multiple>
@@ -86,10 +84,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 </div>
 
 <script>
-let nsfwModel = null;
-// --- Load NSFWJS ---
-nsfwjs.load().then(model=>{ nsfwModel=model; console.log("NSFWJS ready"); });
-
 // --- Firebase Init ---
 const firebaseConfig = {
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
@@ -120,9 +114,38 @@ const errorArea = document.getElementById("errorArea");
 let currentUserUid = "", currentChatFriendUid = "", currentChatListener = null;
 let unreadCounters = {}, lastChatTimestamps = {}, typingTimeout;
 
-// --- Error Handling ---
-window.addEventListener('error', e=>{ showError(e.message || e); });
+// --- NSFWJS ---
+let nsfwModel = null;
+nsfwjs.load().then(model => {
+  nsfwModel = model;
+  console.log("NSFWJS model loaded!");
+  fileBtn.disabled = false; // enable file button
+});
+
+// --- Helper functions ---
 function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(msg)+'</div>'; }
+function escapeHtml(str){ return str.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function getChatId(a,b){ return a<b? a+'_'+b : b+'_'+a; }
+
+// --- Check image safety ---
+async function isSafeImage(file) {
+  if(!nsfwModel) return true;
+  return new Promise((resolve)=>{
+    const reader = new FileReader();
+    reader.onload = e=>{
+      const img = new Image();
+      img.src = e.target.result;
+      img.onload = async ()=>{
+        const predictions = await nsfwModel.classify(img);
+        const top = predictions.reduce((a,b)=>a.probability>b.probability?a:b);
+        console.log(predictions);
+        if(top.className==="Neutral" || top.className==="Drawing") resolve(true);
+        else resolve(false);
+      };
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
 // --- Auth ---
 auth.onAuthStateChanged(user=>{
@@ -297,86 +320,35 @@ function sendMessage(){
 sendBtn.onclick=sendMessage;
 chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
 
-// --- File Upload with NSFW check (including GIF frames) ---
+// --- File Upload with NSFW Check ---
 fileBtn.onclick=()=>chatFileInput.click();
-
 chatFileInput.addEventListener('change', async e=>{
-  for(const f of e.target.files){
-    let blocked = false;
-    if(f.type.startsWith('image/') && nsfwModel){
-      const isGif = f.type === 'image/gif';
-
-      if(isGif){
-        // --- Handle animated GIF ---
-        const arrayBuffer = await f.arrayBuffer();
-        const gif = new window.gifuctjs.Gif(new Uint8Array(arrayBuffer));
-        const frames = gif.decompressFrames(true);
-
-        for(const frame of frames){
-          if(blocked) break;
-          const canvas = document.createElement('canvas');
-          canvas.width = frame.dims.width;
-          canvas.height = frame.dims.height;
-          const ctx = canvas.getContext('2d');
-          const imageData = ctx.createImageData(frame.dims.width, frame.dims.height);
-          imageData.data.set(frame.patch);
-          ctx.putImageData(imageData, 0, 0);
-
-          const img = new Image();
-          img.src = canvas.toDataURL();
-          await new Promise(res=>{
-            img.onload = async ()=>{
-              const predictions = await nsfwModel.classify(img);
-              const top = predictions.reduce((a,b)=>a.probability>b.probability?a:b);
-              if(top.className !== "Neutral") blocked = true;
-              res();
-            }
-          });
-        }
-      } else {
-        // --- Normal image ---
-        blocked = await new Promise(resolve=>{
-          const reader = new FileReader();
-          reader.onload = ev=>{
-            const img = new Image();
-            img.src = ev.target.result;
-            img.onload = async ()=>{
-              const predictions = await nsfwModel.classify(img);
-              const top = predictions.reduce((a,b)=>a.probability>b.probability?a:b);
-              resolve(top.className !== "Neutral");
-            };
-          };
-          reader.readAsDataURL(f);
-        });
-      }
+  for(const file of e.target.files){
+    if(file.type.startsWith('image/')){
+      const safe = await isSafeImage(file);
+      if(!safe){ showError("Image blocked: NSFW detected!"); continue; }
     }
 
-    if(blocked){ showError("Image blocked: NSFW or inappropriate content detected"); continue; }
-
-    // --- Upload safe image ---
-    const chatId = getChatId(currentUserUid,currentChatFriendUid);
-    const tempMsgRef = db.ref('chats/'+chatId+'/messages').push({
+    const chatId=getChatId(currentUserUid,currentChatFriendUid);
+    const tempMsgRef=db.ref('chats/'+chatId+'/messages').push({
       sender:currentUserUid,
       receiver:currentChatFriendUid,
       uploading:true,
-      fileName:f.name,
+      fileName:file.name,
       timestamp:Date.now()
     });
 
-    const reader2 = new FileReader();
-    reader2.onload = function(ev){
-      const data = ev.target.result;
-      tempMsgRef.update({uploading:false,fileData:data,fileType:f.type});
+    const reader2=new FileReader();
+    reader2.onload=function(ev){
+      tempMsgRef.update({uploading:false,fileData:ev.target.result,fileType:file.type});
       db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempMsgRef.key).set(true);
     };
-    reader2.readAsDataURL(f);
+    reader2.readAsDataURL(file);
   }
 });
 
 // --- Close Chat ---
 function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null; if(currentChatListener) currentChatListener.off(); }
-function getChatId(a,b){ return a<b? a+'_'+b : b+'_'+a; }
-function escapeHtml(str){ return str.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
 // --- Resizable Chat Anywhere ---
 let isResizing=false,lastX,lastY,lastWidth,lastHeight;
