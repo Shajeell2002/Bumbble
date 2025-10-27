@@ -93,6 +93,82 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
+  /* ---------- NSFW Filter Setup ---------- */
+let nsfwModel = null;
+
+async function loadNsfwModel() {
+  try {
+    console.log("🔄 Loading NSFW model from /assets/nsfw-model/model.json...");
+    nsfwModel = await nsfwjs.load("/assets/nsfw-model/");
+    console.log("✅ NSFW model loaded successfully.");
+  } catch (err) {
+    console.error("❌ Failed to load NSFW model:", err);
+    showError("⚠️ Image safety filter failed to load. Some uploads may be restricted.");
+  }
+}
+loadNsfwModel();
+
+/* ---------- NSFW Check Before Upload ---------- */
+async function isImageNSFW(file) {
+  return new Promise(async (resolve) => {
+    if (!nsfwModel) {
+      console.warn("⚠️ NSFW model not ready, skipping check.");
+      return resolve(false);
+    }
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = async () => {
+      try {
+        const predictions = await nsfwModel.classify(img);
+        console.log("🔍 NSFW predictions:", predictions);
+        const unsafe = predictions.some(
+          (p) => ["Porn", "Hentai", "Sexy"].includes(p.className) && p.probability > 0.6
+        );
+        resolve(unsafe);
+      } catch (err) {
+        console.error("Error classifying image:", err);
+        resolve(false);
+      }
+    };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+/* ---------- Override File Upload with NSFW Check ---------- */
+chatFileInput.addEventListener("change", async (e) => {
+  const files = Array.from(e.target.files);
+  for (const f of files) {
+    const isUnsafe = await isImageNSFW(f);
+    if (isUnsafe) {
+      showError("🚫 NSFW image detected. Upload blocked for safety.");
+      continue;
+    }
+
+    const chatId = getChatId(currentUserUid, currentChatFriendUid);
+    const tempMsgRef = db.ref("chats/" + chatId + "/messages").push({
+      sender: currentUserUid,
+      receiver: currentChatFriendUid,
+      uploading: true,
+      fileName: f.name,
+      timestamp: Date.now(),
+    });
+
+    const reader = new FileReader();
+    reader.onload = function (ev) {
+      const data = ev.target.result;
+      tempMsgRef.update({
+        uploading: false,
+        fileData: data,
+        fileType: f.type,
+      });
+      db.ref("unread/" + currentChatFriendUid + "/" + currentUserUid + "/" + tempMsgRef.key).set(true);
+    };
+    reader.readAsDataURL(f);
+  }
+});
+
+
+  
 // --- DOM ---
 const nav = document.getElementById("navLinks");
 const userList = document.getElementById("userList");
@@ -330,5 +406,6 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
