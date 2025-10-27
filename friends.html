@@ -115,6 +115,7 @@ function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+esca
 // --- Auth ---
 auth.onAuthStateChanged(user=>{
   if(user && user.emailVerified){
+console.log("✅ Logged in as:", user.email);
     currentUserUid = user.uid;
     nav.innerHTML = `
       <a href="index.html">Home</a>
@@ -328,3 +329,4 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
