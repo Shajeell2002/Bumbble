@@ -112,6 +112,41 @@ let unreadCounters = {}, lastChatTimestamps = {}, typingTimeout;
 window.addEventListener('error', e=>{ showError(e.message || e); });
 function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(msg)+'</div>'; }
 
+/* ---------- NSFWJS Setup ---------- */
+let nsfwModel = null;
+async function loadNsfwModel(){
+  try{
+    nsfwModel = await nsfwjs.load();
+    console.log("✅ NSFW model loaded");
+  }catch(err){
+    console.error("❌ Failed to load NSFW model:", err);
+    showError("Image safety filter failed to load. Some uploads may be restricted.");
+  }
+}
+loadNsfwModel();
+
+/* Helper: Check if image is NSFW */
+async function isImageNSFW(file){
+  return new Promise(async (resolve)=>{
+    if(!nsfwModel) return resolve(false); // block uploads until model ready
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = async ()=>{
+      try{
+        const predictions = await nsfwModel.classify(img);
+        const unsafe = predictions.some(p=>["Porn","Hentai","Sexy"].includes(p.className) && p.probability>0.6);
+        resolve(unsafe);
+      }catch(err){
+        console.error("Error classifying:", err);
+        resolve(false);
+      }
+    };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+
+
 // --- Auth ---
 auth.onAuthStateChanged(user=>{
   if(user && user.emailVerified){
