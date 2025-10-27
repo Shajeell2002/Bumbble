@@ -43,7 +43,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  
 </head>
 <body>
 
@@ -112,55 +111,6 @@ let unreadCounters = {}, lastChatTimestamps = {}, typingTimeout;
 // --- Error Handling ---
 window.addEventListener('error', e=>{ showError(e.message || e); });
 function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(msg)+'</div>'; }
-
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.0/dist/nsfwjs.min.js"></script>
- 
-  
-<script>
-let nsfwModel = null;
-
-async function loadNsfwModel(){
-  try {
-    // ✅ Explicit CDN model path
-    const modelUrl = "https://cdn.jsdelivr.net/npm/nsfwjs@2.4.0/dist/model/";
-    nsfwModel = await nsfwjs.load(modelUrl);
-    console.log("✅ NSFW model loaded successfully");
-  } catch (err) {
-    console.error("❌ Failed to load NSFW model:", err);
-    showError("Image safety filter failed to load. Some uploads may be restricted.");
-  }
-}
-loadNsfwModel();
-
-async function isImageNSFW(file){
-  return new Promise(async (resolve)=>{
-    if(!nsfwModel) return resolve(false);
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = async ()=>{
-      try{
-        const predictions = await nsfwModel.classify(img);
-        console.log("🔍 Predictions:", predictions);
-        const unsafe = predictions.some(p =>
-          ["Porn","Hentai","Sexy"].includes(p.className) && p.probability > 0.6
-        );
-        resolve(unsafe);
-      }catch(err){
-        console.error("Classification error:", err);
-        resolve(false);
-      }
-    };
-    img.src = URL.createObjectURL(file);
-  });
-}
-
-function showError(msg){
-  alert(msg);
-}
-</script>
-
-
 
 // --- Auth ---
 auth.onAuthStateChanged(user=>{
@@ -378,6 +328,3 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
-
-
-
