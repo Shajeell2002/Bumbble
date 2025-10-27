@@ -365,19 +365,59 @@ chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); }
 
 // --- File Upload ---
 fileBtn.onclick=()=>chatFileInput.click();
-chatFileInput.addEventListener('change', e=>{
-  Array.from(e.target.files).forEach(f=>{
-    const chatId=getChatId(currentUserUid,currentChatFriendUid);
-    const tempMsgRef=db.ref('chats/'+chatId+'/messages').push({sender:currentUserUid,receiver:currentChatFriendUid,uploading:true,fileName:f.name,timestamp:Date.now()});
-    const reader=new FileReader();
-    reader.onload=function(ev){
-      const data=ev.target.result;
-      tempMsgRef.update({uploading:false,fileData:data,fileType:f.type});
-      db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempMsgRef.key).set(true);
+chatFileInput.addEventListener('change', async e => {
+  if (!window.nsfwModel) {
+    alert("⚠️ NSFW filter not ready yet, please try again in a few seconds.");
+    return;
+  }
+
+  for (const f of e.target.files) {
+    const chatId = getChatId(currentUserUid, currentChatFriendUid);
+    const tempMsgRef = db.ref('chats/' + chatId + '/messages').push({
+      sender: currentUserUid,
+      receiver: currentChatFriendUid,
+      uploading: true,
+      fileName: f.name,
+      timestamp: Date.now()
+    });
+
+    const reader = new FileReader();
+    reader.onload = async function (ev) {
+      const data = ev.target.result;
+
+      // Create an image element to classify
+      const img = new Image();
+      img.src = data;
+      await new Promise(res => (img.onload = res));
+
+      // Run NSFW classification
+      const predictions = await window.nsfwModel.classify(img);
+      console.log("🔍 NSFW Check:", predictions);
+
+      // Find the top prediction
+      const top = predictions.reduce((a, b) => (a.probability > b.probability ? a : b));
+      console.log("🧩 Highest:", top.className, top.probability.toFixed(2));
+
+      // Block image if it’s pornographic or sexually explicit
+      if (
+        (top.className === "Porn" && top.probability > 0.6) ||
+        (top.className === "Hentai" && top.probability > 0.6) ||
+        (top.className === "Sexy" && top.probability > 0.75)
+      ) {
+        alert("🚫 NSFW image blocked. Please upload appropriate content.");
+        tempMsgRef.remove(); // delete temp message
+        return;
+      }
+
+      // Safe image — upload normally
+      tempMsgRef.update({ uploading: false, fileData: data, fileType: f.type });
+      db.ref('unread/' + currentChatFriendUid + '/' + currentUserUid + '/' + tempMsgRef.key).set(true);
     };
+
     reader.readAsDataURL(f);
-  });
+  }
 });
+
 
 // --- Close Chat ---
 function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null; if(currentChatListener) currentChatListener.off(); }
@@ -406,8 +446,3 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
-
-
-
-
-
