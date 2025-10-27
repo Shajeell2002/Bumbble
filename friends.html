@@ -113,45 +113,52 @@ let unreadCounters = {}, lastChatTimestamps = {}, typingTimeout;
 window.addEventListener('error', e=>{ showError(e.message || e); });
 function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(msg)+'</div>'; }
 
- <!-- TensorFlow.js -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
-
-<!-- NSFWJS -->
 <script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.0/dist/nsfwjs.min.js"></script>
  
   
-/* ---------- NSFWJS Setup ---------- */
+<script>
 let nsfwModel = null;
+
 async function loadNsfwModel(){
-  try{
-    nsfwModel = await nsfwjs.load();
-    console.log("✅ NSFW model loaded");
-  }catch(err){
+  try {
+    // ✅ Explicit CDN model path
+    const modelUrl = "https://cdn.jsdelivr.net/npm/nsfwjs@2.4.0/dist/model/";
+    nsfwModel = await nsfwjs.load(modelUrl);
+    console.log("✅ NSFW model loaded successfully");
+  } catch (err) {
     console.error("❌ Failed to load NSFW model:", err);
     showError("Image safety filter failed to load. Some uploads may be restricted.");
   }
 }
 loadNsfwModel();
 
-/* Helper: Check if image is NSFW */
 async function isImageNSFW(file){
   return new Promise(async (resolve)=>{
-    if(!nsfwModel) return resolve(false); // block uploads until model ready
+    if(!nsfwModel) return resolve(false);
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = async ()=>{
       try{
         const predictions = await nsfwModel.classify(img);
-        const unsafe = predictions.some(p=>["Porn","Hentai","Sexy"].includes(p.className) && p.probability>0.6);
+        console.log("🔍 Predictions:", predictions);
+        const unsafe = predictions.some(p =>
+          ["Porn","Hentai","Sexy"].includes(p.className) && p.probability > 0.6
+        );
         resolve(unsafe);
       }catch(err){
-        console.error("Error classifying:", err);
+        console.error("Classification error:", err);
         resolve(false);
       }
     };
     img.src = URL.createObjectURL(file);
   });
 }
+
+function showError(msg){
+  alert(msg);
+}
+</script>
 
 
 
@@ -371,5 +378,6 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
