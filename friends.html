@@ -92,6 +92,19 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
+ 
+// --- DOM ---
+const nav = document.getElementById("navLinks");
+const userList = document.getElementById("userList");
+const chatModal = document.getElementById("chatModal");
+const chatMessages = document.getElementById("chatMessages");
+const chatWith = document.getElementById("chatWith");
+const chatInput = document.getElementById("chatInput");
+const sendBtn = document.getElementById("sendBtn");
+const fileBtn = document.getElementById("fileBtn");
+const chatFileInput = document.getElementById("chatFileInput");
+const typingIndicator = document.getElementById("typingIndicator");
+const errorArea = document.getElementById("errorArea");
 
   /* ---------- NSFW Filter Setup ---------- */
 let nsfwModel = null;
@@ -166,22 +179,9 @@ chatFileInput.addEventListener("change", async (e) => {
     reader.readAsDataURL(f);
   }
 });
-
-
   
-// --- DOM ---
-const nav = document.getElementById("navLinks");
-const userList = document.getElementById("userList");
-const chatModal = document.getElementById("chatModal");
-const chatMessages = document.getElementById("chatMessages");
-const chatWith = document.getElementById("chatWith");
-const chatInput = document.getElementById("chatInput");
-const sendBtn = document.getElementById("sendBtn");
-const fileBtn = document.getElementById("fileBtn");
-const chatFileInput = document.getElementById("chatFileInput");
-const typingIndicator = document.getElementById("typingIndicator");
-const errorArea = document.getElementById("errorArea");
-
+  
+  
 let currentUserUid = "", currentChatFriendUid = "", currentChatListener = null;
 let unreadCounters = {}, lastChatTimestamps = {}, typingTimeout;
 
@@ -406,6 +406,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
