@@ -115,7 +115,8 @@ let nsfwModel = null;
 // Load NSFW model correctly
 async function loadNsfwModel() {
   nsfwModel = await nsfwjs.load(
-    "https://models.sashido.io/nsfwjs/"
+nsfwModel = await nsfwjs.load("https://models.sashido.io/nsfwjs/model.json");
+
   );
   console.log("✅ NSFW model loaded");
 }
@@ -152,9 +153,9 @@ async function isImageNSFW(file) {
         console.log("NSFW:", predictions);
 
         if (
-          (top.className === "Porn" && top.probability > 0.40) ||
-          (top.className === "Hentai" && top.probability > 0.40) ||
-          (top.className === "Sexy" && top.probability > 0.60)
+          (top.className === "Porn" && top.probability > 0.80) ||
+          (top.className === "Hentai" && top.probability > 0.80) ||
+          (top.className === "Sexy" && top.probability > 0.90)
         ) {
           return resolve(true);
         }
@@ -424,10 +425,3 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
-
-
-
-
-
-
-
