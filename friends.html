@@ -115,7 +115,7 @@ let nsfwModel = null;
 async function loadNsfwModel() {
   try {
     console.log("🔄 Loading NSFW model from /assets/nsfw-model/model.json...");
-    nsfwModel = await nsfwjs.load("./assets/nsfw-model/");
+    nsfwModel = await nsfwjs.load();
     console.log("✅ NSFW model loaded successfully.");
   } catch (err) {
     console.error("❌ Failed to load NSFW model:", err);
