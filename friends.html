@@ -492,7 +492,7 @@ function escapeHtml(str){ return str.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&l
 // --- Resizable Chat Anywhere ---
 let isResizing=false,lastX,lastY,lastWidth,lastHeight;
 chatModal.addEventListener('mousedown', e=>{
-  if(e.target!==chatInput && e.target.tagName!=='BUTTON'){
+  if (e.offsetX > chatModal.clientWidth - 15 || e.offsetY > chatModal.clientHeight - 15) {
     isResizing=true; lastX=e.clientX; lastY=e.clientY;
     const rect=chatModal.getBoundingClientRect();
     lastWidth=rect.width; lastHeight=rect.height;
