@@ -127,86 +127,32 @@ loadNsfwModel();
 /* ---------- NSFW Check Before Upload ---------- */
 async function isImageNSFW(file) {
   return new Promise(async (resolve) => {
-    if (!nsfwModel) {
-      console.warn("⚠️ NSFW model not ready, skipping check.");
-      return resolve(false);
-    }
-
     const img = new Image();
-    img.crossOrigin = "anonymous";
+    img.src = URL.createObjectURL(file);
+
     img.onload = async () => {
-      try {
-        // Draw the image onto a hidden canvas
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const tensor = tf.browser.fromPixels(img).expandDims(0);
+      const predictions = await nsfwModel.classify(tensor);
+      tensor.dispose();
 
-        // Convert to tensor
-        const imageTensor = tf.browser.fromPixels(canvas);
-        const predictions = await nsfwModel.classify(imageTensor);
-        imageTensor.dispose();
+      console.log("🔍 NSFW Predictions:", predictions);
 
-        console.log("🔍 NSFW Predictions:", predictions);
+      const result = predictions.reduce((a, b) => a.probability > b.probability ? a : b);
 
-        // Get highest probability
-        const top = predictions.reduce((a, b) => (a.probability > b.probability ? a : b));
+      const unsafe =
+        (result.className === "Porn" && result.probability > 0.40) ||
+        (result.className === "Hentai" && result.probability > 0.40) ||
+        (result.className === "Sexy" && result.probability > 0.80);
 
-        const isUnsafe =
-          (top.className === "Porn" && top.probability > 0.55) ||
-          (top.className === "Hentai" && top.probability > 0.55) ||
-          (top.className === "Sexy" && top.probability > 0.7);
-
-        if (isUnsafe) {
-          console.warn("🚫 Blocked by NSFW Filter:", top);
-        }
-
-        resolve(isUnsafe);
-      } catch (err) {
-        console.error("⚠️ NSFW check failed:", err);
-        resolve(false);
-      }
+      resolve(unsafe);
     };
 
-    img.onerror = () => resolve(false);
-    img.src = URL.createObjectURL(file);
+    img.onerror = () => resolve(true); // if image fails to load → block for safety
   });
 }
 
 
 /* ---------- Override File Upload with NSFW Check ---------- */
-chatFileInput.addEventListener("change", async (e) => {
-  const files = Array.from(e.target.files);
-  for (const f of files) {
-    const isUnsafe = await isImageNSFW(f);
-    if (isUnsafe) {
-      showError("🚫 NSFW image detected. Upload blocked for safety.");
-      continue;
-    }
-
-    const chatId = getChatId(currentUserUid, currentChatFriendUid);
-    const tempMsgRef = db.ref("chats/" + chatId + "/messages").push({
-      sender: currentUserUid,
-      receiver: currentChatFriendUid,
-      uploading: true,
-      fileName: f.name,
-      timestamp: Date.now(),
-    });
-
-    const reader = new FileReader();
-    reader.onload = function (ev) {
-      const data = ev.target.result;
-      tempMsgRef.update({
-        uploading: false,
-        fileData: data,
-        fileType: f.type,
-      });
-      db.ref("unread/" + currentChatFriendUid + "/" + currentUserUid + "/" + tempMsgRef.key).set(true);
-    };
-    reader.readAsDataURL(f);
-  }
-});
   
   
   
@@ -391,82 +337,42 @@ function sendMessage(){
 sendBtn.onclick=sendMessage;
 chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
 
-// --- File Upload ---
-fileBtn.onclick=()=>chatFileInput.click();
-chatFileInput.addEventListener('change', async e => {
-  for (const f of e.target.files) {
+// --- File Upload with strict NSFW filtering ---
+fileBtn.onclick = () => chatFileInput.click();
+
+chatFileInput.addEventListener("change", async (e) => {
+  const files = Array.from(e.target.files);
+
+  for (const f of files) {
+    if (!nsfwModel) {
+      showError("⚠️ Safety system not ready. Try again in few seconds.");
+      continue;
+    }
+
+    const isUnsafe = await isImageNSFW(f);
+
+    if (isUnsafe) {
+      showError("🚫 This image contains nudity/adult content and cannot be uploaded.");
+      continue;
+    }
+
     const chatId = getChatId(currentUserUid, currentChatFriendUid);
-    const tempMsgRef = db.ref('chats/' + chatId + '/messages').push({
+    const tempMsgRef = db.ref("chats/" + chatId + "/messages").push({
       sender: currentUserUid,
       receiver: currentChatFriendUid,
       uploading: true,
       fileName: f.name,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     const reader = new FileReader();
-    reader.onload = async function (ev) {
-      const data = ev.target.result;
-
-      let isSafe = true;
-
-      try {
-        // 🧠 First layer: NSFWJS model check
-        if (window.nsfwModel) {
-          const img = new Image();
-          img.src = data;
-          await new Promise(res => (img.onload = res));
-
-          const predictions = await window.nsfwModel.classify(img);
-          console.log("🔍 NSFWJS predictions:", predictions);
-
-          const top = predictions.reduce((a, b) => (a.probability > b.probability ? a : b));
-
-          if (
-            (top.className === "Porn" && top.probability > 0.6) ||
-            (top.className === "Hentai" && top.probability > 0.6) ||
-            (top.className === "Sexy" && top.probability > 0.75)
-          ) {
-            console.warn("🚫 Blocked by NSFWJS:", top);
-            isSafe = false;
-          }
-        }
-      } catch (err) {
-        console.error("⚠️ NSFWJS check failed:", err);
-      }
-
-      // 🧩 Second layer: Fallback — use external API if unsure
-      if (isSafe) {
-        try {
-          const formData = new FormData();
-          formData.append("media", f);
-
-          const response = await fetch("https://api.moderatecontent.com/moderate/", {
-            method: "POST",
-            body: formData
-          });
-
-          const result = await response.json();
-          console.log("🧠 Fallback API:", result);
-
-          // Example response: { rating_index: 4, rating_label: "adult" }
-          if (result.rating_label === "adult" || result.rating_index >= 4) {
-            isSafe = false;
-          }
-        } catch (err) {
-          console.error("⚠️ Fallback check failed:", err);
-        }
-      }
-
-      if (!isSafe) {
-        alert("🚫 Image blocked: contains nudity or adult content.");
-        tempMsgRef.remove();
-        return;
-      }
-
-      // ✅ Safe — upload
-      tempMsgRef.update({ uploading: false, fileData: data, fileType: f.type });
-      db.ref('unread/' + currentChatFriendUid + '/' + currentUserUid + '/' + tempMsgRef.key).set(true);
+    reader.onload = (ev) => {
+      tempMsgRef.update({
+        uploading: false,
+        fileData: ev.target.result,
+        fileType: f.type,
+      });
+      db.ref("unread/" + currentChatFriendUid + "/" + currentUserUid + "/" + tempMsgRef.key).set(true);
     };
 
     reader.readAsDataURL(f);
@@ -500,7 +406,6 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
-
 
 
 
