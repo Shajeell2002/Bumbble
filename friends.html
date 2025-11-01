@@ -123,53 +123,52 @@ loadNsfwModel();
 
 /* ---------- NSFW Check Before Upload ---------- */
 async function isImageNSFW(file) {
-  return new Promise(async (resolve) => {
-    if (!nsfwModel) {
-      console.warn("⚠️ NSFW model not ready, skipping check.");
-      return resolve(false);
-    }
+  if (!nsfwModel) {
+    console.warn("NSFW model not ready — blocking for safety");
+    return true; // fail safe
+  }
 
-    const img = new Image();
-    img.crossOrigin = "anonymous";
+  const img = new Image();
+  img.src = URL.createObjectURL(file);
+
+  return new Promise(resolve => {
     img.onload = async () => {
+      const tensor = tf.tidy(() =>
+        tf.browser.fromPixels(img)
+          .resizeNearestNeighbor([224, 224])
+          .toFloat()
+          .div(tf.scalar(255))
+          .expandDims()
+      );
+
       try {
-        // Draw the image onto a hidden canvas
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const predictions = await nsfwModel.classify(tensor);
+        tensor.dispose();
 
-        // Convert to tensor
-        const imageTensor = tf.browser.fromPixels(canvas);
-        const predictions = await nsfwModel.classify(imageTensor);
-        imageTensor.dispose();
+        const top = predictions.reduce((a, b) =>
+          a.probability > b.probability ? a : b
+        );
 
-        console.log("🔍 NSFW Predictions:", predictions);
+        console.log("NSFW:", predictions);
 
-        // Get highest probability
-        const top = predictions.reduce((a, b) => (a.probability > b.probability ? a : b));
-
-        const isUnsafe =
-          (top.className === "Porn" && top.probability > 0.55) ||
-          (top.className === "Hentai" && top.probability > 0.55) ||
-          (top.className === "Sexy" && top.probability > 0.7);
-
-        if (isUnsafe) {
-          console.warn("🚫 Blocked by NSFW Filter:", top);
+        if (
+          (top.className === "Porn" && top.probability > 0.40) ||
+          (top.className === "Hentai" && top.probability > 0.40) ||
+          (top.className === "Sexy" && top.probability > 0.60)
+        ) {
+          return resolve(true);
         }
 
-        resolve(isUnsafe);
-      } catch (err) {
-        console.error("⚠️ NSFW check failed:", err);
-        resolve(false);
+        return resolve(false);
+      } catch {
+        return resolve(true); // safety fallback
       }
     };
 
-    img.onerror = () => resolve(false);
-    img.src = URL.createObjectURL(file);
+    img.onerror = () => resolve(true);
   });
 }
+
 
 
 /* ---------- Override File Upload with NSFW Check ---------- */
