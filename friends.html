@@ -142,7 +142,7 @@ async function isImageNSFW(file) {
       const unsafe =
         (result.className === "Porn" && result.probability > 0.40) ||
         (result.className === "Hentai" && result.probability > 0.40) ||
-        (result.className === "Sexy" && result.probability > 0.90);
+        (result.className === "Sexy" && result.probability > 0.80);
 
       resolve(unsafe);
     };
@@ -406,6 +406,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
