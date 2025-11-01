@@ -125,8 +125,8 @@ loadNsfwModel();
 /* ---------- NSFW Check Before Upload ---------- */
 async function isImageNSFW(file) {
   if (!nsfwModel) {
-    console.warn("NSFW model not ready — blocking for safety");
-    return true; // fail safe
+    console.warn("Model not ready — blocking by safety");
+    return true;
   }
 
   const img = new Image();
@@ -138,7 +138,7 @@ async function isImageNSFW(file) {
         tf.browser.fromPixels(img)
           .resizeNearestNeighbor([224, 224])
           .toFloat()
-          .div(tf.scalar(255))
+          .div(255)
           .expandDims()
       );
 
@@ -146,12 +146,13 @@ async function isImageNSFW(file) {
         const predictions = await nsfwModel.classify(tensor);
         tensor.dispose();
 
-        const top = predictions.reduce((a, b) =>
+        const top = predictions.reduce((a, b) => 
           a.probability > b.probability ? a : b
         );
 
-        console.log("NSFW:", predictions);
+        console.log("NSFW Predictions:", predictions);
 
+        // ✅ Realistic Safe Thresholds
         if (
           (top.className === "Porn" && top.probability > 0.80) ||
           (top.className === "Hentai" && top.probability > 0.80) ||
@@ -162,7 +163,7 @@ async function isImageNSFW(file) {
 
         return resolve(false);
       } catch {
-        return resolve(true); // safety fallback
+        resolve(true);
       }
     };
 
@@ -425,3 +426,10 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
+
+
+
+
+
+
