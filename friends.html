@@ -174,15 +174,18 @@ async function isImageNSFW(file) {
 /* ---------- Override File Upload with NSFW Check ---------- */
 chatFileInput.addEventListener("change", async (e) => {
   const files = Array.from(e.target.files);
+
   for (const f of files) {
-    const isUnsafe = await isImageNSFW(f);
-    if (isUnsafe) {
-      showError("🚫 NSFW image detected. Upload blocked for safety.");
+
+    const unsafe = await isImageNSFW(f);
+    if (unsafe) {
+      showError("🚫 NSFW image blocked.");
       continue;
     }
 
+    // ✅ Safe to upload
     const chatId = getChatId(currentUserUid, currentChatFriendUid);
-    const tempMsgRef = db.ref("chats/" + chatId + "/messages").push({
+    const msgRef = db.ref("chats/" + chatId + "/messages").push({
       sender: currentUserUid,
       receiver: currentChatFriendUid,
       uploading: true,
@@ -191,18 +194,19 @@ chatFileInput.addEventListener("change", async (e) => {
     });
 
     const reader = new FileReader();
-    reader.onload = function (ev) {
-      const data = ev.target.result;
-      tempMsgRef.update({
+    reader.onload = ev => {
+      msgRef.update({
         uploading: false,
-        fileData: data,
-        fileType: f.type,
+        fileData: ev.target.result,
+        fileType: f.type
       });
-      db.ref("unread/" + currentChatFriendUid + "/" + currentUserUid + "/" + tempMsgRef.key).set(true);
+
+      db.ref("unread/" + currentChatFriendUid + "/" + currentUserUid + "/" + msgRef.key).set(true);
     };
     reader.readAsDataURL(f);
   }
 });
+
   
   
   
@@ -464,6 +468,17 @@ chatFileInput.addEventListener('change', async e => {
       tempMsgRef.update({ uploading: false, fileData: data, fileType: f.type });
       db.ref('unread/' + currentChatFriendUid + '/' + currentUserUid + '/' + tempMsgRef.key).set(true);
     };
+
+sendBtn.disabled = true;
+fileBtn.disabled = true;
+
+async function loadNsfwModel() {
+  nsfwModel = await nsfwjs.load("https://models.sashido.io/nsfwjs/");
+  console.log("✅ NSFW model loaded");
+  sendBtn.disabled = false;
+  fileBtn.disabled = false;
+}
+loadNsfwModel();
 
     reader.readAsDataURL(f);
   }
