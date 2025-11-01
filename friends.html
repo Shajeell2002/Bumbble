@@ -112,15 +112,12 @@ const errorArea = document.getElementById("errorArea");
   /* ---------- NSFW Filter Setup ---------- */
 let nsfwModel = null;
 
+// Load NSFW model correctly
 async function loadNsfwModel() {
-  try {
-    console.log("🔄 Loading NSFW model from /assets/nsfw-model/model.json...");
-    nsfwModel = await nsfwjs.load("./assets/nsfw-model/");
-    console.log("✅ NSFW model loaded successfully.");
-  } catch (err) {
-    console.error("❌ Failed to load NSFW model:", err);
-    showError("⚠️ Image safety filter failed to load. Some uploads may be restricted.");
-  }
+  nsfwModel = await nsfwjs.load(
+    "https://models.sashido.io/nsfwjs/"
+  );
+  console.log("✅ NSFW model loaded");
 }
 loadNsfwModel();
 
@@ -500,6 +497,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
