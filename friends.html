@@ -392,97 +392,10 @@ sendBtn.onclick=sendMessage;
 chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
 
 // --- File Upload ---
-fileBtn.onclick=()=>chatFileInput.click();
-chatFileInput.addEventListener('change', async e => {
-  for (const f of e.target.files) {
-    const chatId = getChatId(currentUserUid, currentChatFriendUid);
-    const tempMsgRef = db.ref('chats/' + chatId + '/messages').push({
-      sender: currentUserUid,
-      receiver: currentChatFriendUid,
-      uploading: true,
-      fileName: f.name,
-      timestamp: Date.now()
-    });
+// --- File Upload with NSFW Blocking ---
+fileBtn.onclick = () => chatFileInput.click();
 
-    const reader = new FileReader();
-    reader.onload = async function (ev) {
-      const data = ev.target.result;
 
-      let isSafe = true;
-
-      try {
-        // 🧠 First layer: NSFWJS model check
-        if (window.nsfwModel) {
-          const img = new Image();
-          img.src = data;
-          await new Promise(res => (img.onload = res));
-
-          const predictions = await window.nsfwModel.classify(img);
-          console.log("🔍 NSFWJS predictions:", predictions);
-
-          const top = predictions.reduce((a, b) => (a.probability > b.probability ? a : b));
-
-          if (
-            (top.className === "Porn" && top.probability > 0.6) ||
-            (top.className === "Hentai" && top.probability > 0.6) ||
-            (top.className === "Sexy" && top.probability > 0.75)
-          ) {
-            console.warn("🚫 Blocked by NSFWJS:", top);
-            isSafe = false;
-          }
-        }
-      } catch (err) {
-        console.error("⚠️ NSFWJS check failed:", err);
-      }
-
-      // 🧩 Second layer: Fallback — use external API if unsure
-      if (isSafe) {
-        try {
-          const formData = new FormData();
-          formData.append("media", f);
-
-          const response = await fetch("https://api.moderatecontent.com/moderate/", {
-            method: "POST",
-            body: formData
-          });
-
-          const result = await response.json();
-          console.log("🧠 Fallback API:", result);
-
-          // Example response: { rating_index: 4, rating_label: "adult" }
-          if (result.rating_label === "adult" || result.rating_index >= 4) {
-            isSafe = false;
-          }
-        } catch (err) {
-          console.error("⚠️ Fallback check failed:", err);
-        }
-      }
-
-      if (!isSafe) {
-        alert("🚫 Image blocked: contains nudity or adult content.");
-        tempMsgRef.remove();
-        return;
-      }
-
-      // ✅ Safe — upload
-      tempMsgRef.update({ uploading: false, fileData: data, fileType: f.type });
-      db.ref('unread/' + currentChatFriendUid + '/' + currentUserUid + '/' + tempMsgRef.key).set(true);
-    };
-
-sendBtn.disabled = true;
-fileBtn.disabled = true;
-
-async function loadNsfwModel() {
-  nsfwModel = await nsfwjs.load("https://models.sashido.io/nsfwjs/");
-  console.log("✅ NSFW model loaded");
-  sendBtn.disabled = false;
-  fileBtn.disabled = false;
-}
-loadNsfwModel();
-
-    reader.readAsDataURL(f);
-  }
-});
 
 // --- Close Chat ---
 function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null; if(currentChatListener) currentChatListener.off(); }
