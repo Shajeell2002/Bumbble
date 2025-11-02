@@ -32,27 +32,35 @@ footer { text-align: center; padding: 20px; background: #f1f1f1; margin-top: 40p
 </style>
 </head>
 <body>
-<header>
-<h1>Bumbble</h1>
-<nav>
-<a href="index.html">Home</a>
-<a href="friends.html">Friends</a>
-<a href="stories.html">Stories</a>
-<a href="safety.html">Safety</a>
-<a href="login.html" id="loginLink">Login</a>
-<a href="signup.html" id="signupLink">Sign Up</a>
-</nav>
-</header>
+  <script>
+    // Dynamically update header links based on auth state
+    const navbar = document.getElementById("navbar");
 
-<script>
-  // simulate login check using localStorage
-  const isLoggedIn = localStorage.getItem("loggedIn") === "true";
-
-  if (isLoggedIn) {
-    document.getElementById("loginLink").style.display = "none";
-    document.getElementById("signupLink").style.display = "none";
-  }
-</script>
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        navbar.innerHTML = `
+          <a href="index.html">Home</a>
+          <a href="friends.html">Friends</a>
+          <a href="stories.html">Stories</a>
+          <a href="safety.html">Safety</a>
+          <a href="profile.html">Profile</a>
+          <a href="#" id="logoutBtn">Logout</a>
+        `;
+        document.getElementById("logoutBtn").addEventListener("click", () => {
+          auth.signOut().then(() => {
+            window.location.href = "login.html";
+          });
+        });
+      } else {
+        navbar.innerHTML = `
+          <a href="index.html">Home</a>
+          <a href="stories.html">Stories</a>
+          <a href="login.html">Login</a>
+          <a href="signup.html">Sign Up</a>
+        `;
+      }
+    });
+  </script>
 
 <section class="section">
 <h2>Safety Tips & Guidelines</h2>
