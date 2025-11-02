@@ -161,19 +161,11 @@ function updateNav() {
       <a href="#" id="logoutBtn">Logout</a>
     `;
 
-    // Hide Join Button (Hero Section)
-    const joinBtn = document.querySelector(".hero-text button");
-    if (joinBtn) joinBtn.style.display = "none";
-
-    // Logout click
-    document.getElementById("logoutBtn").addEventListener("click", function(){
-      localStorage.removeItem("current_user");
-      alert("✅ Logged out successfully.");
-      window.location.href = "login.html";
-    });
-
-  } else {
-    nav.innerHTML = `
+document.getElementById("logoutBtn").addEventListener("click", () => {
+        auth.signOut().then(() => { window.location.href = "login.html"; });
+      });
+    } else {
+      navbar.innerHTML = `
       <a href="index.html">Home</a>
       <a href="friends.html">Friends</a>
       <a href="stories.html">Stories</a>
@@ -220,18 +212,3 @@ setInterval(updateLiveStatus, 10000);
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
