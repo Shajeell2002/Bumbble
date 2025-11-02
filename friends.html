@@ -227,11 +227,14 @@ chatFileInput.addEventListener("change", async (e) => {
 
     const unsafe = await isImageNSFW(f);
     if (unsafe) {
-      showError("🚫 NSFW image blocked.");
-      continue;
+      showError("🚫 NSFW image blocked. Nude / bare skin content is not allowed.");
+      console.warn("Blocked NSFW Image:", f.name);
+      continue;  // ✅ prevents upload
     }
 
-    // ✅ Safe to upload
+    console.log("✅ Safe image, uploading:", f.name);
+
+    // ⬇️ SAFE IMAGE UPLOAD
     const chatId = getChatId(currentUserUid, currentChatFriendUid);
     const msgRef = db.ref("chats/" + chatId + "/messages").push({
       sender: currentUserUid,
@@ -249,12 +252,16 @@ chatFileInput.addEventListener("change", async (e) => {
         fileType: f.type
       });
 
-      db.ref("unread/" + currentChatFriendUid + "/" + currentUserUid + "/" + msgRef.key).set(true);
+      db.ref("unread/" + currentChatFriendUid + "/" + currentUserUid + "/" + msgRef.key)
+        .set(true);
     };
+
     reader.readAsDataURL(f);
   }
+  
+  // Reset input to allow re-upload attempt
+  chatFileInput.value = "";
 });
-
   
   
   
