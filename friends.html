@@ -160,6 +160,13 @@ chatFileInput.addEventListener("change", async (e) => {
   const files = Array.from(e.target.files);
   for (const f of files) {
     const isUnsafe = await isImageNSFW(f);
+// 🔒 Additional hard skin detection layer
+const hasSkin = await hasSkinPixels(f);
+if (hasSkin) {
+  showError("🚫 Skin detected. Upload blocked.");
+  continue;
+}
+
     if (isUnsafe) {
       showError("🚫 NSFW image detected. Upload blocked for safety.");
       continue;
