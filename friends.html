@@ -130,12 +130,7 @@ async function loadNsfwModel() {
 }
 loadNsfwModel();
 
-// ✅ Bare skin blocker, even if emojis/text covering
-const excessiveSkin = await detectExcessiveSkin(img);
-if (excessiveSkin) {
-  console.warn("🚫 Blocked due to excessive skin exposure");
-  return resolve(true);
-}
+
 
 /* ---------- NSFW Check Before Upload ---------- */
 async function isImageNSFW(file) {
