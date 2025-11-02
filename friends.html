@@ -225,23 +225,25 @@ async function detectExcessiveSkin(img) {
   for (let i = 0; i < data.length; i += 4) {
     let r = data[i], g = data[i+1], b = data[i+2];
 
-    // ✅ YCbCr skin detection
-    const y  = 0.299*r + 0.587*g + 0.114*b;
+    // YCbCr + RGB hybrid (works across all skin tones)
+    const y = 0.299*r + 0.587*g + 0.114*b;
     const cb = 128 - 0.168736*r - 0.331264*g + 0.5*b;
     const cr = 128 + 0.5*r - 0.418688*g - 0.081312*b;
 
-    const isRGB = (r > 90 && g > 40 && b > 20 && r > g && r > b);
-    const isYCbCr = (cb > 77 && cb < 127 && cr > 133 && cr < 173);
+    const isRGB = (r > 80 && g > 40 && b > 20 && r > g && r > b);
+    const isYCbCr = (cb > 75 && cb < 135 && cr > 130 && cr < 180);
 
-    if (isRGB || isYCbCr) skinPixels++;
+    if (isRGB && isYCbCr) skinPixels++;
   }
 
   const ratio = skinPixels / totalPixels;
   console.log("Skin Ratio =", ratio);
 
-  // 🔥 Reduce threshold to ~10–12% for stricter blocking
-  return ratio > 0.11;
+  // ✅ NEW VERY STRICT LIMIT
+  // 0.05 = ~5% body skin → blocks shirtless selfies
+  return ratio > 0.05;
 }
+
 
 
 
