@@ -130,6 +130,13 @@ async function loadNsfwModel() {
 }
 loadNsfwModel();
 
+// ✅ Bare skin blocker, even if emojis/text covering
+const excessiveSkin = await detectExcessiveSkin(img);
+if (excessiveSkin) {
+  console.warn("🚫 Blocked due to excessive skin exposure");
+  return resolve(true);
+}
+
 /* ---------- NSFW Check Before Upload ---------- */
 async function isImageNSFW(file) {
   if (!nsfwModel) {
@@ -173,12 +180,7 @@ if (
   return resolve(true);
 }
 
-// ✅ Bare skin blocker, even if emojis/text covering
-const excessiveSkin = await detectExcessiveSkin(img);
-if (excessiveSkin) {
-  console.warn("🚫 Blocked due to excessive skin exposure");
-  return resolve(true);
-}
+
 
 
 const skinExposed = await detectExcessiveSkin(img);
@@ -221,27 +223,29 @@ async function detectExcessiveSkin(img) {
   ctx.drawImage(img, 0, 0);
 
   const { data } = ctx.getImageData(0, 0, img.width, img.height);
-  let skin = 0, total = data.length / 4;
+
+  let skinPixels = 0;
+  const totalPixels = data.length / 4;
 
   for (let i = 0; i < data.length; i += 4) {
-    const r = data[i], g = data[i + 1], b = data[i + 2];
+    let r = data[i], g = data[i+1], b = data[i+2];
 
-    // Improved universal skin tone range
-    if (
-      r > 90 && g > 40 && b > 20 &&
-      r > g && r > b &&
-      (Math.max(r, g, b) - Math.min(r, g, b) > 15) &&
-      !(r > 220 && g > 210 && b > 210) // avoid white
-    ) {
-      skin++;
-    }
+    // ✅ YCbCr skin detection
+    const y  = 0.299*r + 0.587*g + 0.114*b;
+    const cb = 128 - 0.168736*r - 0.331264*g + 0.5*b;
+    const cr = 128 + 0.5*r - 0.418688*g - 0.081312*b;
+
+    const isRGB = (r > 90 && g > 40 && b > 20 && r > g && r > b);
+    const isYCbCr = (cb > 77 && cb < 127 && cr > 133 && cr < 173);
+
+    if (isRGB || isYCbCr) skinPixels++;
   }
 
-  const skinRatio = skin / total;
-  console.log("Skin Ratio:", skinRatio);
+  const ratio = skinPixels / totalPixels;
+  console.log("Skin Ratio =", ratio);
 
-  // ✅ Block high skin exposure
-  return skinRatio > 0.15;  // previously 0.10 failing on low-light
+  // 🔥 Reduce threshold to ~10–12% for stricter blocking
+  return ratio > 0.11;
 }
 
 
