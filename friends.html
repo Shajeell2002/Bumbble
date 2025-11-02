@@ -47,7 +47,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.0/dist/nsfwjs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
@@ -175,6 +174,11 @@ if (
   return resolve(true);
 }
 
+const isNSFW = await nsfwModel.classify(tensor);
+if (porn > .35 || hentai > .35 || sexy > .45) return true;
+
+const excessiveSkin = await detectExcessiveSkin(img);
+if (excessiveSkin) return true;
 
 
 
@@ -304,38 +308,52 @@ function isSkinPixel(r, g, b) {
 }
 
 async function detectExcessiveSkin(img) {
+  // load face model once
+  if (!window.faceModel) {
+    window.faceModel = await blazeface.load();
+  }
+
+  const faces = await window.faceModel.estimateFaces(img, false);
+
+  // If no face detected, do NOT block (emoji users/banner images)
+  if (!faces.length) return false;
+
+  const face = faces[0];
+  const faceHeight = face.bottomRight[1] - face.topLeft[1];
+
+  const torsoStart = Math.floor(face.bottomRight[1] + faceHeight * 0.2);
+  const torsoEnd = Math.min(img.height, torsoStart + faceHeight * 2);
+
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   canvas.width = img.width;
   canvas.height = img.height;
   ctx.drawImage(img, 0, 0);
+  
+  const { data } = ctx.getImageData(0, torsoStart, img.width, torsoEnd - torsoStart);
 
-  const { data } = ctx.getImageData(0, 0, img.width, img.height);
-
-  let skinPixels = 0;
-  const totalPixels = data.length / 4;
+  let skin = 0, total = data.length / 4;
 
   for (let i = 0; i < data.length; i += 4) {
-    let r = data[i], g = data[i+1], b = data[i+2];
+    const r = data[i], g = data[i+1], b = data[i+2];
 
-    // YCbCr + RGB hybrid (works across all skin tones)
-    const y = 0.299*r + 0.587*g + 0.114*b;
-    const cb = 128 - 0.168736*r - 0.331264*g + 0.5*b;
-    const cr = 128 + 0.5*r - 0.418688*g - 0.081312*b;
-
-    const isRGB = (r > 80 && g > 40 && b > 20 && r > g && r > b);
-    const isYCbCr = (cb > 75 && cb < 135 && cr > 130 && cr < 180);
-
-    if (isRGB && isYCbCr) skinPixels++;
+    // universal skin tone range
+    if (
+      r > 90 && g > 40 && b > 20 &&
+      r > g && r > b &&
+      (Math.max(r,g,b) - Math.min(r,g,b) > 18) &&
+      !(r > 230 && g > 230 && b > 230)
+    ) {
+      skin++;
+    }
   }
 
-  const ratio = skinPixels / totalPixels;
-  console.log("Skin Ratio =", ratio);
+  const ratio = skin / total;
+  console.log("Torso Skin Ratio:", ratio);
 
-  // ✅ NEW VERY STRICT LIMIT
-  // 0.05 = ~5% body skin → blocks shirtless selfies
-  return ratio > 0.05;
+  return ratio > 0.20; // 🔥 block threshold
 }
+
 
 async function detectTorsoExposed() {
   try {
@@ -362,6 +380,14 @@ chatFileInput.addEventListener("change", async (e) => {
   const files = Array.from(e.target.files);
 
   for (const f of files) {
+
+    const isNSFW = await isImageNSFW(f);
+    if (isNSFW) {
+      showError("🚫 NSFW image blocked. Nude / bare skin content is not allowed.");
+      console.warn("Blocked NSFW Image:", f.name);
+      continue;
+    }
+
 
     const unsafe = await isImageNSFW(f);
     if (unsafe) {
