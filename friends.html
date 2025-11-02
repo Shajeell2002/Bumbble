@@ -156,15 +156,21 @@ async function isImageNSFW(file) {
 
         // ✅ Adjusted realistic filters
 // 🚫 Strict filter to block nudity, bare skin, lingerie, bikini
+// ✅ Strict nudity / skin exposure filter
 if (
-  porn > 0.50 ||      // block if porn probability > 50%
-  hentai > 0.50 ||    // block hentai > 50%
-  sexy > 0.55 ||      // block sexy > 55%
-  (sexy > 0.40 && porn > 0.30) // smart detect mixed cases
+  porn > 0.40 ||      // slight porn probability blocks
+  hentai > 0.40 ||
+  sexy > 0.45 ||
+  (sexy > 0.35 && porn > 0.20)
 ) {
   return resolve(true);
 }
 
+const skinExposed = await detectExcessiveSkin(img);
+if (skinExposed) {
+  console.warn("🚫 Blocked due to skin exposure");
+  return resolve(true);
+}
         return resolve(false);
 
       } catch (e) {
