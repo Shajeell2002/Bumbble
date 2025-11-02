@@ -179,10 +179,13 @@ if (
 
 
 const skinExposed = await detectExcessiveSkin(img);
-if (skinExposed) {
-  console.warn("🚫 Blocked due to skin exposure");
+const torsoExposed = await detectTorsoExposed(img);
+
+if (skinExposed || torsoExposed) {
+  console.warn("🚫 Blocked: bare skin/torso");
   return resolve(true);
 }
+
         return resolve(false);
 
       } catch (e) {
@@ -244,6 +247,22 @@ async function detectExcessiveSkin(img) {
   return ratio > 0.05;
 }
 
+async function detectTorsoExposed() {
+  try {
+    const net = await bodyPix.load(); 
+    const segmentation = await net.segmentPerson(img);
+
+    const torsoPixels = segmentation.data.filter(v => v === 1).length;
+    const ratio = torsoPixels / segmentation.data.length;
+
+    console.log("Torso Exposure Ratio:", ratio);
+
+    return ratio > 0.10; // ~10% torso area
+  } catch (e) {
+    console.warn("Torso detection fallback:", e);
+    return false;
+  }
+}
 
 
 
