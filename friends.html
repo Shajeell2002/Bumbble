@@ -49,6 +49,8 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 
 
 </head>
@@ -203,28 +205,52 @@ function isSkinPixel(r, g, b) {
 }
 
 async function detectExcessiveSkin(img) {
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  canvas.width = img.width;
-  canvas.height = img.height;
-  ctx.drawImage(img, 0, 0);
-
-  const { data } = ctx.getImageData(0, 0, img.width, img.height);
-
-  let skin = 0;
-  const total = img.width * img.height;
-
-  for (let i = 0; i < data.length; i += 4) {
-    if (isSkinPixel(data[i], data[i + 1], data[i + 2])) skin++;
+  if (!window.selfieSeg) {
+    window.selfieSeg = new SelfieSegmentation({
+      locateFile: (file) =>
+        `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`,
+    });
+    selfieSeg.setOptions({ modelSelection: 1 });
   }
 
-  const ratio = skin / total;
-  console.log("Skin ratio:", ratio);
+  const canvas = document.createElement("canvas");
+  canvas.width = img.width;
+  canvas.height = img.height;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0);
 
-  // 🔥 Threshold options:
-  // 0.18 = normal strict nude block (recommended)
-  // 0.30 = allows gym/beach selfies
-  return ratio > 0.18;
+  const maskPromise = new Promise((resolve) => {
+    selfieSeg.onResults((res) => resolve(res.segmentationMask));
+    selfieSeg.send({ image: canvas });
+  });
+
+  const mask = await maskPromise;
+  ctx.drawImage(mask, 0, 0, img.width, img.height);
+  const data = ctx.getImageData(0, 0, img.width, img.height).data;
+
+  let person = 0,
+    skin = 0,
+    torso = 0;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const isHuman = data[i] > 200; 
+    if (!isHuman) continue;
+    person++;
+
+    const r = data[i + 4], g = data[i + 5], b = data[i + 6];
+    if (isSkinPixel(r, g, b)) {
+      skin++;
+      const idx = i / 4;
+      const y = Math.floor(idx / img.width);
+      if (y > img.height * 0.30 && y < img.height * 0.80) torso++;
+    }
+  }
+
+  const sr = skin / (person || 1);
+  const tr = torso / (person || 1);
+  console.log("Skin:", sr, "Torso:", tr);
+
+  return tr > 0.13 || sr > 0.30; 
 }
 
 
