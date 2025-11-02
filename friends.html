@@ -118,85 +118,88 @@ const errorArea = document.getElementById("errorArea");
 let nsfwModel = null;
 
 // Load NSFW model correctly
-async function loadNsfwModel() {
-  try {
-    nsfwModel = await nsfwjs.load("https://models.sashido.io/nsfwjs/model.json");
-    console.log("✅ NSFW model loaded");
-  } catch (err) {
-    console.error("❌ NSFW model failed to load", err);
-  }
-}
-loadNsfwModel();
+let nsfwModel, bodyPixModel;
 
-/* ---------- NSFW Check Before Upload ---------- */
+// 🚀 Load Models
+(async () => {
+  nsfwModel = await nsfwjs.load("https://models.sashido.io/nsfwjs/model.json");
+  bodyPixModel = await bodyPix.load();
+})();
+
 async function isImageNSFW(file) {
-  if (!nsfwModel) {
-    console.warn("NSFW model not ready yet. Allowing image.");
-    return false; // ✅ allow image until model loads
-  }
+  const img = await loadImage(URL.createObjectURL(file));
 
-  const img = new Image();
-  img.src = URL.createObjectURL(file);
+  // ✅ NSFWJS Prediction
+  const tensor = tf.browser.fromPixels(img).expandDims(0);
+  const predictions = await nsfwModel.classify(tensor);
+  tensor.dispose();
 
-  return new Promise(resolve => {
-    img.onload = async () => {
-      const tensor = tf.tidy(() =>
-        tf.browser.fromPixels(img)
-          .resizeNearestNeighbor([224, 224])
-          .toFloat()
-          .div(255)
-          .expandDims()
-      );
+  const porn = getScore(predictions, "Porn");
+  const sexy = getScore(predictions, "Sexy");
+  const hentai = getScore(predictions, "Hentai");
 
-      try {
-        const predictions = await nsfwModel.classify(tensor);
-        tensor.dispose();
+  // ✅ Block explicit / sexual probability
+  if (porn > 0.35 || hentai > 0.35 || sexy > 0.45) return true;
 
-        const porn = predictions.find(p => p.className === "Porn")?.probability || 0;
-        const sexy = predictions.find(p => p.className === "Sexy")?.probability || 0;
-        const hentai = predictions.find(p => p.className === "Hentai")?.probability || 0;
+  // ✅ Detect human body presence
+  const segmentation = await bodyPixModel.segmentPerson(img);
+  const mask = segmentation.data;
+  const total = mask.length;
+  const bodyPixels = mask.filter(v => v === 1).length;
+  const bodyRatio = bodyPixels / total;
 
-        console.log("NSFW Scores:", { porn, sexy, hentai });
+  // ✅ Block large exposed body areas (shirtless / bikini)
+  if (bodyRatio > 0.30) return true;
 
-        // ✅ Adjusted realistic filters
-// 🚫 Strict filter to block nudity, bare skin, lingerie, bikini
-// ✅ Strict nudity / skin exposure filter
-if (
-  porn > 0.40 ||      // slight porn probability blocks
-  hentai > 0.40 ||
-  sexy > 0.45 ||
-  (sexy > 0.35 && porn > 0.20)
-) {
-  return resolve(true);
+  // ✅ Skin tone estimation
+  const skinRatio = await skinExposure(img);
+  if (skinRatio > 0.20) return true;
+
+  return false;
 }
 
-const skinExposed = await detectExcessiveSkin(img);
-if (skinExposed) {
-  console.warn("🚫 Blocked due to skin exposure");
-  return resolve(true);
+// Helper
+function getScore(p, label) {
+  return p.find(x => x.className === label)?.probability || 0;
 }
-        return resolve(false);
 
-      } catch (e) {
-        console.warn("NSFW model error → allow to avoid false blocks:", e);
-        return resolve(false);
-      }
-    };
-
-    img.onerror = () => resolve(false);
+function loadImage(src) {
+  return new Promise(res => {
+    const img = new Image();
+    img.src = src;
+    img.crossOrigin = "anonymous";
+    img.onload = () => res(img);
   });
 }
 
-// --- Additional bare-skin detection using pixel check ---
-function isSkinPixel(r, g, b) {
-  // Basic human-skin color range in RGB
-  return (
-    r > 90 && g > 40 && b > 20 &&
-    r > g && r > b &&
-    Math.abs(r - g) > 15
-  );
+// ✅ Skin Analysis
+async function skinExposure(img) {
+  const c = document.createElement("canvas");
+  const ctx = c.getContext("2d");
+  c.width = img.width;
+  c.height = img.height;
+  ctx.drawImage(img, 0, 0);
+
+  const data = ctx.getImageData(0, 0, img.width, img.height).data;
+
+  let skin = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i], g = data[i+1], b = data[i+2];
+    if (isSkin(r, g, b)) skin++;
+  }
+
+  return skin / (img.width * img.height);
 }
 
+// ✅ Skin pixel logic
+function isSkin(r, g, b) {
+  return (
+    r > 95 && g > 40 && b > 20 &&
+    r > g && r > b &&
+    Math.abs(r - g) > 15 &&
+    !(r > 200 && g > 200 && b > 200)
+  );
+}
 async function detectExcessiveSkin(img) {
   const OFFSCREEN = document.createElement("canvas");
   const ctx = OFFSCREEN.getContext("2d");
