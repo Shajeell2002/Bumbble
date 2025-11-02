@@ -53,7 +53,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 <header>
   <h1>Bumbble</h1>
   <nav id="navLinks">
-    
   </nav>
 </header>
 
@@ -241,7 +240,8 @@ console.log("✅ Logged in as:", user.email);
     const lastName = localStorage.getItem("lastChatFriendName");
     if(lastUid && lastName) openChat(lastUid,lastName);
   } else {
-        userList.innerHTML="<p style='padding:12px'>Please login to view users.</p>";
+    nav.innerHTML = '<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>';
+    userList.innerHTML="<p style='padding:12px'>Please login to view users.</p>";
   }
 });
 
@@ -496,4 +496,5 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
