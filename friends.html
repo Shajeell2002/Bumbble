@@ -198,6 +198,96 @@ if (skinExposed || torsoExposed) {
   });
 }
 
+// ✅ Load BodyPix once (global)
+let bodyPixModel = null;
+bodyPix.load().then(m => {
+  bodyPixModel = m;
+  console.log("✅ BodyPix loaded");
+});
+
+// ✅ Face detection model (lightweight)
+async function loadFaceDetector() {
+  const model = await blazeface.load();
+  return model;
+}
+let faceModelPromise = loadFaceDetector();
+
+async function detectBareTorso(img) {
+  try {
+    if (!bodyPixModel) return false;
+
+    const segmentation = await bodyPixModel.segmentPersonParts(img, {
+      internalResolution: "medium",
+      segmentationThreshold: 0.6
+    });
+
+    // Body part indices for torso: 11 & 12 = upper body
+    const torsoPixels = segmentation.data.filter((p, i) =>
+      (p === 11 || p === 12)
+    ).length;
+
+    const ratio = torsoPixels / segmentation.data.length;
+    console.log("Torso Ratio:", ratio);
+
+    return ratio > 0.12; // ✅ ~12% torso visible → shirtless picture
+  } catch (e) {
+    console.warn("Torso check failed:", e);
+    return false;
+  }
+}
+
+async function detectExcessiveSkinSmart(img) {
+  const canvas = document.createElement("canvas");
+  canvas.width = img.width;
+  canvas.height = img.height;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0);
+  const pixels = ctx.getImageData(0,0,img.width,img.height).data;
+
+  let skin = 0;
+  for (let i=0; i<pixels.length; i+=4) {
+    const r=pixels[i], g=pixels[i+1], b=pixels[i+2];
+
+    // universal dark-skin + fair-skin range
+    const y = 0.299*r + 0.587*g + 0.114*b;
+    const cb = 128 - 0.168*r - 0.331*g + 0.5*b;
+    const cr = 128 + 0.5*r - 0.418*g - 0.081*b;
+
+    const rgbSkin = (r>60 && g>30 && b>15 && r>g && r>b);
+    const yCb = (cb>75 && cb<145 && cr>135 && cr<190);
+    if (rgbSkin && yCb) skin++;
+  }
+
+  const ratio = skin / (pixels.length/4);
+  console.log("Skin Ratio:", ratio);
+
+  return ratio > 0.32; // ✅ ~30% skin → bikini/shirtless
+}
+
+async function hasFace(img) {
+  try {
+    const model = await faceModelPromise;
+    const preds = await model.estimateFaces(img, false);
+    return preds.length > 0;
+  } catch { return true; } // fail safe allow
+}
+
+// ✅ Smart skin filter decision
+async function blockBareSkin(img) {
+  const skin = await detectExcessiveSkinSmart(img);
+  const torso = await detectBareTorso(img);
+  const face = await hasFace(img);
+
+  // ✅ Allow selfie with face & normal clothes
+  if (face && skin < 0.32 && !torso) return false;
+
+  // ✅ Block chest, stomach, bikini, bra, bare skin
+  if (torso || skin > 0.32) return true;
+
+  return false;
+}
+
+
 // --- Additional bare-skin detection using pixel check ---
 function isSkinPixel(r, g, b) {
   // Improved YCbCr skin detection range
