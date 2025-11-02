@@ -207,8 +207,7 @@ function isSkinPixel(r, g, b) {
 async function detectExcessiveSkin(img) {
   if (!window.selfieSeg) {
     window.selfieSeg = new SelfieSegmentation({
-      locateFile: (file) =>
-        `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`,
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`,
     });
     selfieSeg.setOptions({ modelSelection: 1 });
   }
@@ -219,38 +218,41 @@ async function detectExcessiveSkin(img) {
   const ctx = canvas.getContext("2d");
   ctx.drawImage(img, 0, 0);
 
+  // Get original pixels
+  const originalData = ctx.getImageData(0, 0, img.width, img.height).data;
+
+  // Get mask
   const maskPromise = new Promise((resolve) => {
     selfieSeg.onResults((res) => resolve(res.segmentationMask));
     selfieSeg.send({ image: canvas });
   });
 
-  const mask = await maskPromise;
-  ctx.drawImage(mask, 0, 0, img.width, img.height);
-  const data = ctx.getImageData(0, 0, img.width, img.height).data;
+  const maskCanvas = await maskPromise;
+  const maskCtx = maskCanvas.getContext("2d");
+  const maskData = maskCtx.getImageData(0, 0, img.width, img.height).data;
 
-  let person = 0,
-    skin = 0,
-    torso = 0;
+  let skin = 0, detectedHuman = 0;
 
-  for (let i = 0; i < data.length; i += 4) {
-    const isHuman = data[i] > 200; 
-    if (!isHuman) continue;
-    person++;
+  for (let i = 0; i < originalData.length; i += 4) {
+    const maskVal = maskData[i]; // grayscale mask (0–255)
 
-    const r = data[i + 4], g = data[i + 5], b = data[i + 6];
+    if (maskVal < 200) continue; // background pixel
+    detectedHuman++;
+
+    const r = originalData[i];
+    const g = originalData[i + 1];
+    const b = originalData[i + 2];
+
     if (isSkinPixel(r, g, b)) {
       skin++;
-      const idx = i / 4;
-      const y = Math.floor(idx / img.width);
-      if (y > img.height * 0.30 && y < img.height * 0.80) torso++;
     }
   }
 
-  const sr = skin / (person || 1);
-  const tr = torso / (person || 1);
-  console.log("Skin:", sr, "Torso:", tr);
+  const skinRatio = skin / detectedHuman;
+  console.log("Skin Ratio:", skinRatio);
 
-  return tr > 0.13 || sr > 0.30; 
+  // 🚫 Block if >30% visible skin in human area
+  return skinRatio > 0.30;
 }
 
 
