@@ -251,8 +251,8 @@ async function detectExcessiveSkin(img) {
   const skinRatio = skin / detectedHuman;
   console.log("Skin Ratio:", skinRatio);
 
-  // 🚫 Block if >30% visible skin in human area
-  return skinRatio > 0.30;
+  // 🚫 Block if >10% visible skin in human area
+  return skinRatio > 0.10;
 }
 
 
