@@ -46,11 +46,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 <!-- ✅ Add TensorFlow.js before NSFWJS -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.0/dist/nsfwjs.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-
 
 </head>
 <body>
@@ -115,292 +110,63 @@ const typingIndicator = document.getElementById("typingIndicator");
 const errorArea = document.getElementById("errorArea");
 
   /* ---------- NSFW Filter Setup ---------- */
-/* ---------- NSFW Filter Setup ---------- */
 let nsfwModel = null;
 
-// Load NSFW model correctly
-async function loadNsfwModel() {
-  try {
-    nsfwModel = await nsfwjs.load("https://models.sashido.io/nsfwjs/model.json");
-    console.log("✅ NSFW model loaded");
-  } catch (err) {
-    console.error("❌ NSFW model failed to load", err);
-  }
-}
-loadNsfwModel();
+async function hasSkinPixels(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = function () {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
 
+      const imageData = ctx.getImageData(0, 0, img.width, img.height);
+      const data = imageData.data;
 
+      let skinPixelCount = 0;
 
-/* ---------- NSFW Check Before Upload ---------- */
-async function isImageNSFW(file) {
-  if (!nsfwModel) {
-    console.warn("NSFW model not ready yet. Allowing image.");
-    return false; // ✅ allow image until model loads
-  }
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
 
-  const img = new Image();
-  img.src = URL.createObjectURL(file);
-
-  return new Promise(resolve => {
-    img.onload = async () => {
-      const tensor = tf.tidy(() =>
-        tf.browser.fromPixels(img)
-          .resizeNearestNeighbor([224, 224])
-          .toFloat()
-          .div(255)
-          .expandDims()
-      );
-
-      try {
-        const predictions = await nsfwModel.classify(tensor);
-        tensor.dispose();
-
-        const porn = predictions.find(p => p.className === "Porn")?.probability || 0;
-        const sexy = predictions.find(p => p.className === "Sexy")?.probability || 0;
-        const hentai = predictions.find(p => p.className === "Hentai")?.probability || 0;
-
-        console.log("NSFW Scores:", { porn, sexy, hentai });
-
-        // ✅ Adjusted realistic filters
-// 🚫 Strict filter to block nudity, bare skin, lingerie, bikini
-// ✅ Strict nudity / skin exposure filter
-// 🚫 Hard nudity/skin exposure threshold
-if (
-  porn > 0.30 ||
-  hentai > 0.30 ||
-  sexy > 0.40 ||
-  (sexy > 0.30 && porn > 0.15)
-) {
-  return resolve(true);
-}
-
-const isNSFW = await nsfwModel.classify(tensor);
-if (porn > .35 || hentai > .35 || sexy > .45) return true;
-
-const excessiveSkin = await detectExcessiveSkin(img);
-if (excessiveSkin) return true;
-
-
-
-const skinExposed = await detectExcessiveSkin(img);
-const torsoExposed = await detectTorsoExposed(img);
-
-if (skinExposed || torsoExposed) {
-  console.warn("🚫 Blocked: bare skin/torso");
-  return resolve(true);
-}
-
-        return resolve(false);
-
-      } catch (e) {
-        console.warn("NSFW model error → allow to avoid false blocks:", e);
-        return resolve(false);
+        // Basic skin color ranges (RGB)
+        if (
+          r > 95 && g > 40 && b > 20 &&
+          (Math.max(r, g, b) - Math.min(r, g, b) > 15) &&
+          Math.abs(r - g) > 15 &&
+          r > g && r > b
+        ) {
+          skinPixelCount++;
+          if (skinPixelCount > 1) {
+            resolve(true);
+            return;
+          }
+        }
       }
+
+      resolve(false);
     };
 
-    img.onerror = () => resolve(false);
+    img.src = URL.createObjectURL(file);
   });
 }
-
-// ✅ Load BodyPix once (global)
-let bodyPixModel = null;
-bodyPix.load().then(m => {
-  bodyPixModel = m;
-  console.log("✅ BodyPix loaded");
-});
-
-// ✅ Face detection model (lightweight)
-async function loadFaceDetector() {
-  const model = await blazeface.load();
-  return model;
-}
-let faceModelPromise = loadFaceDetector();
-
-async function detectBareTorso(img) {
-  try {
-    if (!bodyPixModel) return false;
-
-    const segmentation = await bodyPixModel.segmentPersonParts(img, {
-      internalResolution: "medium",
-      segmentationThreshold: 0.6
-    });
-
-    // Body part indices for torso: 11 & 12 = upper body
-    const torsoPixels = segmentation.data.filter((p, i) =>
-      (p === 11 || p === 12)
-    ).length;
-
-    const ratio = torsoPixels / segmentation.data.length;
-    console.log("Torso Ratio:", ratio);
-
-    return ratio > 0.12; // ✅ ~12% torso visible → shirtless picture
-  } catch (e) {
-    console.warn("Torso check failed:", e);
-    return false;
-  }
-}
-
-async function detectExcessiveSkinSmart(img) {
-  const canvas = document.createElement("canvas");
-  canvas.width = img.width;
-  canvas.height = img.height;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(img, 0, 0);
-  const pixels = ctx.getImageData(0,0,img.width,img.height).data;
-
-  let skin = 0;
-  for (let i=0; i<pixels.length; i+=4) {
-    const r=pixels[i], g=pixels[i+1], b=pixels[i+2];
-
-    // universal dark-skin + fair-skin range
-    const y = 0.299*r + 0.587*g + 0.114*b;
-    const cb = 128 - 0.168*r - 0.331*g + 0.5*b;
-    const cr = 128 + 0.5*r - 0.418*g - 0.081*b;
-
-    const rgbSkin = (r>60 && g>30 && b>15 && r>g && r>b);
-    const yCb = (cb>75 && cb<145 && cr>135 && cr<190);
-    if (rgbSkin && yCb) skin++;
-  }
-
-  const ratio = skin / (pixels.length/4);
-  console.log("Skin Ratio:", ratio);
-
-  return ratio > 0.32; // ✅ ~30% skin → bikini/shirtless
-}
-
-async function hasFace(img) {
-  try {
-    const model = await faceModelPromise;
-    const preds = await model.estimateFaces(img, false);
-    return preds.length > 0;
-  } catch { return true; } // fail safe allow
-}
-
-// ✅ Smart skin filter decision
-async function blockBareSkin(img) {
-  const skin = await detectExcessiveSkinSmart(img);
-  const torso = await detectBareTorso(img);
-  const face = await hasFace(img);
-
-  // ✅ Allow selfie with face & normal clothes
-  if (face && skin < 0.32 && !torso) return false;
-
-  // ✅ Block chest, stomach, bikini, bra, bare skin
-  if (torso || skin > 0.32) return true;
-
-  return false;
-}
-
-
-// --- Additional bare-skin detection using pixel check ---
-function isSkinPixel(r, g, b) {
-  // Improved YCbCr skin detection range
-  // Works better across all skin tones
-  const Y  =  0 + 0.299*r + 0.587*g + 0.114*b;
-  const Cb = 128 - 0.1687*r - 0.3313*g + 0.5*b;
-  const Cr = 128 + 0.5*r - 0.4187*g - 0.0813*b;
-
-  return (
-    Cr > 135 && Cr < 180 &&
-    Cb > 85 && Cb < 135 &&
-    Y > 80 && Y < 255
-  );
-}
-
-async function detectExcessiveSkin(img) {
-  // load face model once
-  if (!window.faceModel) {
-    window.faceModel = await blazeface.load();
-  }
-
-  const faces = await window.faceModel.estimateFaces(img, false);
-
-  // If no face detected, do NOT block (emoji users/banner images)
-  if (!faces.length) return false;
-
-  const face = faces[0];
-  const faceHeight = face.bottomRight[1] - face.topLeft[1];
-
-  const torsoStart = Math.floor(face.bottomRight[1] + faceHeight * 0.2);
-  const torsoEnd = Math.min(img.height, torsoStart + faceHeight * 2);
-
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  canvas.width = img.width;
-  canvas.height = img.height;
-  ctx.drawImage(img, 0, 0);
-  
-  const { data } = ctx.getImageData(0, torsoStart, img.width, torsoEnd - torsoStart);
-
-  let skin = 0, total = data.length / 4;
-
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i], g = data[i+1], b = data[i+2];
-
-    // universal skin tone range
-    if (
-      r > 90 && g > 40 && b > 20 &&
-      r > g && r > b &&
-      (Math.max(r,g,b) - Math.min(r,g,b) > 18) &&
-      !(r > 230 && g > 230 && b > 230)
-    ) {
-      skin++;
-    }
-  }
-
-  const ratio = skin / total;
-  console.log("Torso Skin Ratio:", ratio);
-
-  return ratio > 0.20; // 🔥 block threshold
-}
-
-
-async function detectTorsoExposed() {
-  try {
-    const net = await bodyPix.load(); 
-    const segmentation = await net.segmentPerson(img);
-
-    const torsoPixels = segmentation.data.filter(v => v === 1).length;
-    const ratio = torsoPixels / segmentation.data.length;
-
-    console.log("Torso Exposure Ratio:", ratio);
-
-    return ratio > 0.10; // ~10% torso area
-  } catch (e) {
-    console.warn("Torso detection fallback:", e);
-    return false;
-  }
-}
-
-
 
 
 /* ---------- Override File Upload with NSFW Check ---------- */
 chatFileInput.addEventListener("change", async (e) => {
   const files = Array.from(e.target.files);
-
   for (const f of files) {
-
-    const isNSFW = await isImageNSFW(f);
-    if (isNSFW) {
-      showError("🚫 NSFW image blocked. Nude / bare skin content is not allowed.");
-      console.warn("Blocked NSFW Image:", f.name);
+    const isUnsafe = await isImageNSFW(f);
+    if (isUnsafe) {
+      showError("🚫 NSFW image detected. Upload blocked for safety.");
       continue;
     }
 
-
-    const unsafe = await isImageNSFW(f);
-    if (unsafe) {
-      showError("🚫 NSFW image blocked. Nude / bare skin content is not allowed.");
-      console.warn("Blocked NSFW Image:", f.name);
-      continue;  // ✅ prevents upload
-    }
-
-    console.log("✅ Safe image, uploading:", f.name);
-
-    // ⬇️ SAFE IMAGE UPLOAD
     const chatId = getChatId(currentUserUid, currentChatFriendUid);
-    const msgRef = db.ref("chats/" + chatId + "/messages").push({
+    const tempMsgRef = db.ref("chats/" + chatId + "/messages").push({
       sender: currentUserUid,
       receiver: currentChatFriendUid,
       uploading: true,
@@ -409,22 +175,17 @@ chatFileInput.addEventListener("change", async (e) => {
     });
 
     const reader = new FileReader();
-    reader.onload = ev => {
-      msgRef.update({
+    reader.onload = function (ev) {
+      const data = ev.target.result;
+      tempMsgRef.update({
         uploading: false,
-        fileData: ev.target.result,
-        fileType: f.type
+        fileData: data,
+        fileType: f.type,
       });
-
-      db.ref("unread/" + currentChatFriendUid + "/" + currentUserUid + "/" + msgRef.key)
-        .set(true);
+      db.ref("unread/" + currentChatFriendUid + "/" + currentUserUid + "/" + tempMsgRef.key).set(true);
     };
-
     reader.readAsDataURL(f);
   }
-  
-  // Reset input to allow re-upload attempt
-  chatFileInput.value = "";
 });
   
   
@@ -611,10 +372,86 @@ sendBtn.onclick=sendMessage;
 chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
 
 // --- File Upload ---
-// --- File Upload with NSFW Blocking ---
-fileBtn.onclick = () => chatFileInput.click();
+fileBtn.onclick=()=>chatFileInput.click();
+chatFileInput.addEventListener('change', async e => {
+  for (const f of e.target.files) {
+    const chatId = getChatId(currentUserUid, currentChatFriendUid);
+    const tempMsgRef = db.ref('chats/' + chatId + '/messages').push({
+      sender: currentUserUid,
+      receiver: currentChatFriendUid,
+      uploading: true,
+      fileName: f.name,
+      timestamp: Date.now()
+    });
 
+    const reader = new FileReader();
+    reader.onload = async function (ev) {
+      const data = ev.target.result;
 
+      let isSafe = true;
+
+      try {
+        // 🧠 First layer: NSFWJS model check
+        if (window.nsfwModel) {
+          const img = new Image();
+          img.src = data;
+          await new Promise(res => (img.onload = res));
+
+          const predictions = await window.nsfwModel.classify(img);
+          console.log("🔍 NSFWJS predictions:", predictions);
+
+          const top = predictions.reduce((a, b) => (a.probability > b.probability ? a : b));
+
+          if (
+            (top.className === "Porn" && top.probability > 0.6) ||
+            (top.className === "Hentai" && top.probability > 0.6) ||
+            (top.className === "Sexy" && top.probability > 0.75)
+          ) {
+            console.warn("🚫 Blocked by NSFWJS:", top);
+            isSafe = false;
+          }
+        }
+      } catch (err) {
+        console.error("⚠️ NSFWJS check failed:", err);
+      }
+
+      // 🧩 Second layer: Fallback — use external API if unsure
+      if (isSafe) {
+        try {
+          const formData = new FormData();
+          formData.append("media", f);
+
+          const response = await fetch("https://api.moderatecontent.com/moderate/", {
+            method: "POST",
+            body: formData
+          });
+
+          const result = await response.json();
+          console.log("🧠 Fallback API:", result);
+
+          // Example response: { rating_index: 4, rating_label: "adult" }
+          if (result.rating_label === "adult" || result.rating_index >= 4) {
+            isSafe = false;
+          }
+        } catch (err) {
+          console.error("⚠️ Fallback check failed:", err);
+        }
+      }
+
+      if (!isSafe) {
+        alert("🚫 Image blocked: contains nudity or adult content.");
+        tempMsgRef.remove();
+        return;
+      }
+
+      // ✅ Safe — upload
+      tempMsgRef.update({ uploading: false, fileData: data, fileType: f.type });
+      db.ref('unread/' + currentChatFriendUid + '/' + currentUserUid + '/' + tempMsgRef.key).set(true);
+    };
+
+    reader.readAsDataURL(f);
+  }
+});
 
 // --- Close Chat ---
 function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null; if(currentChatListener) currentChatListener.off(); }
@@ -624,7 +461,7 @@ function escapeHtml(str){ return str.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&l
 // --- Resizable Chat Anywhere ---
 let isResizing=false,lastX,lastY,lastWidth,lastHeight;
 chatModal.addEventListener('mousedown', e=>{
-  if (e.offsetX > chatModal.clientWidth - 15 || e.offsetY > chatModal.clientHeight - 15) {
+  if(e.target!==chatInput && e.target.tagName!=='BUTTON'){
     isResizing=true; lastX=e.clientX; lastY=e.clientY;
     const rect=chatModal.getBoundingClientRect();
     lastWidth=rect.width; lastHeight=rect.height;
@@ -643,7 +480,6 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
-
 
 
 
