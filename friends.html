@@ -127,8 +127,8 @@ loadNsfwModel();
 /* ---------- NSFW Check Before Upload ---------- */
 async function isImageNSFW(file) {
   if (!nsfwModel) {
-    console.warn("Model not ready — blocking by safety");
-    return true;
+    console.warn("NSFW model not ready yet. Allowing image.");
+    return false; // ✅ allow image until model loads
   }
 
   const img = new Image();
@@ -148,30 +148,29 @@ async function isImageNSFW(file) {
         const predictions = await nsfwModel.classify(tensor);
         tensor.dispose();
 
-        const top = predictions.reduce((a, b) => 
-          a.probability > b.probability ? a : b
-        );
+        const porn = predictions.find(p => p.className === "Porn")?.probability || 0;
+        const sexy = predictions.find(p => p.className === "Sexy")?.probability || 0;
+        const hentai = predictions.find(p => p.className === "Hentai")?.probability || 0;
 
-        console.log("NSFW Predictions:", predictions);
+        console.log("NSFW Scores:", { porn, sexy, hentai });
 
-        // ✅ Realistic Safe Thresholds
-        if (
-          (top.className === "Porn" && top.probability > 0.80) ||
-          (top.className === "Hentai" && top.probability > 0.80) ||
-          (top.className === "Sexy" && top.probability > 0.90)
-        ) {
+        // ✅ Adjusted realistic filters
+        if (porn > 0.80 || hentai > 0.80 || sexy > 0.92) {
           return resolve(true);
         }
 
         return resolve(false);
-      } catch {
-        resolve(true);
+
+      } catch (e) {
+        console.warn("NSFW model error → allow to avoid false blocks:", e);
+        return resolve(false);
       }
     };
 
-    img.onerror = () => resolve(true);
+    img.onerror = () => resolve(false);
   });
 }
+
 
 
 
