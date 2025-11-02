@@ -214,7 +214,7 @@ async function detectExcessiveSkin(img) {
   const ratio = skinPixels / totalPixels;
   console.log("Skin exposure ratio:", ratio);
 
-  return ratio > 0.30; // ✅ block if >30% skin visible
+  return ratio > 0.25; // ✅ block if >25% skin visible
 }
 
 
