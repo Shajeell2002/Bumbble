@@ -1,160 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bumbble - Safety</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { 
-      font-family: Arial, sans-serif; 
-      background: lavender; /* Matching background color */
-      color: #333; 
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bumbble - Safety</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { 
+  font-family: Arial, sans-serif; 
+  background: lavender; /* Changed to match stories.html style with color variation */
+  color: #333; 
+}
 
-    /* Header */
-    header { 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      padding: 20px; 
-      background: #ffcb2b; 
-    }
-    header h1 { font-size: 24px; margin: 0; }
-    nav a { 
-      margin: 0 10px; 
-      text-decoration: none; 
-      color: #333; 
-      font-weight: bold; 
-    }
+/* Header */
+header { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  padding: 20px; 
+  background: #ffcb2b; 
+}
+header h1 { font-size: 24px; margin: 0; }
+nav a { 
+  margin: 0 10px; 
+  text-decoration: none; 
+  color: #333; 
+  font-weight: bold; 
+}
 
-    /* Section */
-    .section { padding: 40px 20px; }
-    .section h2 { 
-      font-size: 28px; 
-      margin-bottom: 20px; 
-      text-align: center; 
-    }
+/* Section */
+.section { padding: 40px 20px; }
+.section h2 { font-size: 28px; margin-bottom: 20px; text-align: center; }
 
-    /* Cards */
-    .card-container { 
-      display: flex; 
-      flex-wrap: wrap; 
-      justify-content: center; 
-      gap: 20px; 
-    }
-    .card { 
-      background: #f9f9f9; 
-      border-radius: 15px; 
-      padding: 20px; 
-      width: 280px; 
-      text-align: left; 
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1); 
-    }
-    .card img { 
-      width: 100%; 
-      border-radius: 10px; 
-      margin-bottom: 10px; 
-    }
-    .card h3 { margin-bottom: 8px; }
-    .card p { font-size: 14px; margin-bottom: 10px; }
+/* Cards */
+.card-container { 
+  display: flex; 
+  flex-wrap: wrap; 
+  justify-content: center; 
+  gap: 20px; 
+}
+.card { 
+  background: #f9f9f9; 
+  border-radius: 15px; 
+  padding: 20px; 
+  width: 280px; 
+  text-align: left; 
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1); 
+}
+.card img { 
+  width: 100%; 
+  border-radius: 10px; 
+  margin-bottom: 10px; 
+}
+.card h3 { margin-bottom: 8px; }
+.card p { font-size: 14px; margin-bottom: 10px; }
 
-    /* Footer */
-    footer { 
-      text-align: center; 
-      padding: 20px; 
-      background: #f1f1f1; 
-      margin-top: 40px; 
-    }
+/* Footer */
+footer { 
+  text-align: center; 
+  padding: 20px; 
+  background: #f1f1f1; 
+  margin-top: 40px; 
+}
 
-    /* Responsive */
-    @media (max-width: 768px) {
-      .card-container { 
-        flex-direction: column; 
-        align-items: center; 
-      }
-    }
-  </style>
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
-      authDomain: "bumbble-c061f.firebaseapp.com",
-      databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
-      projectId: "bumbble-c061f",
-      storageBucket: "bumbble-c061f.appspot.com",
-      messagingSenderId: "213165886981",
-      appId: "1:213165886981:web:c18652003444869b1bd66c"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-  </script>
+/* Responsive */
+@media (max-width: 768px) { 
+  .card-container { 
+    flex-direction: column; 
+    align-items: center; 
+  } 
+}
+</style>
 </head>
 <body>
-  <header>
-    <h1>Bumbble</h1>
-    <nav id="navbar">
-      <!-- Links will be injected dynamically -->
-    </nav>
-  </header>
+<header>
+<h1>Bumbble</h1>
+<nav>
+<a href="index.html">Home</a>
+<a href="friends.html">Friends</a>
+<a href="stories.html">Stories</a>
+<a href="safety.html">Safety</a>
+<a href="login.html">Login</a>
+<a href="signup.html">Sign Up</a>
+</nav>
+</header>
 
-  <section class="section">
-    <h2>Safety Tips & Guidelines</h2>
-    <div class="card-container">
-      <div class="card">
-        <img src="images/safety1.png" alt="Meet in public">
-        <h3>Meet in Public</h3>
-        <p>Always meet new people in a public place and let a friend know your location.</p>
-      </div>
-      <div class="card">
-        <img src="images/safety2.png" alt="Protect your privacy">
-        <h3>Protect Your Privacy</h3>
-        <p>Never share personal information like your home address or financial details.</p>
-      </div>
-      <div class="card">
-        <img src="images/safety3.png" alt="Report suspicious activity">
-        <h3>Report Suspicious Activity</h3>
-        <p>If someone behaves inappropriately, report them immediately using our platform tools.</p>
-      </div>
-    </div>
-  </section>
+<section class="section">
+<h2>Safety Tips & Guidelines</h2>
+<div class="card-container">
+<div class="card">
+<img src="images/safety1.png" alt="Meet in Public">
+<h3>Meet in Public</h3>
+<p>Always meet new people in a public place and let a friend know your location.</p>
+</div>
+<div class="card">
+<img src="images/safety2.png" alt="Protect Your Privacy">
+<h3>Protect Your Privacy</h3>
+<p>Never share personal information like your home address or financial details.</p>
+</div>
+<div class="card">
+<img src="images/safety3.png" alt="Report Suspicious Activity">
+<h3>Report Suspicious Activity</h3>
+<p>If someone behaves inappropriately, report them immediately using our platform tools.</p>
+</div>
+</div>
+</section>
 
-  <footer>
-    <p>&copy; 2025 Bumbble. All rights reserved.</p>
-  </footer>
-
-  <script>
-    // Dynamically update header links based on auth state
-    const navbar = document.getElementById("navbar");
-
-    auth.onAuthStateChanged((user) => {
-      if (user) {
-        navbar.innerHTML = `
-          <a href="index.html">Home</a>
-          <a href="friends.html">Friends</a>
-          <a href="stories.html">Stories</a>
-          <a href="safety.html">Safety</a>
-          <a href="profile.html">Profile</a>
-          <a href="#" id="logoutBtn">Logout</a>
-        `;
-        document.getElementById("logoutBtn").addEventListener("click", () => {
-          auth.signOut().then(() => {
-            window.location.href = "login.html";
-          });
-        });
-      } else {
-        navbar.innerHTML = `
-          <a href="index.html">Home</a>
-          <a href="stories.html">Stories</a>
-          <a href="login.html">Login</a>
-          <a href="signup.html">Sign Up</a>
-        `;
-      }
-    });
-  </script>
+<footer>
+<p>&copy; 2025 Bumbble. All rights reserved.</p>
+</footer>
 </body>
 </html>
