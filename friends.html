@@ -163,14 +163,23 @@ async function isImageNSFW(file) {
         // ✅ Adjusted realistic filters
 // 🚫 Strict filter to block nudity, bare skin, lingerie, bikini
 // ✅ Strict nudity / skin exposure filter
+// 🚫 Hard nudity/skin exposure threshold
 if (
-  porn > 0.40 ||      // slight porn probability blocks
-  hentai > 0.40 ||
-  sexy > 0.45 ||
-  (sexy > 0.35 && porn > 0.20)
+  porn > 0.30 ||
+  hentai > 0.30 ||
+  sexy > 0.40 ||
+  (sexy > 0.30 && porn > 0.15)
 ) {
   return resolve(true);
 }
+
+// ✅ Bare skin blocker, even if emojis/text covering
+const excessiveSkin = await detectExcessiveSkin(img);
+if (excessiveSkin) {
+  console.warn("🚫 Blocked due to excessive skin exposure");
+  return resolve(true);
+}
+
 
 const skinExposed = await detectExcessiveSkin(img);
 if (skinExposed) {
@@ -205,55 +214,36 @@ function isSkinPixel(r, g, b) {
 }
 
 async function detectExcessiveSkin(img) {
-  if (!window.selfieSeg) {
-    window.selfieSeg = new SelfieSegmentation({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`,
-    });
-    selfieSeg.setOptions({ modelSelection: 1 });
-  }
-
   const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
   canvas.width = img.width;
   canvas.height = img.height;
-  const ctx = canvas.getContext("2d");
   ctx.drawImage(img, 0, 0);
 
-  // Get original pixels
-  const originalData = ctx.getImageData(0, 0, img.width, img.height).data;
+  const { data } = ctx.getImageData(0, 0, img.width, img.height);
+  let skin = 0, total = data.length / 4;
 
-  // Get mask
-  const maskPromise = new Promise((resolve) => {
-    selfieSeg.onResults((res) => resolve(res.segmentationMask));
-    selfieSeg.send({ image: canvas });
-  });
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i], g = data[i + 1], b = data[i + 2];
 
-  const maskCanvas = await maskPromise;
-  const maskCtx = maskCanvas.getContext("2d");
-  const maskData = maskCtx.getImageData(0, 0, img.width, img.height).data;
-
-  let skin = 0, detectedHuman = 0;
-
-  for (let i = 0; i < originalData.length; i += 4) {
-    const maskVal = maskData[i]; // grayscale mask (0–255)
-
-    if (maskVal < 50) continue; // background pixel
-    detectedHuman++;
-
-    const r = originalData[i];
-    const g = originalData[i + 1];
-    const b = originalData[i + 2];
-
-    if (isSkinPixel(r, g, b)) {
+    // Improved universal skin tone range
+    if (
+      r > 90 && g > 40 && b > 20 &&
+      r > g && r > b &&
+      (Math.max(r, g, b) - Math.min(r, g, b) > 15) &&
+      !(r > 220 && g > 210 && b > 210) // avoid white
+    ) {
       skin++;
     }
   }
 
-  const skinRatio = skin / detectedHuman;
+  const skinRatio = skin / total;
   console.log("Skin Ratio:", skinRatio);
 
-  // 🚫 Block if >10% visible skin in human area
-  return skinRatio > 0.10;
+  // ✅ Block high skin exposure
+  return skinRatio > 0.15;  // previously 0.10 failing on low-light
 }
+
 
 
 
