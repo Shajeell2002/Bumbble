@@ -110,15 +110,17 @@ const typingIndicator = document.getElementById("typingIndicator");
 const errorArea = document.getElementById("errorArea");
 
   /* ---------- NSFW Filter Setup ---------- */
+/* ---------- NSFW Filter Setup ---------- */
 let nsfwModel = null;
 
 // Load NSFW model correctly
 async function loadNsfwModel() {
-  nsfwModel = await nsfwjs.load(
-nsfwModel = await nsfwjs.load("https://models.sashido.io/nsfwjs/model.json");
-
-  );
-  console.log("✅ NSFW model loaded");
+  try {
+    nsfwModel = await nsfwjs.load("https://models.sashido.io/nsfwjs/model.json");
+    console.log("✅ NSFW model loaded");
+  } catch (err) {
+    console.error("❌ NSFW model failed to load", err);
+  }
 }
 loadNsfwModel();
 
