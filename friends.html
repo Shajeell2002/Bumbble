@@ -236,7 +236,7 @@ async function detectExcessiveSkin(img) {
   for (let i = 0; i < originalData.length; i += 4) {
     const maskVal = maskData[i]; // grayscale mask (0–255)
 
-    if (maskVal < 200) continue; // background pixel
+    if (maskVal < 50) continue; // background pixel
     detectedHuman++;
 
     const r = originalData[i];
