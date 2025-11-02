@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -145,36 +146,48 @@ footer { text-align:center; padding:20px; background:#b39ddb; color:white; margi
 
 <script>
 // Dynamic Navigation
+// Navigation update based on login
 const nav = document.getElementById("navLinks");
 const currentUser = localStorage.getItem("current_user");
 
-if(currentUser){
+// Create Nav Links Based on Login
+function updateNav() {
+  if (currentUser) {
     nav.innerHTML = `
-        <a href="index.html">Home</a>
-        <a href="friends.html">Friends</a>
-        <a href="stories.html">Stories</a>
-        <a href="safety.html">Safety</a>
-        <a href="profile.html">Profile</a>
-        <a href="#" id="logoutBtn">Logout</a>
+      <a href="index.html">Home</a>
+      <a href="friends.html">Friends</a>
+      <a href="stories.html">Stories</a>
+      <a href="safety.html">Safety</a>
+      <a href="profile.html">Profile</a>
+      <a href="#" id="logoutBtn">Logout</a>
     `;
-    document.getElementById("logoutBtn").addEventListener("click", function(){
-        localStorage.removeItem("current_user");
-        alert("✅ Logged out successfully.");
-        window.location.href = "login.html";
-    });
+
+    // Hide Join Button (Hero Section)
     const joinBtn = document.querySelector(".hero-text button");
-    if(joinBtn) joinBtn.style.display = "none";
-} else {
+    if (joinBtn) joinBtn.style.display = "none";
+
+    // Logout click
+    document.getElementById("logoutBtn").addEventListener("click", function(){
+      localStorage.removeItem("current_user");
+      alert("✅ Logged out successfully.");
+      window.location.href = "login.html";
+    });
+
+  } else {
     nav.innerHTML = `
-        <a href="index.html">Home</a>
-        <a href="friends.html">Friends</a>
-        <a href="stories.html">Stories</a>
-        <a href="events.html">Events</a>
-        <a href="safety.html">Safety</a>
-        <a href="login.html">Login</a>
-        <a href="signup.html">Sign Up</a>
+      <a href="index.html">Home</a>
+      <a href="friends.html">Friends</a>
+      <a href="stories.html">Stories</a>
+      <a href="events.html">Events</a>
+      <a href="safety.html">Safety</a>
+      <a href="login.html">Login</a>
+      <a href="signup.html">Sign Up</a>
     `;
+  }
 }
+
+updateNav();
+
 
 // Firebase Initialization
 const firebaseConfig = {
