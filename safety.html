@@ -34,14 +34,44 @@ footer { text-align: center; padding: 20px; background: #b39ddb; color:white; ma
 <body>
 <header>
 <h1>Bumbble</h1>
-<nav>
-<a href="index.html">Home</a>
-<a href="friends.html">Friends</a>
-<a href="stories.html">Stories</a>
-<a href="safety.html">Safety</a>
-<a href="login.html">Login</a>
-<a href="signup.html">Sign Up</a>
-</nav>
+function updateNav() {
+  if (currentUser) {
+    nav.innerHTML = `
+      <a href="index.html">Home</a>
+      <a href="friends.html">Friends</a>
+      <a href="stories.html">Stories</a>
+      <a href="safety.html">Safety</a>
+      <a href="profile.html">Profile</a>
+      <a href="#" id="logoutBtn">Logout</a>
+    `;
+
+    // Hide Join Button (Hero Section)
+    const joinBtn = document.querySelector(".hero-text button");
+    if (joinBtn) joinBtn.style.display = "none";
+
+    // Logout click
+    document.getElementById("logoutBtn").addEventListener("click", function(){
+      localStorage.removeItem("current_user");
+      alert("✅ Logged out successfully.");
+      window.location.href = "login.html";
+    });
+
+  } else {
+    nav.innerHTML = `
+      <a href="index.html">Home</a>
+      <a href="friends.html">Friends</a>
+      <a href="stories.html">Stories</a>
+      <a href="events.html">Events</a>
+      <a href="safety.html">Safety</a>
+      <a href="login.html">Login</a>
+      <a href="signup.html">Sign Up</a>
+    `;
+  }
+}
+
+updateNav();
+
+
 </header>
 
 <section class="section">
@@ -67,3 +97,4 @@ footer { text-align: center; padding: 20px; background: #b39ddb; color:white; ma
 </footer>
 </body>
 </html>
+
