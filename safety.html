@@ -41,7 +41,7 @@ footer { text-align: center; padding: 20px; background: #f1f1f1; margin-top: 40p
 <h2>Safety Tips & Guidelines</h2>
 <div class="card-container">
 <div class="card">
-<alt="Tip 1">
+<img src="safety1.jpg" alt="Tip 1">
 <h3>Meet in Public</h3>
 <p>Always meet new people in a public place and let a friend know your location.</p>
 </div>
@@ -63,36 +63,40 @@ footer { text-align: center; padding: 20px; background: #f1f1f1; margin-top: 40p
 </footer>
 
 <script>
-const nav = document.getElementById("navLinks");
-const currentUser = localStorage.getItem("current_user");
+document.addEventListener("DOMContentLoaded", () => {
+  const nav = document.getElementById("navLinks");
+  const currentUser = localStorage.getItem("current_user");
 
-if (currentUser) {
-  nav.innerHTML = `
+  if (currentUser) {
+    nav.innerHTML = `
       <a href="index.html">Home</a>
       <a href="friends.html">Friends</a>
       <a href="stories.html">Stories</a>
       <a href="safety.html">Safety</a>
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
-  `;
-  
-  document.getElementById("logoutBtn").addEventListener("click", () => {
+    `;
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
       localStorage.removeItem("current_user");
       alert("Logged out successfully.");
       window.location.href = "login.html";
-  });
+    });
 
-} else {
-  nav.innerHTML = `
+  } else {
+    nav.innerHTML = `
       <a href="index.html">Home</a>
       <a href="friends.html">Friends</a>
       <a href="stories.html">Stories</a>
       <a href="safety.html">Safety</a>
       <a href="login.html">Login</a>
       <a href="signup.html">Sign Up</a>
-  `;
-}
+    `;
+  }
+});
 </script>
+
 
 </body>
 </html>
+
