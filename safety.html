@@ -33,15 +33,32 @@ footer { text-align: center; padding: 20px; background: #f1f1f1; margin-top: 40p
 </head>
 <body>
 <header>
-  <h1>Bumbble</h1>
-  <nav id="navLinks"></nav>
+<h1>Bumbble</h1>
+<nav>
+<a href="index.html">Home</a>
+<a href="friends.html">Friends</a>
+<a href="stories.html">Stories</a>
+<a href="safety.html">Safety</a>
+<a href="login.html" id="loginLink">Login</a>
+<a href="signup.html" id="signupLink">Sign Up</a>
+</nav>
 </header>
+
+<script>
+  // simulate login check using localStorage
+  const isLoggedIn = localStorage.getItem("loggedIn") === "true";
+
+  if (isLoggedIn) {
+    document.getElementById("loginLink").style.display = "none";
+    document.getElementById("signupLink").style.display = "none";
+  }
+</script>
 
 <section class="section">
 <h2>Safety Tips & Guidelines</h2>
 <div class="card-container">
 <div class="card">
-<img src="safety1.jpg" alt="Tip 1">
+<alt="Tip 1">
 <h3>Meet in Public</h3>
 <p>Always meet new people in a public place and let a friend know your location.</p>
 </div>
@@ -61,39 +78,9 @@ footer { text-align: center; padding: 20px; background: #f1f1f1; margin-top: 40p
 <footer>
 <p>&copy; 2025 Bumbble. All rights reserved.</p>
 </footer>
-
-<script>
-const nav = document.getElementById("navLinks");
-const currentUser = localStorage.getItem("current_user");
-
-if (currentUser) {
-  nav.innerHTML = `
-      <a href="index.html">Home</a>
-      <a href="friends.html">Friends</a>
-      <a href="stories.html">Stories</a>
-      <a href="safety.html">Safety</a>
-      <a href="profile.html">Profile</a>
-      <a href="#" id="logoutBtn">Logout</a>
-  `;
-  
-  document.getElementById("logoutBtn").addEventListener("click", () => {
-      localStorage.removeItem("current_user");
-      alert("Logged out successfully.");
-      window.location.href = "login.html";
-  });
-
-} else {
-  nav.innerHTML = `
-      <a href="index.html">Home</a>
-      <a href="friends.html">Friends</a>
-      <a href="stories.html">Stories</a>
-      <a href="safety.html">Safety</a>
-      <a href="login.html">Login</a>
-      <a href="signup.html">Sign Up</a>
-  `;
-}
-</script>
-
 </body>
 </html>
+
+
+
 
