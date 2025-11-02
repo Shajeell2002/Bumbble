@@ -177,6 +177,39 @@ if (
   });
 }
 
+// --- Additional bare-skin detection using pixel check ---
+function isSkinPixel(r, g, b) {
+  // Basic human-skin color range in RGB
+  return (
+    r > 90 && g > 40 && b > 20 &&
+    r > g && r > b &&
+    Math.abs(r - g) > 15
+  );
+}
+
+async function detectExcessiveSkin(img) {
+  const OFFSCREEN = document.createElement("canvas");
+  const ctx = OFFSCREEN.getContext("2d");
+
+  OFFSCREEN.width = img.width;
+  OFFSCREEN.height = img.height;
+  ctx.drawImage(img, 0, 0);
+
+  const data = ctx.getImageData(0, 0, img.width, img.height).data;
+
+  let skinPixels = 0;
+  const totalPixels = img.width * img.height;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i], g = data[i+1], b = data[i+2];
+    if (isSkinPixel(r, g, b)) skinPixels++;
+  }
+
+  const ratio = skinPixels / totalPixels;
+  console.log("Skin exposure ratio:", ratio);
+
+  return ratio > 0.30; // ✅ block if >30% skin visible
+}
 
 
 
