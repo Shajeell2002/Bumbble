@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Friends & Chat</title>
 <style>
+/* --- Base Styles --- */
 body { font-family: Arial, sans-serif; margin:0; background:#f8f6fb; color:#333; display:flex; min-height:100vh; flex-direction: column; }
 header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#d8cce5; box-shadow:0 3px 6px rgba(0,0,0,0.1); position:fixed; top:0; left:0; right:0; z-index:500; }
 header h1{ font-size:24px; margin:0; }
@@ -45,7 +46,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.0/dist/nsfwjs.min.js"></script>
-
 </head>
 <body>
 
@@ -81,7 +81,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 </div>
 
 <script>
-// --- Firebase Init ---
 const firebaseConfig = {
   apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
   authDomain:"bumbble-c061f.firebaseapp.com",
@@ -95,7 +94,6 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-// --- DOM ---
 const nav = document.getElementById("navLinks");
 const userList = document.getElementById("userList");
 const chatModal = document.getElementById("chatModal");
@@ -108,46 +106,44 @@ const chatFileInput = document.getElementById("chatFileInput");
 const typingIndicator = document.getElementById("typingIndicator");
 const errorArea = document.getElementById("errorArea");
 
-// --- NSFW Setup ---
+let currentUserUid = "", currentChatFriendUid = "", currentChatListener = null;
+let unreadCounters = {}, lastChatTimestamps = {}, typingTimeout;
 let nsfwModel = null;
+
+// --- Load NSFW model ---
 async function loadNsfwModel() {
   try { nsfwModel = await nsfwjs.load("./assets/nsfw-model/"); } 
-  catch(err){ showError("⚠️ Image safety filter failed to load."); }
+  catch(e){ showError("NSFW model failed to load."); console.error(e);}
 }
 loadNsfwModel();
 
-// --- Error Handling ---
-window.addEventListener('error', e=>{ showError(e.message || e); });
 function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(msg)+'</div>'; }
-
-// --- Auth ---
-let currentUserUid="", currentChatFriendUid="", currentChatListener=null, unreadCounters={}, lastChatTimestamps={}, typingTimeout;
+function escapeHtml(str){ return str.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
 auth.onAuthStateChanged(user=>{
   if(user && user.emailVerified){
-    currentUserUid = user.uid;
-    nav.innerHTML = `
+    currentUserUid=user.uid;
+    nav.innerHTML=`
       <a href="index.html">Home</a>
       <a href="friends.html">Friends</a>
       <a href="stories.html">Stories</a>
       <a href="safety.html">Safety</a>
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>`;
-    document.getElementById("logoutBtn").onclick = ()=>{
+    document.getElementById("logoutBtn").onclick=()=>{
       db.ref('users/'+currentUserUid+'/public/online').set(false);
       localStorage.removeItem("lastChatFriendUid");
       localStorage.removeItem("lastChatFriendName");
       auth.signOut().then(()=>window.location.href="login.html");
     };
     setupOnlineStatus();
-    loadUsersRealtime();
+    loadUsersIncremental();
     setupUnreadListener();
-
-    const lastUid = localStorage.getItem("lastChatFriendUid");
-    const lastName = localStorage.getItem("lastChatFriendName");
+    const lastUid=localStorage.getItem("lastChatFriendUid");
+    const lastName=localStorage.getItem("lastChatFriendName");
     if(lastUid && lastName) openChat(lastUid,lastName);
   } else {
-    nav.innerHTML = '<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>';
+    nav.innerHTML='<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>';
     userList.innerHTML="<p style='padding:12px'>Please login to view users.</p>";
   }
 });
@@ -161,78 +157,71 @@ function setupOnlineStatus(){
   });
 }
 
-// --- Optimized Users List ---
-let renderedUsers = {};
-function loadUsersRealtime(){
-  const usersRef = db.ref('users');
-  usersRef.off();
-
-  usersRef.on('child_added', snap=>{
-    const uid = snap.key;
-    if(uid===currentUserUid) return;
+// --- Incremental Users Load ---
+function loadUsersIncremental(){
+  const userRows={};
+  db.ref('users').on('child_added', snap=>{
+    if(snap.key===currentUserUid) return;
     const u = snap.val().public || {};
-    const userObj = { uid, name: u.name||"Unknown", gender: u.gender||"N/A", online: !!u.online };
-    renderedUsers[uid]=userObj;
-    addOrUpdateUserRow(userObj);
+    const row=createUserRow(snap.key,u);
+    userRows[snap.key]=row;
+    userList.appendChild(row);
   });
-
-  usersRef.on('child_changed', snap=>{
-    const uid = snap.key;
-    if(uid===currentUserUid) return;
-    const u = snap.val().public || {};
-    const userObj = { uid, name: u.name||"Unknown", gender: u.gender||"N/A", online: !!u.online };
-    renderedUsers[uid]=userObj;
-    addOrUpdateUserRow(userObj);
+  db.ref('users').on('child_changed', snap=>{
+    if(userRows[snap.key]){
+      const u = snap.val().public || {};
+      updateUserRow(userRows[snap.key],snap.key,u);
+    }
+  });
+  db.ref('users').on('child_removed', snap=>{
+    if(userRows[snap.key]){
+      userRows[snap.key].remove();
+      delete userRows[snap.key];
+    }
   });
 }
 
-function addOrUpdateUserRow(user){
-  let row=document.querySelector(`.user-row[data-uid="${user.uid}"]`);
-  if(!row){
-    row=document.createElement('div');
-    row.className='user-row';
-    row.dataset.uid=user.uid;
-    row.dataset.name=user.name;
-    row.onclick = ()=>openChat(user.uid, user.name);
-    userList.appendChild(row);
-  }
-  row.innerHTML = `<div><span class="status-dot ${user.online?'online':'offline'}"></span>${escapeHtml(user.name)} (${escapeHtml(user.gender)})</div>`;
+function createUserRow(uid,u){
+  const row=document.createElement('div');
+  row.className='user-row';
+  row.dataset.uid=uid;
+  row.dataset.name=u.name||"Unknown";
+  row.innerHTML=`<div><span class="status-dot ${u.online?'online':'offline'}"></span>${escapeHtml(u.name||"Unknown")} (${escapeHtml(u.gender||"N/A")})</div>`;
+  row.onclick=()=>openChat(uid,u.name||"Unknown");
+  return row;
+}
+function updateUserRow(row,uid,u){
+  row.querySelector('span.status-dot').className='status-dot '+(u.online?'online':'offline');
+  row.querySelector('div').childNodes[1].textContent=`${u.name||"Unknown"} (${u.gender||"N/A"})`;
   updateFriendListBadges();
 }
 
-// --- Unread Badges with debounce ---
-let badgeUpdateTimeout;
-function updateFriendListBadges(){
-  clearTimeout(badgeUpdateTimeout);
-  badgeUpdateTimeout = setTimeout(()=>{
-    document.querySelectorAll('.user-row').forEach(r=>{
-      const uid=r.dataset.uid;
-      let badge=r.querySelector('.badge');
-      const count=Number(unreadCounters[uid]||0);
-      if(count>0){
-        if(!badge){ badge=document.createElement('span'); badge.className='badge'; r.querySelector('div').appendChild(badge); }
-        badge.textContent=count;
-      } else if(badge) badge.remove();
-    });
-  },50);
+// --- Unread Badges ---
+function setupUnreadListener(){
+  db.ref('unread/'+currentUserUid).on('value', snap=>{
+    unreadCounters={};
+    const data=snap.val()||{};
+    Object.keys(data).forEach(uid=>unreadCounters[uid]=Object.keys(data[uid]||{}).length);
+    updateFriendListBadges();
+  });
 }
-
+function updateFriendListBadges(){
+  document.querySelectorAll('.user-row').forEach(r=>{
+    const uid=r.dataset.uid;
+    let badge=r.querySelector('.badge');
+    const count=Number(unreadCounters[uid]||0);
+    if(count>0){
+      if(!badge){ badge=document.createElement('span'); badge.className='badge'; r.querySelector('div').appendChild(badge); }
+      badge.textContent=count;
+    } else if(badge) badge.remove();
+  });
+}
 function flashUserRow(uid){
   const row=document.querySelector(`.user-row[data-uid="${uid}"]`);
   if(row){ row.classList.add('flash'); setTimeout(()=>row.classList.remove('flash'),800); }
 }
 
-// --- Unread Listener ---
-function setupUnreadListener(){
-  db.ref('unread/'+currentUserUid).on('value', snap=>{
-    unreadCounters={};
-    const data = snap.val()||{};
-    Object.keys(data).forEach(uid=>unreadCounters[uid]=Object.keys(data[uid]||{}).length);
-    updateFriendListBadges();
-  });
-}
-
-// --- Chat Functions ---
+// --- Open Chat ---
 function openChat(uid,name){
   document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
   const activeRow=document.querySelector(`.user-row[data-uid="${uid}"]`);
@@ -250,20 +239,14 @@ function openChat(uid,name){
   delete unreadCounters[uid];
   updateFriendListBadges();
 
-  const chatId = getChatId(currentUserUid,uid);
+  const chatId=getChatId(currentUserUid,uid);
   if(currentChatListener) currentChatListener.off();
   db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [uid]:true });
 
-  const chatRef=db.ref('chats/'+chatId+'/messages').orderByChild('timestamp').limitToLast(50);
-  chatRef.once('value', snap=>{
-    const msgs = snap.val()||{};
-    Object.keys(msgs).sort((a,b)=>msgs[a].timestamp-msgs[b].timestamp).forEach(k=>addOrUpdateMessageToChat({...msgs[k], _key:k}));
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  });
-
+  const chatRef=db.ref('chats/'+chatId+'/messages');
   currentChatListener=chatRef;
   chatRef.on('child_added', snap=>{
-    const msg={...snap.val(), _key:snap.key};
+    const msg={...snap.val(),_key:snap.key};
     addOrUpdateMessageToChat(msg);
     lastChatTimestamps[uid]=msg.timestamp;
     if(msg.receiver===currentUserUid && msg.sender!==currentUserUid){
@@ -277,6 +260,7 @@ function openChat(uid,name){
   listenTyping(uid);
 }
 
+// --- Messages ---
 function addOrUpdateMessageToChat(msg){
   if(!msg||!msg._key) return;
   const id='msg-'+msg._key;
@@ -291,19 +275,19 @@ function addOrUpdateMessageToChat(msg){
   } else if(msg.uploading){ el.innerHTML=`<span class="uploading-badge">Sending ${escapeHtml(msg.fileName||'...')}</span><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`; }
   else if(msg.text){ el.innerHTML = escapeHtml(msg.text)+'<div class="timestamp '+(isSelf?'':'friend')+'">'+new Date(msg.timestamp).toLocaleString()+'</div>'; }
   else{ el.innerHTML='<div class="small-muted">Unknown message</div>'; }
-
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+  chatMessages.scrollTop=chatMessages.scrollHeight;
 }
 
+// --- Typing ---
 chatInput.addEventListener('input', ()=>{
   if(!currentChatFriendUid) return;
   db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).set(true);
   clearTimeout(typingTimeout);
   typingTimeout=setTimeout(()=>db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove(),1000);
 });
-
 function listenTyping(uid){ db.ref('typing/'+currentUserUid+'/'+uid).on('value', snap=>{ typingIndicator.textContent = snap.exists()? chatWith.textContent+' is typing...' : ''; }); }
 
+// --- Send Message ---
 function sendMessage(){
   const text=chatInput.value.trim();
   if(!text||!currentChatFriendUid) return;
@@ -316,33 +300,66 @@ function sendMessage(){
 sendBtn.onclick=sendMessage;
 chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
 
-function getChatId(u1,u2){ return [u1,u2].sort().join('_'); }
-function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null; if(currentChatListener) currentChatListener.off(); }
-
-// --- File Upload ---
+// --- File Upload with NSFW ---
 fileBtn.onclick=()=>chatFileInput.click();
-chatFileInput.addEventListener('change',async e=>{
-  if(!currentChatFriendUid) return;
-  const files=Array.from(e.target.files||[]);
-  const chatId=getChatId(currentUserUid,currentChatFriendUid);
-  for(const f of files){
-    const tempRef=db.ref('chats/'+chatId+'/messages').push({sender:currentUserUid,receiver:currentChatFriendUid,fileName:f.name,timestamp:Date.now(),uploading:true});
+chatFileInput.addEventListener('change', async e=>{
+  for(const f of e.target.files){
+    const isUnsafe=await isImageNSFW(f);
+    if(isUnsafe){ alert("🚫 NSFW image detected. Upload blocked."); continue; }
+
+    const chatId=getChatId(currentUserUid,currentChatFriendUid);
+    const tempMsgRef=db.ref('chats/'+chatId+'/messages').push({
+      sender:currentUserUid, receiver:currentChatFriendUid, uploading:true, fileName:f.name, timestamp:Date.now()
+    });
+
     const reader=new FileReader();
-    reader.onload=async ev=>{
-      const dataUrl=ev.target.result;
-      if(nsfwModel){
-        try{ const predictions=await nsfwModel.classify(dataUrl); const isUnsafe=predictions.some(p=>['Porn','Hentai','Sexy'].includes(p.className) && p.probability>0.7); if(isUnsafe){ showError("NSFW content blocked."); tempRef.remove(); return; } }catch{}
-      }
-      tempRef.update({fileData:dataUrl, fileType:f.type, uploading:false});
-      db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempRef.key).set(true);
+    reader.onload=ev=>{
+      tempMsgRef.update({ uploading:false, fileData:ev.target.result, fileType:f.type });
+      db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+tempMsgRef.key).set(true);
     };
     reader.readAsDataURL(f);
   }
-  chatFileInput.value='';
 });
 
-// --- Utilities ---
-function escapeHtml(text){ return String(text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+async function isImageNSFW(file){
+  if(!nsfwModel) return false;
+  return new Promise(res=>{
+    const img=new Image();
+    img.onload=async ()=>{
+      const canvas=document.createElement('canvas');
+      canvas.width=img.width; canvas.height=img.height;
+      canvas.getContext('2d').drawImage(img,0,0);
+      const predictions=await nsfwModel.classify(canvas);
+      const top=predictions.reduce((a,b)=>a.probability>b.probability?a:b);
+      res((top.className==="Porn" && top.probability>0.55) || (top.className==="Hentai" && top.probability>0.55) || (top.className==="Sexy" && top.probability>0.7));
+    };
+    img.src=URL.createObjectURL(file);
+  });
+}
+
+// --- Close Chat ---
+function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null; if(currentChatListener) currentChatListener.off(); }
+
+// --- Chat ID ---
+function getChatId(a,b){ return a<b?a+'_'+b:b+'_'+a; }
+
+// --- Resizable Chat ---
+let isResizing=false,lastX,lastY,lastWidth,lastHeight;
+chatModal.addEventListener('mousedown', e=>{
+  if(e.target!==chatInput && e.target.tagName!=='BUTTON'){
+    isResizing=true; lastX=e.clientX; lastY=e.clientY;
+    const rect=chatModal.getBoundingClientRect();
+    lastWidth=rect.width; lastHeight=rect.height;
+    document.body.style.userSelect='none';
+  }
+});
+document.addEventListener('mousemove', e=>{
+  if(!isResizing) return;
+  const dx=e.clientX-lastX, dy=e.clientY-lastY;
+  chatModal.style.width=Math.min(Math.max(lastWidth+dx,300),window.innerWidth-40)+'px';
+  chatModal.style.height=Math.min(Math.max(lastHeight+dy,200),window.innerHeight-60)+'px';
+});
+document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; document.body.style.userSelect='auto'; } });
 
 </script>
 
