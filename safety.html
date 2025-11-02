@@ -34,13 +34,8 @@ footer { text-align: center; padding: 20px; background: #b39ddb; color:white; ma
 <body>
 <header>
 <h1>Bumbble</h1>
-<nav>
-<a href="index.html">Home</a>
-<a href="friends.html">Friends</a>
-<a href="stories.html">Stories</a>
-<a href="safety.html">Safety</a>
-<a href="login.html">Login</a>
-<a href="signup.html">Sign Up</a>
+<nav id="navbar">
+  <!-- Links will be injected dynamically -->
 </nav>
 </header>
 
@@ -65,5 +60,47 @@ footer { text-align: center; padding: 20px; background: #b39ddb; color:white; ma
 <footer>
 <p>&copy; 2025 Bumbble. All rights reserved.</p>
 </footer>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+    authDomain: "bumbble-c061f.firebaseapp.com",
+    databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
+    projectId: "bumbble-c061f",
+    storageBucket: "bumbble-c061f.appspot.com",
+    messagingSenderId: "213165886981",
+    appId: "1:213165886981:web:c18652003444869b1bd66c"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+
+  const navbar = document.getElementById("navbar");
+
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      navbar.innerHTML = `
+        <a href="index.html">Home</a>
+        <a href="friends.html">Friends</a>
+        <a href="stories.html">Stories</a>
+        <a href="safety.html">Safety</a>
+        <a href="profile.html">Profile</a>
+        <a href="#" id="logoutBtn">Logout</a>
+      `;
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        auth.signOut().then(() => { window.location.href = "login.html"; });
+      });
+    } else {
+      navbar.innerHTML = `
+        <a href="index.html">Home</a>
+        <a href="stories.html">Stories</a>
+        <a href="login.html">Login</a>
+        <a href="signup.html">Sign Up</a>
+      `;
+    }
+  });
+</script>
 </body>
 </html>
