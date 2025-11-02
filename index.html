@@ -143,14 +143,33 @@ footer { text-align:center; padding:20px; background:#b39ddb; color:white; margi
   <p>&copy; 2025 Bumbble.in. All rights reserved.</p>
 </footer>
 
-<script>
-// Dynamic Navigation
-// Navigation update based on login
-  const navbar = document.getElementById("navbar");
+<header>
+  <h1>Bumbble.in</h1>
+  <nav id="navLinks"></nav>
+</header>
 
-  auth.onAuthStateChanged((user) => {
-    if (user) {
-      navbar.innerHTML = `
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script>
+  // Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+    authDomain: "bumbble-c061f.firebaseapp.com",
+    databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
+    projectId: "bumbble-c061f",
+    storageBucket: "bumbble-c061f.appspot.com",
+    messagingSenderId: "213165886981",
+    appId: "1:213165886981:web:c18652003444869b1bd66c"
+  };
+  
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const nav = document.getElementById("navLinks");
+
+  // Update nav based on login state
+  auth.onAuthStateChanged(user => {
+    if(user) {
+      nav.innerHTML = `
         <a href="index.html">Home</a>
         <a href="friends.html">Friends</a>
         <a href="stories.html">Stories</a>
@@ -159,10 +178,13 @@ footer { text-align:center; padding:20px; background:#b39ddb; color:white; margi
         <a href="#" id="logoutBtn">Logout</a>
       `;
       document.getElementById("logoutBtn").addEventListener("click", () => {
-        auth.signOut().then(() => { window.location.href = "login.html"; });
+        auth.signOut().then(() => window.location.href = "login.html");
       });
+      // Hide hero join button if present
+      const joinBtn = document.querySelector(".hero-text button");
+      if(joinBtn) joinBtn.style.display = "none";
     } else {
-      navbar.innerHTML = `
+      nav.innerHTML = `
         <a href="index.html">Home</a>
         <a href="stories.html">Stories</a>
         <a href="login.html">Login</a>
@@ -170,41 +192,8 @@ footer { text-align:center; padding:20px; background:#b39ddb; color:white; margi
       `;
     }
   });
-
-
-updateNav();
-
-
-// Firebase Initialization
-const firebaseConfig = {
-  apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
-  authDomain:"bumbble-c061f.firebaseapp.com",
-  databaseURL:"https://bumbble-c061f-default-rtdb.firebaseio.com",
-  projectId:"bumbble-c061f",
-  storageBucket:"bumbble-c061f.appspot.com",
-  messagingSenderId:"213165886981",
-  appId:"1:213165886981:web:c18652003444869b1bd66c"
-};
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.database();
-
-// Confetti on match
-document.getElementById('matchBtnInteractive').addEventListener('click', () => {
-  confetti({ particleCount:200, spread:70, origin:{ y:0.6 } });
-});
-
-function updateLiveStatus(){
-    const onlineUsersEl = document.getElementById("onlineUsers");
-    const recentJoinEl = document.getElementById("recentJoin");
-    const onlineUsers = ["User1","User2"]; // Replace with dynamic Firebase data
-    const recentJoins = ["User3"]; // Replace with dynamic Firebase data
-    onlineUsersEl.innerText = "Online Users: " + onlineUsers.length;
-    recentJoinEl.innerText = "Recent Join: " + recentJoins.join(", ");
-}
-updateLiveStatus();
-setInterval(updateLiveStatus, 10000);
 </script>
+
 
 </body>
 </html>
