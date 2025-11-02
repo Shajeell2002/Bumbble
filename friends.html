@@ -189,36 +189,42 @@ if (skinExposed) {
 
 // --- Additional bare-skin detection using pixel check ---
 function isSkinPixel(r, g, b) {
-  // Basic human-skin color range in RGB
+  // Improved YCbCr skin detection range
+  // Works better across all skin tones
+  const Y  =  0 + 0.299*r + 0.587*g + 0.114*b;
+  const Cb = 128 - 0.1687*r - 0.3313*g + 0.5*b;
+  const Cr = 128 + 0.5*r - 0.4187*g - 0.0813*b;
+
   return (
-    r > 90 && g > 40 && b > 20 &&
-    r > g && r > b &&
-    Math.abs(r - g) > 15
+    Cr > 135 && Cr < 180 &&
+    Cb > 85 && Cb < 135 &&
+    Y > 80 && Y < 255
   );
 }
 
 async function detectExcessiveSkin(img) {
-  const OFFSCREEN = document.createElement("canvas");
-  const ctx = OFFSCREEN.getContext("2d");
-
-  OFFSCREEN.width = img.width;
-  OFFSCREEN.height = img.height;
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = img.width;
+  canvas.height = img.height;
   ctx.drawImage(img, 0, 0);
 
-  const data = ctx.getImageData(0, 0, img.width, img.height).data;
+  const { data } = ctx.getImageData(0, 0, img.width, img.height);
 
-  let skinPixels = 0;
-  const totalPixels = img.width * img.height;
+  let skin = 0;
+  const total = img.width * img.height;
 
   for (let i = 0; i < data.length; i += 4) {
-    const r = data[i], g = data[i+1], b = data[i+2];
-    if (isSkinPixel(r, g, b)) skinPixels++;
+    if (isSkinPixel(data[i], data[i + 1], data[i + 2])) skin++;
   }
 
-  const ratio = skinPixels / totalPixels;
-  console.log("Skin exposure ratio:", ratio);
+  const ratio = skin / total;
+  console.log("Skin ratio:", ratio);
 
-  return ratio > 0.25; // ✅ block if >25% skin visible
+  // 🔥 Threshold options:
+  // 0.18 = normal strict nude block (recommended)
+  // 0.30 = allows gym/beach selfies
+  return ratio > 0.18;
 }
 
 
