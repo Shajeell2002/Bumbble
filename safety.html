@@ -32,6 +32,38 @@ footer { text-align: center; padding: 20px; background: #f1f1f1; margin-top: 40p
 </style>
 </head>
 <body>
+  <header>
+    <h1>Bumbble</h1>
+    <nav id="navbar">
+      <!-- Links will be injected dynamically -->
+    </nav>
+  </header>
+
+  <section class="section">
+    <h2>Success Stories</h2>
+    <div class="card-container">
+      <div class="card">
+        <img src="images/couple1.png" alt="Couple story">
+        <h3>Radhika & Sam</h3>
+        <p>“We met on Bumbble and instantly clicked! Now we’re planning our wedding.”</p>
+      </div>
+      <div class="card">
+        <img src="images/friends1.png" alt="Friends story">
+        <h3>Rajeev & Roshan</h3>
+        <p>“Bumbble helped us find friends in a new city. Couldn’t be happier.”</p>
+      </div>
+      <div class="card">
+        <img src="images/friends2.png" alt="Community story">
+        <h3>Divya & Preeti</h3>
+        <p>“From matches to best friends, Bumbble gave us a lifelong connection.”</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>&copy; 2025 Bumbble. All rights reserved.</p>
+  </footer>
+
   <script>
     // Dynamically update header links based on auth state
     const navbar = document.getElementById("navbar");
