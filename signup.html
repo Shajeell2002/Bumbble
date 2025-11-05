@@ -253,7 +253,7 @@ document.getElementById('signupBtn').addEventListener('click', async function ()
       createdAt: Date.now()
     });
 
-    successMsg.textContent = 'Account created — verification email sent. Please verify before login.';
+    successMsg.textContent = 'Account created — verification email sent, Check your Inbox & Spam folder . Please verify before login.';
     btn.textContent = 'Done';
     // optional: redirect after short delay
     setTimeout(() => { window.location.href = 'login.html'; }, 3500);
@@ -268,3 +268,4 @@ document.getElementById('signupBtn').addEventListener('click', async function ()
 </script>
 </body>
 </html>
+
