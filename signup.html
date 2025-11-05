@@ -6,86 +6,99 @@
 <title>Bumbble - Sign Up</title>
 
 <style>
-  /* Page layout matching your site theme */
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: Arial, sans-serif;
-    background: #fff;
-    color: #333;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-  }
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial, sans-serif;}
 
-  /* Header (same yellow theme) */
-  header { display:flex; justify-content:space-between; align-items:center; padding:16px 24px; background:#ffcb2b; }
-  header h1 { font-size:22px; margin:0; }
-  nav a { margin-left:12px; color:#000; text-decoration:none; font-weight:600; }
-  nav a:hover { text-decoration:underline; }
+body{
+  background:linear-gradient(180deg,#fff8c4,#fff4a8,#fff8d9);
+  display:flex;
+  flex-direction:column;
+  min-height:100vh;
+}
 
-  /* Main area */
-  main { flex:1; display:flex; justify-content:center; align-items:flex-start; padding:40px 20px; background: linear-gradient(180deg,#fffdf8,#fff8e1); }
+/* ------------ Header Style (Matches Main Site) ------------ */
+header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  background:#FFCF4B;
+  padding:14px 22px;
+  border-bottom:2px solid #e0b300;
+  position:sticky;
+  top:0;
+  z-index:10;
+}
+header h1{font-size:22px;font-weight:700;color:#222;}
+nav a{
+  margin-left:12px;
+  font-size:15px;
+  font-weight:600;
+  text-decoration:none;
+  color:#111;
+}
+nav a:hover{text-decoration:underline;color:#000;}
 
-  /* Signup card */
-  .signup-container {
-    width: 100%;
-    max-width: 420px;
-    background: #fff;
-    border-radius: 12px;
-    padding: 28px;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-  }
-  .signup-container h2 { text-align:center; margin-bottom:16px; font-size:22px; color:#222; }
-  .form-row { margin-bottom:12px; }
-  input[type="text"], input[type="email"], input[type="password"], input[type="number"], select {
-    width:100%;
-    padding:11px 12px;
-    border-radius:8px;
-    border:1px solid #d7d7d7;
-    font-size:15px;
-    outline:none;
-  }
-  input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus, select:focus, input[type="number"]:focus {
-    border-color:#ffcb2b;
-    box-shadow:0 0 0 4px rgba(255,203,43,0.08);
-  }
-  .btn {
-    width:100%;
-    padding:12px;
-    margin-top:8px;
-    border-radius:8px;
-    border:none;
-    font-weight:700;
-    font-size:16px;
-    cursor:pointer;
-    background:#ffcb2b;
-    color:#111;
-  }
-  .btn:disabled { opacity:0.6; cursor:not-allowed; }
+/* ------------ Signup Card ------------ */
+main{
+  flex:1;display:flex;justify-content:center;align-items:flex-start;
+  padding:50px 20px;
+}
 
-  .msg { text-align:center; margin-top:10px; font-size:14px; }
-  .error { color:#c62828; }
-  .success { color:#2e7d32; }
+.signup-container{
+  width:100%;max-width:420px;background:#fff;
+  padding:32px;border-radius:14px;
+  box-shadow:0 8px 22px rgba(0,0,0,.12);
+}
 
-  .small { font-size:13px; text-align:center; margin-top:12px; }
-  .small a { color:#0073e6; text-decoration:none; }
-  .small a:hover { text-decoration:underline; }
+.signup-container h2{
+  text-align:center;margin-bottom:18px;font-size:22px;color:#111;
+}
 
-  footer { text-align:center; padding:14px; background:#f1f1f1; font-size:13px; }
-  @media(max-width:480px){
-    main { padding:20px 12px; }
-    .signup-container { padding:20px; }
-  }
+.form-row{margin-bottom:12px;}
+
+input, select{
+  width:100%;padding:11px;border-radius:8px;
+  border:1px solid #cfcfcf;font-size:15px;outline:none;
+}
+input:focus, select:focus{
+  border-color:#ffca24;
+  box-shadow:0 0 0 3px rgba(255,213,30,.32);
+}
+
+.btn{
+  width:100%;padding:12px;border:none;
+  background:#FFCF4B;color:#111;border-radius:8px;
+  font-weight:700;font-size:16px;cursor:pointer;
+}
+.btn:hover{background:#f9c200;}
+.btn:disabled{background:#e6d38b;cursor:not-allowed;}
+
+.msg{text-align:center;margin-top:8px;font-size:14px;}
+.error{color:#c62828;}
+.success{color:#2e7d32;}
+
+.small{text-align:center;margin-top:10px;font-size:13px;}
+.small a{color:#0073e6;text-decoration:none;}
+.small a:hover{text-decoration:underline;}
+
+footer{
+  text-align:center;padding:14px;font-size:13px;
+  background:#fff1b5;
+  border-top:2px solid #f1d865;
+}
+
+@media(max-width:480px){
+  main{padding:24px 12px;}
+  .signup-container{padding:24px;}
+}
 </style>
 
-<!-- Firebase (compat) -->
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 
 <body>
-
 <header>
   <h1>Bumbble</h1>
   <nav id="navLinks">
@@ -99,17 +112,11 @@
 </header>
 
 <main>
-  <div class="signup-container" role="region" aria-label="Signup form">
+  <div class="signup-container">
     <h2>Create Your Account</h2>
 
-    <div class="form-row">
-      <input id="name" type="text" placeholder="Full name" required />
-    </div>
-
-    <div class="form-row">
-      <input id="age" type="number" placeholder="Age" min="13" />
-    </div>
-
+    <div class="form-row"><input id="name" type="text" placeholder="Full name" required></div>
+    <div class="form-row"><input id="age" type="number" placeholder="Age" min="13"></div>
     <div class="form-row">
       <select id="gender">
         <option value="">Select gender</option>
@@ -118,147 +125,78 @@
         <option value="Other">Other</option>
       </select>
     </div>
-
-    <div class="form-row">
-      <input id="location" type="text" placeholder="Location (city)" />
-    </div>
-
-    <div class="form-row">
-      <input id="email" type="email" placeholder="Email address" required />
-    </div>
-
-    <div class="form-row">
-      <input id="password" type="password" placeholder="Password (min 6 characters)" required />
-    </div>
+    <div class="form-row"><input id="location" type="text" placeholder="City"></div>
+    <div class="form-row"><input id="email" type="email" placeholder="Email" required></div>
+    <div class="form-row"><input id="password" type="password" placeholder="Password (min 6 chars)" required></div>
 
     <button id="signupBtn" class="btn">Sign Up</button>
 
-    <p id="errorMsg" class="msg error" aria-live="polite"></p>
-    <p id="successMsg" class="msg success" aria-live="polite"></p>
+    <p id="errorMsg" class="msg error"></p>
+    <p id="successMsg" class="msg success"></p>
 
     <p class="small">Already have an account? <a href="login.html">Login</a></p>
   </div>
 </main>
 
-<footer>
-  &copy; 2025 Bumbble. All rights reserved.
-</footer>
+<footer>© 2025 Bumbble. All rights reserved.</footer>
 
 <script>
-  // ---------- Firebase config (keep your real keys) ----------
-  const firebaseConfig = {
-    apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
-    authDomain: "bumbble-c061f.firebaseapp.com",
-    databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
-    projectId: "bumbble-c061f",
-    storageBucket: "bumbble-c061f.appspot.com",
-    messagingSenderId: "213165886981",
-    appId: "1:213165886981:web:c18652003444869b1bd66c"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.database();
+// Firebase config
+const firebaseConfig={
+  apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+  authDomain:"bumbble-c061f.firebaseapp.com",
+  databaseURL:"https://bumbble-c061f-default-rtdb.firebaseio.com",
+  projectId:"bumbble-c061f",
+  storageBucket:"bumbble-c061f.appspot.com",
+  messagingSenderId:"213165886981",
+  appId:"1:213165886981:web:c18652003444869b1bd66c"
+};
+firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth();
+const db=firebase.database();
 
-  // update header depending on auth state (keeps nav consistent)
-  const nav = document.getElementById('navLinks');
-  auth.onAuthStateChanged(user => {
-    if (user && user.emailVerified) {
-      nav.innerHTML = `
-        <a href="index.html">Home</a>
-        <a href="friends.html">Friends</a>
-        <a href="stories.html">Stories</a>
-        <a href="events.html">Events</a>
-        <a href="safety.html">Safety</a>
-        <a href="profile.html">Profile</a>
-        <a href="#" id="logoutBtn">Logout</a>
-      `;
-      document.getElementById('logoutBtn').addEventListener('click', () => {
-        auth.signOut();
-        localStorage.removeItem('current_user');
-        window.location.href = 'login.html';
-      });
-    } else {
-      // default nav (not logged in)
-      nav.innerHTML = `
-        <a href="index.html">Home</a>
-        <a href="friends.html">Friends</a>
-        <a href="stories.html">Stories</a>
-        <a href="events.html">Events</a>
-        <a href="safety.html">Safety</a>
-        <a href="login.html">Login</a>
-        <a href="signup.html">Sign Up</a>
-      `;
-    }
-  });
+// nav update
+const nav=document.getElementById("navLinks");
+auth.onAuthStateChanged(user=>{
+  if(user && user.emailVerified){
+    nav.innerHTML=`
+      <a href="index.html">Home</a>
+      <a href="friends.html">Friends</a>
+      <a href="stories.html">Stories</a>
+      <a href="safety.html">Safety</a>
+      <a href="profile.html">Profile</a>
+      <a href="#" id="logoutBtn">Logout</a>`;
+    document.getElementById("logoutBtn").onclick=()=>{auth.signOut(); localStorage.removeItem("current_user"); location.href="login.html";}
+  }
+});
 
-  // Signup handler
-  document.getElementById('signupBtn').addEventListener('click', async function () {
-    const name = document.getElementById('name').value.trim();
-    const age = document.getElementById('age').value.trim();
-    const gender = document.getElementById('gender').value;
-    const location = document.getElementById('location').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
+// Signup logic
+document.getElementById("signupBtn").onclick=async()=>{
+  const name=name.value.trim(), age=age.value.trim(), gender=gender.value,
+        location=location.value.trim(), email=email.value.trim(),
+        password=password.value, btn=signupBtn;
+  errorMsg.textContent=""; successMsg.textContent="";
 
-    const errorMsg = document.getElementById('errorMsg');
-    const successMsg = document.getElementById('successMsg');
-    const btn = document.getElementById('signupBtn');
+  if(!name||!email||!password){errorMsg.textContent="Enter name, email & password";return;}
+  if(password.length<6){errorMsg.textContent="Password must be 6+ chars";return;}
 
-    errorMsg.textContent = '';
-    successMsg.textContent = '';
+  btn.disabled=true; btn.textContent="Creating...";
+  try{
+    const cred=await auth.createUserWithEmailAndPassword(email,password);
+    const uid=cred.user.uid;
+    await cred.user.sendEmailVerification({url:"https://bumbble.in/login.html"});
+    
+    await db.ref(`users/${uid}/public`).set({
+      name, age:age||"N/A", gender:gender||"", location:location||"",
+      pic:"images/profile1.png", online:false, testAccount:false
+    });
+    await db.ref(`users/${uid}/private`).set({email, createdAt:Date.now()});
 
-    // Basic validation
-    if (!name || !email || !password) {
-      errorMsg.textContent = 'Please fill in name, email and password.';
-      return;
-    }
-    if (password.length < 6) {
-      errorMsg.textContent = 'Password must be at least 6 characters.';
-      return;
-    }
-
-    btn.disabled = true;
-    btn.textContent = 'Creating account...';
-
-    try {
-      // create account
-      const cred = await auth.createUserWithEmailAndPassword(email, password);
-      const user = cred.user;
-      const uid = user.uid;
-
-      // send verification email (redirects to login on click)
-      await user.sendEmailVerification({ url: 'https://bumbble.in/login.html' });
-
-      // save public profile
-      await db.ref(`users/${uid}/public`).set({
-        name: name,
-        age: age || 'N/A',
-        gender: gender || '',
-        location: location || '',
-        pic: 'images/profile1.png',
-        online: false,
-        testAccount: false
-      });
-
-      // save private profile
-      await db.ref(`users/${uid}/private`).set({
-        email: email,
-        createdAt: Date.now()
-      });
-
-      successMsg.textContent = 'Account created — verification email sent. Please verify before login.';
-      btn.textContent = 'Done';
-      // optional: redirect after short delay
-      setTimeout(() => { window.location.href = 'login.html'; }, 3500);
-
-    } catch (err) {
-      console.error('Signup error:', err);
-      errorMsg.textContent = err.message || 'Signup failed.';
-      btn.disabled = false;
-      btn.textContent = 'Sign Up';
-    }
-  });
+    successMsg.textContent="✅ Account created! Check email to verify.";
+    btn.textContent="Done";
+    setTimeout(()=>location.href="login.html",3000);
+  }catch(e){errorMsg.textContent=e.message; btn.disabled=false; btn.textContent="Sign Up";}
+};
 </script>
 </body>
 </html>
-
