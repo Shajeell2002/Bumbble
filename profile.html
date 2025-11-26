@@ -7,7 +7,7 @@
 <style>
 body {
     font-family: Arial, sans-serif;
-    background: #b39ddb; /* Lavender background */
+    background: #b39ddb;
     color: #333;
     margin: 0;
     display: flex;
@@ -21,7 +21,7 @@ header {
     justify-content: space-between;
     align-items: center;
     padding: 20px;
-    background: #b39ddb; /* Lavender header */
+    background: #b39ddb;
     color: white;
     box-shadow:0 3px 6px rgba(0,0,0,0.1);
 }
@@ -29,7 +29,7 @@ header h1 { font-size: 24px; color:white; }
 nav a { margin: 0 10px; text-decoration: none; color: white; font-weight: bold; }
 nav a:hover { text-decoration: underline; }
 
-/* Profile Container */
+/* Profile Card */
 .profile-container {
     flex: 1;
     max-width: 400px;
@@ -38,12 +38,12 @@ nav a:hover { text-decoration: underline; }
     border-radius: 15px;
     border: 1px solid #ddd;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    background: #fff; /* white card on lavender background */
+    background: #fff;
 }
 .profile-container h2 {
     text-align: center;
     margin-bottom: 20px;
-    color: #4a2e8e; /* lavender heading */
+    color: #4a2e8e;
 }
 .profile-container input[type=text],
 .profile-container input[type=number],
@@ -60,7 +60,7 @@ nav a:hover { text-decoration: underline; }
     width: 100%;
     padding: 10px;
     margin-top: 10px;
-    background: #4a2e8e; /* dark lavender button */
+    background: #4a2e8e;
     border: none;
     border-radius: 5px;
     font-weight: bold;
@@ -87,7 +87,7 @@ nav a:hover { text-decoration: underline; }
   <h2>Your Profile</h2>
   <img id="profilePreview" src="images/profile1.png" alt="Profile Picture">
   <input type="file" id="profilePic" accept="image/*">
-  <input type="text" id="name" placeholder="Full Name">
+  <input type="text" id="name" placeholder="Unique Profile Name">
   <input type="number" id="age" placeholder="Age">
   <input type="text" id="location" placeholder="Location">
   <select id="gender">
@@ -119,8 +119,8 @@ const nav = document.getElementById("navLinks");
 const errorMsg = document.getElementById("errorMsg");
 const profilePreview = document.getElementById("profilePreview");
 let profileBase64 = "";
+let oldUsername = "";  // ⭐ stores old username
 
-// Navigation & auth
 auth.onAuthStateChanged(user => {
   if(user && user.emailVerified){
     nav.innerHTML = `
@@ -133,7 +133,7 @@ auth.onAuthStateChanged(user => {
     `;
     document.getElementById("logoutBtn").addEventListener("click", ()=>{
       auth.signOut().then(()=>{
-        sessionStorage.removeItem("current_user"); // auto logout on close
+        sessionStorage.removeItem("current_user");
         window.location.href="login.html";
       });
     });
@@ -144,7 +144,7 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-// Image compression & upload
+/* ---------------- IMAGE COMPRESSION ---------------- */
 function compressImage(file, maxDim=150, maxSizeKB=64, callback){
   const reader = new FileReader();
   reader.onload = function(evt){
@@ -167,7 +167,7 @@ function compressImage(file, maxDim=150, maxSizeKB=64, callback){
       if((dataUrl.length/1024)>maxSizeKB){ alert("Image too large after compression"); callback(""); }
       else callback(dataUrl);
     }
-    img.src=evt.target.result;
+    img.src = evt.target.result;
   }
   reader.readAsDataURL(file);
 }
@@ -183,7 +183,7 @@ document.getElementById("profilePic").addEventListener("change", e=>{
   });
 });
 
-// Realtime profile listener
+/* ---------------- LOAD USER LIVE DATA ---------------- */
 function setupRealtimeProfile(uid){
   const publicRef = db.ref(`users/${uid}/public`);
   const privateRef = db.ref(`users/${uid}/private`);
@@ -196,6 +196,7 @@ function setupRealtimeProfile(uid){
     document.getElementById("gender").value = data.gender || "";
     profilePreview.src = data.pic || "images/profile1.png";
     profileBase64 = data.pic || "";
+    oldUsername = data.name ? data.name.toLowerCase() : ""; // ⭐ store previous username
   });
   
   privateRef.on('value', snap=>{
@@ -204,26 +205,58 @@ function setupRealtimeProfile(uid){
   });
 }
 
-// Update profile
+/* ---------------- USERNAME CHECK ---------------- */
+async function isUsernameAvailable(username, uid){
+  const snap = await db.ref("usernames/" + username.toLowerCase()).get();
+  if(!snap.exists()) return true;     // No one has this name
+  if(snap.val() === uid) return true; // Same user keeping own name
+  return false;                       // Someone else owns it
+}
+
+/* ---------------- UPDATE PROFILE ---------------- */
 async function updateProfile(){
   const user = auth.currentUser;
   if(!user) return;
   const uid = user.uid;
-  const name = document.getElementById("name").value.trim();
+
+  const username = document.getElementById("name").value.trim();
   const age = document.getElementById("age").value.trim();
   const location = document.getElementById("location").value.trim();
   const gender = document.getElementById("gender").value;
-  errorMsg.textContent="";
-  if(!name) return errorMsg.textContent="Name cannot be empty!";
-  try{
+
+  errorMsg.textContent = "";
+
+  if(!username) return errorMsg.textContent="Name cannot be empty!";
+
+  try {
+    // 1. Check availability
+    const free = await isUsernameAvailable(username, uid);
+    if(!free){
+      errorMsg.textContent = "This profile name is already taken. Choose another.";
+      return;
+    }
+
+    // 2. Delete old username mapping if changed
+    if(oldUsername && oldUsername !== username.toLowerCase()){
+      await db.ref("usernames/" + oldUsername).remove();
+    }
+
+    // 3. Register new username
+    await db.ref("usernames/" + username.toLowerCase()).set(uid);
+
+    // 4. Update main profile
     await db.ref(`users/${uid}/public`).update({
-      name,
+      name: username,
       age: age || "N/A",
       location: location || "",
       gender: gender || "",
       pic: profileBase64 || "images/profile1.png"
     });
+
+    oldUsername = username.toLowerCase(); // update local memory
+
     alert("Profile saved successfully!");
+
   } catch(err){
     console.error(err);
     errorMsg.textContent="Failed to save profile.";
