@@ -1,4 +1,169 @@
+<!-- FULL WORKING PROFILE.HTML WITH UNIQUE USERNAME + OLD USERNAME DELETE + PROFILE PIC UPDATE FIX -->
 <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bumbble - Edit Profile</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #f5f5ff; padding: 20px; }
+  .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);} 
+  h2 { text-align: center; color: #6a4fbf; }
+  input, select { width: 100%; padding: 10px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; }
+  #saveBtn { width: 100%; background: #6a4fbf; color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; }
+  #saveBtn:hover { background: #593fb0; }
+  #profilePreview { width: 110px; height: 110px; border-radius: 50%; object-fit: cover; display: block; margin: auto; border: 3px solid #6a4fbf; }
+  #errorMsg { color: red; text-align: center; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="container">
+<h2>Edit Profile</h2>
+<img id="profilePreview" src="images/profile1.png" />
+<br />
+<label>Upload Profile Picture</label>
+<input type="file" id="profilePic" accept="image/*" />
+
+<label>Name</label>
+<input type="text" id="name" />
+
+<label>Age</label>
+<input type="number" id="age" />
+
+<label>Location</label>
+<input type="text" id="location" />
+
+<label>Gender</label>
+<select id="gender">
+  <option value="">Select</option>
+  <option value="Male">Male</option>
+  <option value="Female">Female</option>
+  <option value="Other">Other</option>
+</select>
+
+<p id="errorMsg"></p>
+<button id="saveBtn">Save Profile</button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+<script>
+/* ---------------- FIREBASE INIT ---------------- */
+const firebaseConfig = {
+  apiKey: "YOUR-API-KEY",
+  authDomain: "YOUR-DOMAIN",
+  databaseURL: "YOUR-DB-URL",
+  projectId: "YOUR-ID",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+
+let profileBase64 = "";
+let oldUsername = "";
+
+/* ---------------- IMAGE UPLOAD LISTENER ---------------- */
+document.getElementById("profilePic").addEventListener("change", function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt){
+    profileBase64 = evt.target.result; // set new image
+    document.getElementById("profilePreview").src = profileBase64;
+  }
+  reader.readAsDataURL(file);
+});
+
+/* ---------------- UNIQUE USERNAME CHECK ---------------- */
+async function isUsernameAvailable(username, uid){
+  const snap = await db.ref("usernames/" + username.toLowerCase()).get();
+  if(!snap.exists()) return true;
+  if(snap.val() === uid) return true;
+  return false;
+}
+
+/* ---------------- LOAD PROFILE ---------------- */
+auth.onAuthStateChanged(async (user) => {
+  if(!user) return;
+  const uid = user.uid;
+
+  db.ref(`users/${uid}/public`).on("value", (snap) => {
+    const d = snap.val();
+    if(!d) return;
+
+    document.getElementById("name").value = d.name || "";
+    document.getElementById("age").value = d.age || "";
+    document.getElementById("location").value = d.location || "";
+    document.getElementById("gender").value = d.gender || "";
+
+    document.getElementById("profilePreview").src = d.pic || "images/profile1.png";
+
+    /* DO NOT overwrite profileBase64 if new pic is selected */
+    if(!document.getElementById("profilePic").files.length){
+      profileBase64 = d.pic || "";
+    }
+
+    oldUsername = d.name || "";
+  });
+});
+
+/* ---------------- SAVE PROFILE ---------------- */
+document.getElementById("saveBtn").addEventListener("click", updateProfile);
+
+async function updateProfile(){
+  const user = auth.currentUser;
+  if(!user) return;
+  const uid = user.uid;
+
+  const name = document.getElementById("name").value.trim();
+  const age = document.getElementById("age").value.trim();
+  const location = document.getElementById("location").value.trim();
+  const gender = document.getElementById("gender").value;
+
+  const error = document.getElementById("errorMsg");
+  error.textContent = "";
+
+  if(!name) return error.textContent = "Name cannot be empty!";
+
+  try{
+    /* 1️⃣ Check username availability */
+    const ok = await isUsernameAvailable(name, uid);
+    if(!ok){
+      error.textContent = "This profile name is already taken.";
+      return;
+    }
+
+    /* 2️⃣ Delete old username mapping if changed */
+    if(oldUsername && oldUsername.toLowerCase() !== name.toLowerCase()){
+      await db.ref("usernames/" + oldUsername.toLowerCase()).remove();
+    }
+
+    /* 3️⃣ Reserve new username */
+    await db.ref("usernames/" + name.toLowerCase()).set(uid);
+
+    /* 4️⃣ Save profile */
+    await db.ref(`users/${uid}/public`).update({
+      name,
+      age: age || "N/A",
+      location,
+      gender,
+      pic: profileBase64 || "images/profile1.png"
+    });
+
+    alert("Profile updated successfully!");
+
+  } catch(err){
+    console.error(err);
+    error.textContent = "Failed to update profile.";
+  }
+}
+</script>
+</body>
+</html><!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,15 +172,13 @@
 <style>
 body {
     font-family: Arial, sans-serif;
-    background: #b39ddb;
+    background: #b39ddb; /* Lavender */
     color: #333;
     margin: 0;
     display: flex;
     flex-direction: column;
     min-height: 100vh;
 }
-
-/* Header */
 header {
     display: flex;
     justify-content: space-between;
@@ -23,13 +186,16 @@ header {
     padding: 20px;
     background: #b39ddb;
     color: white;
-    box-shadow:0 3px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
 }
-header h1 { font-size: 24px; color:white; }
-nav a { margin: 0 10px; text-decoration: none; color: white; font-weight: bold; }
+header h1 { color:white; }
+nav a {
+    margin: 0 10px;
+    text-decoration: none;
+    color: white;
+    font-weight: bold;
+}
 nav a:hover { text-decoration: underline; }
-
-/* Profile Card */
 .profile-container {
     flex: 1;
     max-width: 400px;
@@ -45,9 +211,7 @@ nav a:hover { text-decoration: underline; }
     margin-bottom: 20px;
     color: #4a2e8e;
 }
-.profile-container input[type=text],
-.profile-container input[type=number],
-.profile-container input[type=email],
+.profile-container input,
 .profile-container select {
     width: 100%;
     padding: 8px;
@@ -55,23 +219,27 @@ nav a:hover { text-decoration: underline; }
     border: 1px solid #ccc;
     border-radius: 5px;
 }
-.profile-container input[type=file] { margin: 8px 0; }
 .profile-container button {
     width: 100%;
     padding: 10px;
     margin-top: 10px;
     background: #4a2e8e;
+    color: white;
     border: none;
     border-radius: 5px;
     font-weight: bold;
     cursor: pointer;
-    color: white;
 }
 .profile-container button:hover { background: #3b2370; }
-.error-msg { color: red; font-size: 14px; margin-top: 5px; }
-#profilePreview { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin: 10px 0; }
+#errorMsg { color:red; font-size:14px; }
+#profilePreview {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: 10px 0;
+}
 </style>
-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -85,20 +253,23 @@ nav a:hover { text-decoration: underline; }
 
 <div class="profile-container">
   <h2>Your Profile</h2>
-  <img id="profilePreview" src="images/profile1.png" alt="Profile Picture">
+  <img id="profilePreview" src="images/profile1.png">
   <input type="file" id="profilePic" accept="image/*">
+
   <input type="text" id="name" placeholder="Unique Profile Name">
   <input type="number" id="age" placeholder="Age">
   <input type="text" id="location" placeholder="Location">
+
   <select id="gender">
     <option value="">Select Gender</option>
     <option value="Male">Male</option>
     <option value="Female">Female</option>
     <option value="Other">Other</option>
   </select>
-  <input type="email" id="email" placeholder="Email" disabled>
+
+  <input type="email" id="email" disabled>
   <button onclick="updateProfile()">Update Profile</button>
-  <p class="error-msg" id="errorMsg"></p>
+  <p id="errorMsg"></p>
 </div>
 
 <script>
@@ -115,12 +286,14 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
+let profileBase64 = "";
+let oldUsername = "";
+
 const nav = document.getElementById("navLinks");
 const errorMsg = document.getElementById("errorMsg");
 const profilePreview = document.getElementById("profilePreview");
-let profileBase64 = "";
-let oldUsername = "";  // ⭐ stores old username
 
+// NAVIGATION AUTH
 auth.onAuthStateChanged(user => {
   if(user && user.emailVerified){
     nav.innerHTML = `
@@ -129,139 +302,146 @@ auth.onAuthStateChanged(user => {
       <a href="stories.html">Stories</a>
       <a href="safety.html">Safety</a>
       <a href="profile.html">Profile</a>
-      <a href="#" id="logoutBtn">Logout</a>
-    `;
-    document.getElementById("logoutBtn").addEventListener("click", ()=>{
-      auth.signOut().then(()=>{
+      <a href="#" id="logoutBtn">Logout</a>`;
+
+    document.getElementById("logoutBtn").onclick = () => {
+      auth.signOut().then(() => {
         sessionStorage.removeItem("current_user");
-        window.location.href="login.html";
+        window.location.href = "login.html";
       });
-    });
+    };
+
     setupRealtimeProfile(user.uid);
   } else {
-    nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
-    document.querySelector(".profile-container").innerHTML = "<p>Please login to view your profile.</p>";
+    document.querySelector(".profile-container").innerHTML = `<p>Please login to view your profile.</p>`;
   }
 });
 
-/* ---------------- IMAGE COMPRESSION ---------------- */
+// IMAGE COMPRESSION
 function compressImage(file, maxDim=150, maxSizeKB=64, callback){
   const reader = new FileReader();
   reader.onload = function(evt){
     const img = new Image();
     img.onload = function(){
-      let width=img.width, height=img.height;
-      if(width>height && width>maxDim){ height=Math.round(height*maxDim/width); width=maxDim; }
-      else if(height>width && height>maxDim){ width=Math.round(width*maxDim/height); height=maxDim; }
-      else if(width>maxDim){ width=height=maxDim; }
+      let width = img.width, height = img.height;
+      if(width>height && width>maxDim){ height = Math.round(height*maxDim/width); width = maxDim; }
+      else if(height>width && height>maxDim){ width = Math.round(width*maxDim/height); height = maxDim; }
+      else if(width > maxDim){ width = height = maxDim; }
+
       const canvas=document.createElement('canvas');
-      canvas.width=width; canvas.height=height;
-      const ctx=canvas.getContext('2d');
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
       ctx.drawImage(img,0,0,width,height);
+
       let quality=0.9;
-      let dataUrl=canvas.toDataURL('image/jpeg', quality);
+      let dataUrl=canvas.toDataURL('image/jpeg',quality);
+
       while((dataUrl.length/1024)>maxSizeKB && quality>0.05){
-        quality-=0.05;
-        dataUrl=canvas.toDataURL('image/jpeg', quality);
+        quality -= 0.05;
+        dataUrl = canvas.toDataURL('image/jpeg',quality);
       }
-      if((dataUrl.length/1024)>maxSizeKB){ alert("Image too large after compression"); callback(""); }
-      else callback(dataUrl);
+
+      callback(dataUrl);
     }
     img.src = evt.target.result;
   }
   reader.readAsDataURL(file);
 }
 
-document.getElementById("profilePic").addEventListener("change", e=>{
+document.getElementById("profilePic").addEventListener("change", e => {
   const file = e.target.files[0];
   if(!file) return;
-  if(file.size>2*1024*1024){ errorMsg.textContent="Max file size 2MB"; return; }
+
   compressImage(file,150,64,(dataUrl)=>{
-    profileBase64=dataUrl;
-    profilePreview.src=dataUrl || "images/profile1.png";
-    errorMsg.textContent="";
+    profileBase64 = dataUrl;
+    profilePreview.src = dataUrl;
   });
 });
 
-/* ---------------- LOAD USER LIVE DATA ---------------- */
+// REALTIME LOAD
 function setupRealtimeProfile(uid){
   const publicRef = db.ref(`users/${uid}/public`);
   const privateRef = db.ref(`users/${uid}/private`);
-  
-  publicRef.on('value', snap=>{
+
+  publicRef.on('value', snap => {
     const data = snap.val() || {};
+
     document.getElementById("name").value = data.name || "";
     document.getElementById("age").value = data.age || "";
     document.getElementById("location").value = data.location || "";
     document.getElementById("gender").value = data.gender || "";
+
+    oldUsername = data.name || "";
+
     profilePreview.src = data.pic || "images/profile1.png";
-    profileBase64 = data.pic || "";
-    oldUsername = data.name ? data.name.toLowerCase() : ""; // ⭐ store previous username
+
+    if(!document.getElementById("profilePic").files.length){
+      profileBase64 = data.pic || "";
+    }
   });
-  
-  privateRef.on('value', snap=>{
+
+  privateRef.on('value', snap => {
     const data = snap.val() || {};
     document.getElementById("email").value = data.email || "";
   });
 }
 
-/* ---------------- USERNAME CHECK ---------------- */
+// CHECK USERNAME
 async function isUsernameAvailable(username, uid){
-  const snap = await db.ref("usernames/" + username.toLowerCase()).get();
-  if(!snap.exists()) return true;     // No one has this name
-  if(snap.val() === uid) return true; // Same user keeping own name
-  return false;                       // Someone else owns it
+  const ref = db.ref("usernames/" + username.toLowerCase());
+  const snap = await ref.get();
+
+  if(!snap.exists()) return true;
+  if(snap.val() === uid) return true;
+
+  return false;
 }
 
-/* ---------------- UPDATE PROFILE ---------------- */
+// UPDATE PROFILE
 async function updateProfile(){
   const user = auth.currentUser;
   if(!user) return;
   const uid = user.uid;
 
-  const username = document.getElementById("name").value.trim();
+  const name = document.getElementById("name").value.trim();
   const age = document.getElementById("age").value.trim();
   const location = document.getElementById("location").value.trim();
   const gender = document.getElementById("gender").value;
 
   errorMsg.textContent = "";
-
-  if(!username) return errorMsg.textContent="Name cannot be empty!";
+  if(!name) return errorMsg.textContent="Name cannot be empty";
 
   try {
-    // 1. Check availability
-    const free = await isUsernameAvailable(username, uid);
-    if(!free){
-      errorMsg.textContent = "This profile name is already taken. Choose another.";
+    const isAvailable = await isUsernameAvailable(name, uid);
+    if(!isAvailable){
+      errorMsg.textContent = "This profile name is already taken.";
       return;
     }
 
-    // 2. Delete old username mapping if changed
-    if(oldUsername && oldUsername !== username.toLowerCase()){
-      await db.ref("usernames/" + oldUsername).remove();
+    if(oldUsername && oldUsername.toLowerCase() !== name.toLowerCase()){
+      await db.ref("usernames/" + oldUsername.toLowerCase()).remove();
     }
 
-    // 3. Register new username
-    await db.ref("usernames/" + username.toLowerCase()).set(uid);
+    await db.ref("usernames/" + name.toLowerCase()).set(uid);
 
-    // 4. Update main profile
     await db.ref(`users/${uid}/public`).update({
-      name: username,
+      name,
       age: age || "N/A",
-      location: location || "",
-      gender: gender || "",
+      location,
+      gender,
       pic: profileBase64 || "images/profile1.png"
     });
-
-    oldUsername = username.toLowerCase(); // update local memory
 
     alert("Profile saved successfully!");
 
   } catch(err){
     console.error(err);
-    errorMsg.textContent="Failed to save profile.";
+    errorMsg.textContent = "Error saving profile";
   }
 }
 </script>
+
 </body>
 </html>
