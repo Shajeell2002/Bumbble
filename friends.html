@@ -387,18 +387,7 @@ function sendMessage(){
 sendBtn.onclick=sendMessage;
 chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
 
-// --- File Upload ---
-fileBtn.onclick=()=>chatFileInput.click();
-chatFileInput.addEventListener('change', async e => {
-  for (const f of e.target.files) {
-    const chatId = getChatId(currentUserUid, currentChatFriendUid);
-    const tempMsgRef = db.ref('chats/' + chatId + '/messages').push({
-      sender: currentUserUid,
-      receiver: currentChatFriendUid,
-      uploading: true,
-      fileName: f.name,
-      timestamp: Date.now()
-    });
+
 
     const reader = new FileReader();
     reader.onload = async function (ev) {
