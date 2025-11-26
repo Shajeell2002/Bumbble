@@ -640,9 +640,7 @@ function moveUserToTop(uid) {
 
   currentChatListener=chatRef;
   chatRef.on('child_added', snap=>{
-if (msg.receiver === currentUserUid && msg.sender !== currentUserUid) {
-moveUserToTop(msg.sender);
-flashUserRow(msg.sender);
+
 
     const msg={...snap.val(), _key:snap.key};
     addOrUpdateMessageToChat(msg);
@@ -845,21 +843,30 @@ function openChat(uid,name){
     chatMessages.scrollTop = chatMessages.scrollHeight;
   });
 
-  currentChatListener=chatRef;
-  chatRef.on('child_added', snap=>{
-    const msg={...snap.val(), _key:snap.key};
+chatRef.on('child_added', snap => {
+    const msg = { ...snap.val(), _key: snap.key };
     addOrUpdateMessageToChat(msg);
-    lastChatTimestamps[uid]=msg.timestamp;
-    if(msg.receiver===currentUserUid && msg.sender!==currentUserUid){
-      if(currentChatFriendUid!==msg.sender){
-        db.ref('unread/'+currentUserUid+'/'+msg.sender+'/'+msg._key).set(true);
+    lastChatTimestamps[uid] = msg.timestamp;
+
+    // 🔔 If message is incoming
+    if (msg.receiver === currentUserUid && msg.sender !== currentUserUid) {
+
+        // 🟣 Move sender to top of friend list
+        moveUserToTop(msg.sender);
+
+        // ✨ Flash animation
         flashUserRow(msg.sender);
-      } else { db.ref('unread/'+currentUserUid+'/'+msg.sender).remove(); delete unreadCounters[msg.sender]; updateFriendListBadges(); }
+
+        if (currentChatFriendUid !== msg.sender) {
+            db.ref('unread/' + currentUserUid + '/' + msg.sender + '/' + msg._key).set(true);
+        } else {
+            db.ref('unread/' + currentUserUid + '/' + msg.sender).remove();
+            delete unreadCounters[msg.sender];
+            updateFriendListBadges();
+        }
     }
-  });
-  chatRef.on('child_changed', snap=>addOrUpdateMessageToChat({...snap.val(),_key:snap.key}));
-  listenTyping(uid);
-}
+});
+
 
 // --- Messages ---
 function addOrUpdateMessageToChat(msg){
