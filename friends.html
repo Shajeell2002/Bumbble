@@ -262,7 +262,8 @@ function loadUsersRealtime(){
       const u = users[uid].public || {};
       return {uid, name:u.name||"Unknown", gender:u.gender||"N/A", online:!!u.online};
     });
-    friends.sort((a,b)=>(lastChatTimestamps[b.uid]||0)-(lastChatTimestamps[a.uid]||0)||a.name.localeCompare(b.name));
+    friends..sort((a,b)=> a.ts - b.ts || a.name.localeCompare(b.name));
+sort((a,b)=>(lastChatTimestamps[b.uid]||0)-(lastChatTimestamps[a.uid]||0)||a.name.localeCompare(b.name));
     userList.innerHTML='';
     friends.forEach(f=>{
       const row = document.createElement('div');
