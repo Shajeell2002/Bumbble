@@ -1,212 +1,268 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>User Profile</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f3ff;
-      margin: 0;
-      padding: 20px;
-    }
-    .container {
-      max-width: 500px;
-      margin: auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 0 12px rgba(0,0,0,0.1);
-    }
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-      color: #5b4b8a;
-    }
-    .profile-pic {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      object-fit: cover;
-      display: block;
-      margin: 0 auto 10px;
-    }
-    label { font-weight: bold; color:#444; margin-top: 10px; display: block; }
-    input, select, textarea {
-      width: 100%;
-      padding: 10px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-    }
-    button {
-      width: 100%;
-      padding: 12px;
-      border: none;
-      background: #6c5ce7;
-      color: #fff;
-      margin-top: 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bumbble - Profile</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #b39ddb; /* Lavender background */
+    color: #333;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Header */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: #b39ddb; /* Lavender header */
+    color: white;
+    box-shadow:0 3px 6px rgba(0,0,0,0.1);
+}
+header h1 { font-size: 24px; color:white; }
+nav a { margin: 0 10px; text-decoration: none; color: white; font-weight: bold; }
+nav a:hover { text-decoration: underline; }
+
+/* Profile Container */
+.profile-container {
+    flex: 1;
+    max-width: 400px;
+    margin: 30px auto;
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    background: #fff; /* white card on lavender background */
+}
+.profile-container h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #4a2e8e; /* lavender heading */
+}
+.profile-container input[type=text],
+.profile-container input[type=number],
+.profile-container input[type=email],
+.profile-container select {
+    width: 100%;
+    padding: 8px;
+    margin: 8px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+.profile-container input[type=file] { margin: 8px 0; }
+.profile-container button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    background: #4a2e8e; /* dark lavender button */
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    color: white;
+}
+.profile-container button:hover { background: #3b2370; }
+.error-msg { color: red; font-size: 14px; margin-top: 5px; }
+#profilePreview { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin: 10px 0; }
+</style>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
-<div class="container">
+<header>
+  <h1>Bumbble</h1>
+  <nav id="navLinks"></nav>
+</header>
+
+<div class="profile-container">
   <h2>Your Profile</h2>
-
-  <img id="profilePreview" class="profile-pic" src="images/profile1.png" />
-  <input type="file" id="profilePic" accept="image/*" />
-
-  <label>Full Name</label>
-  <input type="text" id="fullName" />
-
-  <label>Gender</label>
+  <img id="profilePreview" src="images/profile1.png" alt="Profile Picture">
+  <input type="file" id="profilePic" accept="image/*">
+  <input type="text" id="name" placeholder="Full Name">
+  <input type="number" id="age" placeholder="Age">
+  <input type="text" id="location" placeholder="Location">
   <select id="gender">
+    <option value="">Select Gender</option>
     <option value="Male">Male</option>
     <option value="Female">Female</option>
     <option value="Other">Other</option>
   </select>
-
-  <label>Date of Birth</label>
-  <input type="date" id="dob" />
-
-  <label>Age</label>
-  <input type="number" id="age" />
-
-  <label>Location</label>
-  <input type="text" id="location" />
-
-  <label>Looking For</label>
-  <select id="lookingFor">
-    <option value="Friendship">Friendship</option>
-    <option value="Relationship">Relationship</option>
-    <option value="Marriage">Marriage</option>
-  </select>
-
-  <label>Purpose</label>
-  <input type="text" id="purpose" />
-
-  <label>Username</label>
-  <input type="text" id="username" />
-
-  <label>Email (read-only)</label>
-  <input type="email" id="email" readonly />
-
-  <label>Bio</label>
-  <textarea id="bio" rows="4"></textarea>
-
-  <button onclick="saveProfile()">Save Profile</button>
+  <input type="email" id="email" placeholder="Email" disabled>
+  <button onclick="updateProfile()">Update Profile</button>
+  <p class="error-msg" id="errorMsg"></p>
 </div>
 
-<script type="module">
-  // --- Firebase Config (Your Real Project) ---
-  const firebaseConfig = {
-    apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
-    authDomain: "bumbble-d3588.firebaseapp.com",
-    projectId: "bumbble-d3588",
-    storageBucket: "bumbble-d3588.appspot.com",
-    messagingSenderId: "555784264359",
-    appId: "1:555784264359:web:67840fe75aca253e7188b7",
-    measurementId: "G-M781XJ26GN"
-  };
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+  authDomain: "bumbble-c061f.firebaseapp.com",
+  databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
+  projectId: "bumbble-c061f",
+  storageBucket: "bumbble-c061f.appspot.com",
+  messagingSenderId: "213165886981",
+  appId: "1:213165886981:web:c18652003444869b1bd66c"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
 
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getDatabase, ref, set, get, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+const nav = document.getElementById("navLinks");
+const errorMsg = document.getElementById("errorMsg");
+const profilePreview = document.getElementById("profilePreview");
+let profileBase64 = "";
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-  const auth = getAuth(app);
-
-  let currentUsername = "";
-  let profileBase64 = "";
-
-  // --- Image Preview + Base64 ---
-  document.getElementById("profilePic").addEventListener("change", function (event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      profileBase64 = e.target.result;
-      document.getElementById("profilePreview").src = profileBase64;
-    };
-    reader.readAsDataURL(file);
-  });
-
-  // --- Load User Data in Real Time ---
-  onAuthStateChanged(auth, (user) => {
-    if (!user) return;
-
-    const userRef = ref(db, `users/${user.uid}`);
-    onValue(userRef, (snapshot) => {
-      if (!snapshot.exists()) return;
-      const data = snapshot.val();
-
-      document.getElementById("fullName").value = data.fullName || "";
-      document.getElementById("gender").value = data.gender || "";
-      document.getElementById("dob").value = data.dob || "";
-      document.getElementById("age").value = data.age || "";
-      document.getElementById("location").value = data.location || "";
-      document.getElementById("lookingFor").value = data.lookingFor || "";
-      document.getElementById("purpose").value = data.purpose || "";
-      document.getElementById("username").value = data.username || "";
-      document.getElementById("email").value = user.email;
-      document.getElementById("bio").value = data.bio || "";
-
-      currentUsername = data.username || "";
-
-      if (!document.getElementById("profilePic").files.length) {
-        profileBase64 = data.pic || "";
-        document.getElementById("profilePreview").src = data.pic || "images/profile1.png";
-      }
+// Navigation & auth
+auth.onAuthStateChanged(user => {
+  if(user && user.emailVerified){
+    nav.innerHTML = `
+      <a href="index.html">Home</a>
+      <a href="friends.html">Friends</a>
+      <a href="stories.html">Stories</a>
+      <a href="safety.html">Safety</a>
+      <a href="profile.html">Profile</a>
+      <a href="#" id="logoutBtn">Logout</a>
+    `;
+    document.getElementById("logoutBtn").addEventListener("click", ()=>{
+      auth.signOut().then(()=>{
+        sessionStorage.removeItem("current_user"); // auto logout on close
+        window.location.href="login.html";
+      });
     });
+    setupRealtimeProfile(user.uid);
+  } else {
+    nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
+    document.querySelector(".profile-container").innerHTML = "<p>Please login to view your profile.</p>";
+  }
+});
+
+// Image compression & upload
+function compressImage(file, maxDim=150, maxSizeKB=64, callback){
+  const reader = new FileReader();
+  reader.onload = function(evt){
+    const img = new Image();
+    img.onload = function(){
+      let width=img.width, height=img.height;
+      if(width>height && width>maxDim){ height=Math.round(height*maxDim/width); width=maxDim; }
+      else if(height>width && height>maxDim){ width=Math.round(width*maxDim/height); height=maxDim; }
+      else if(width>maxDim){ width=height=maxDim; }
+      const canvas=document.createElement('canvas');
+      canvas.width=width; canvas.height=height;
+      const ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,width,height);
+      let quality=0.9;
+      let dataUrl=canvas.toDataURL('image/jpeg', quality);
+      while((dataUrl.length/1024)>maxSizeKB && quality>0.05){
+        quality-=0.05;
+        dataUrl=canvas.toDataURL('image/jpeg', quality);
+      }
+      if((dataUrl.length/1024)>maxSizeKB){ alert("Image too large after compression"); callback(""); }
+      else callback(dataUrl);
+    }
+    img.src=evt.target.result;
+  }
+  reader.readAsDataURL(file);
+}
+
+document.getElementById("profilePic").addEventListener("change", e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  if(file.size>2*1024*1024){ errorMsg.textContent="Max file size 2MB"; return; }
+  compressImage(file,150,64,(dataUrl)=>{
+    profileBase64=dataUrl;
+    profilePreview.src=dataUrl || "images/profile1.png";
+    errorMsg.textContent="";
   });
+});
 
-  // --- Save Profile ---
-  async function saveProfile() {
-    const user = auth.currentUser;
-    if (!user) return alert("Not logged in.");
+// Realtime profile listener
+function setupRealtimeProfile(uid){
+  const publicRef = db.ref(`users/${uid}/public`);
+  const privateRef = db.ref(`users/${uid}/private`);
+  
+  publicRef.on('value', snap=>{
+    const data = snap.val() || {};
+    document.getElementById("name").value = data.name || "";
+    document.getElementById("age").value = data.age || "";
+    document.getElementById("location").value = data.location || "";
+    document.getElementById("gender").value = data.gender || "";
+    profilePreview.src = data.pic || "images/profile1.png";
+    profileBase64 = data.pic || "";
+  });
+  
+  privateRef.on('value', snap=>{
+    const data = snap.val() || {};
+    document.getElementById("email").value = data.email || "";
+  });
+}
+// Check if name is unique (except current user)
+async function isNameUnique(name, currentUid) {
+  const snapshot = await db.ref("users").once("value");
+  const users = snapshot.val() || {};
 
-    const newUsername = document.getElementById("username").value.trim();
-    if (!newUsername) return alert("Username cannot be empty.");
+  for (const uid in users) {
+    if (uid !== currentUid) {
+      const userPublic = users[uid]?.public;
+      if (userPublic && userPublic.name && userPublic.name.toLowerCase() === name.toLowerCase()) {
+        return false; // name already taken
+      }
+    }
+  }
+  return true; // name is available
+}
 
-    // Check if username is already taken (except old one)
-    if (newUsername !== currentUsername) {
-      const usernameRef = ref(db, `usernames/${newUsername}`);
-      const usernameSnap = await get(usernameRef);
-      if (usernameSnap.exists()) return alert("Username already taken.");
+
+// Update profile with unique name restriction
+async function updateProfile() {
+  const user = auth.currentUser;
+  if(!user) return;
+
+  const uid = user.uid;
+  const name = document.getElementById("name").value.trim();
+  const age = document.getElementById("age").value.trim();
+  const location = document.getElementById("location").value.trim();
+  const gender = document.getElementById("gender").value;
+
+  errorMsg.textContent = "";
+
+  if (!name) {
+    errorMsg.textContent = "Full Name cannot be empty!";
+    return;
+  }
+
+  try {
+    // Check name uniqueness across all users
+    const isUnique = await isNameUnique(name, uid);
+    if (!isUnique) {
+      errorMsg.textContent = "This name is already taken. Please choose another.";
+      return;
     }
 
-    // Update user data
-    const userRef = ref(db, `users/${user.uid}`);
-    await update(userRef, {
-      fullName: document.getElementById("fullName").value,
-      gender: document.getElementById("gender").value,
-      dob: document.getElementById("dob").value,
-      age: document.getElementById("age").value,
-      location: document.getElementById("location").value,
-      lookingFor: document.getElementById("lookingFor").value,
-      purpose: document.getElementById("purpose").value,
-      username: newUsername,
-      bio: document.getElementById("bio").value,
+    // Update profile
+    await db.ref(`users/${uid}/public`).update({
+      name,
+      age: age || "N/A",
+      location: location || "",
+      gender: gender || "",
       pic: profileBase64 || "images/profile1.png"
     });
 
-    // Handle username table
-    if (currentUsername && currentUsername !== newUsername) {
-      await remove(ref(db, `usernames/${currentUsername}`));
-    }
-    await set(ref(db, `usernames/${newUsername}`), user.uid);
+    alert("Profile updated successfully!");
 
-    currentUsername = newUsername;
-    alert("Profile Updated Successfully!");
+  } catch (err) {
+    console.error(err);
+    errorMsg.textContent = "Failed to save profile.";
   }
-</script>
+}
 
+</script>
 </body>
 </html>
