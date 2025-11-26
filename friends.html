@@ -331,6 +331,13 @@ function openChat(uid,name){
     chatMessages.scrollTop = chatMessages.scrollHeight;
   });
 
+function moveUserToTop(uid) {
+  const row = document.querySelector(`.user-row[data-uid="${uid}"]`);
+  if (row && userList.firstChild !== row) {
+    userList.prepend(row);
+  }
+}
+
   currentChatListener=chatRef;
   chatRef.on('child_added', snap=>{
     const msg={...snap.val(), _key:snap.key};
@@ -419,9 +426,9 @@ chatFileInput.addEventListener('change', async e => {
           const top = predictions.reduce((a, b) => (a.probability > b.probability ? a : b));
 
           if (
-            (top.className === "Porn" && top.probability > 0.6) ||
-            (top.className === "Hentai" && top.probability > 0.6) ||
-            (top.className === "Sexy" && top.probability > 0.75)
+            (top.className === "Porn" && top.probability > 0.90) ||
+            (top.className === "Hentai" && top.probability > 0.90) ||
+            (top.className === "Sexy" && top.probability > 0.85)
           ) {
             console.warn("🚫 Blocked by NSFWJS:", top);
             isSafe = false;
