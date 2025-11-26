@@ -302,8 +302,6 @@ function flashUserRow(uid){
   if(row){ row.classList.add('flash'); setTimeout(()=>row.classList.remove('flash'),800); }
 }
 
-
-
 // --- Open Chat ---
 function openChat(uid,name){
   document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('active'));
