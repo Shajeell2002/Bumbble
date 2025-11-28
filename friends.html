@@ -320,59 +320,12 @@ function openChat(uid,name){
   delete unreadCounters[uid];
   updateFriendListBadges();
 
-const chatId = getChatId(currentUserUid, uid);
+  const chatId = getChatId(currentUserUid,uid);
+  if(currentChatListener) currentChatListener.off();
+  db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [uid]:true });
 
-// --- Remove previous listeners safely ---
-if (currentChatListener) {
-    currentChatListener.off();
-    currentChatListener = null;
-}
-
-// --- Ensure chatMessages exists ---
-if (!chatMessages) {
-    console.error("chatMessages element missing");
-    return;
-}
-
-// --- Update chat members ---
-db.ref('chats/' + chatId + '/members').update({
-    [currentUserUid]: true,
-    [uid]: true
-});
-
-// --- Create safe chatRef ---
-const chatRef = db.ref('chats/' + chatId + '/messages').limitToLast(50);
-
-// --- Load last 50 messages ---
-chatRef.once('value', snap => {
-    const msgs = snap.val();
-
-    if (!msgs) {
-        chatMessages.innerHTML = ""; // no messages yet
-        return;
-    }
-
-    Object.keys(msgs)
-        .sort((a, b) => msgs[a].timestamp - msgs[b].timestamp)
-        .forEach(key => {
-            const data = msgs[key];
-            if (data) {
-                addOrUpdateMessageToChat({ ...data, _key: key });
-            }
-        });
-
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-});
-
-// --- Realtime listeners ---
-currentChatListener = chatRef;
-
-chatRef.on('child_added', snap => {
-    const data = snap.val();
-    if (!data) return;
-
-    addOrUpdateMessageToChat({ ...data, _key: snap.key });
-});
+  const chatRef=db.ref('chats/'+chatId+'/messages');
+ chatRef.once('value', snap=>{
     const msgs=snap.val()||{};
     Object.keys(msgs).sort((a,b)=>msgs[a].timestamp-msgs[b].timestamp).forEach(k=>addOrUpdateMessageToChat({...msgs[k],_key:k}));
     chatMessages.scrollTop = chatMessages.scrollHeight;
