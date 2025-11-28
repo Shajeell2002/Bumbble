@@ -328,7 +328,7 @@ function openChat(uid,name){
  // Load last 50 messages only
 chatRef
   .orderByChild("timestamp")
-  .limitToLast(50)
+  .limitToLast(10)
   .once("value", snap => {
     const msgs = snap.val() || {};
     Object.keys(msgs)
@@ -426,4 +426,5 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
