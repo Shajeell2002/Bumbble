@@ -343,23 +343,26 @@ function openChat(uid, name) {
     .orderByChild("timestamp")
     .limitToLast(20);
 
-  // Load last 20 messages
-  chatRef.once("value", snap => {
-    const msgs = snap.val() || {};
+  // === Load last 20 messages first ===
+chatRef.once("value", snap => {
+  const msgs = snap.val() || {};
 
-    // Sort by timestamp
-    const sorted = Object.entries(msgs).sort(
-      (a, b) => a[1].timestamp - b[1].timestamp
-    );
+  const sorted = Object.entries(msgs).sort(
+    (a, b) => a[1].timestamp - b[1].timestamp
+  );
 
-    // Render messages
-    sorted.forEach(([key, msg]) =>
-      addOrUpdateMessageToChat({ ...msg, _key: key })
-    );
+  sorted.forEach(([key, msg]) =>
+    addOrUpdateMessageToChat({ ...msg, _key: key })
+  );
 
-    // Auto scroll
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  });
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+
+  // Delay real-time listeners 50ms so DOM updates finish
+  setTimeout(() => {
+    attachRealtimeListeners(chatRef, uid);
+  }, 50);
+});
+
 
   // Realtime listeners: ONLY new messages
   currentChatListener = chatRef;
@@ -471,6 +474,5 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
-
 
 
