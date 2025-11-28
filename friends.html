@@ -325,6 +325,7 @@ function openChat(uid,name){
   db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [uid]:true });
 
   const chatRef=db.ref('chats/'+chatId+'/messages');
+   .limitToLast(50);
   chatRef.once('value', snap=>{
     const msgs=snap.val()||{};
     Object.keys(msgs).sort((a,b)=>msgs[a].timestamp-msgs[b].timestamp).forEach(k=>addOrUpdateMessageToChat({...msgs[k],_key:k}));
@@ -418,5 +419,4 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
-
 
