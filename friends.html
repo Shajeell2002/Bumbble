@@ -393,6 +393,40 @@ chatRef.once("value", snap => {
     }
   });
 
+function attachRealtimeListeners(chatRef, uid) {
+  // NEW messages
+  chatRef.on("child_added", snap => {
+    const msg = { ...snap.val(), _key: snap.key };
+
+    // Prevent duplicates
+    if (document.getElementById("msg-" + snap.key)) return;
+
+    addOrUpdateMessageToChat(msg);
+    lastChatTimestamps[uid] = msg.timestamp;
+
+    // unread logic
+    if (msg.receiver === currentUserUid && msg.sender !== currentUserUid) {
+      if (currentChatFriendUid !== msg.sender) {
+        db.ref(`unread/${currentUserUid}/${msg.sender}/${msg._key}`).set(true);
+        flashUserRow(msg.sender);
+      } else {
+        db.ref(`unread/${currentUserUid}/${msg.sender}`).remove();
+        delete unreadCounters[msg.sender];
+        updateFriendListBadges();
+      }
+    }
+  });
+
+  // UPDATED messages (upload finished)
+  chatRef.on("child_changed", snap => {
+    addOrUpdateMessageToChat({
+      ...snap.val(),
+      _key: snap.key
+    });
+  });
+}
+
+
   // Updated messages (e.g., image finished uploading)
   chatRef.on("child_changed", snap => {
     addOrUpdateMessageToChat({ ...snap.val(), _key: snap.key });
