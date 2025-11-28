@@ -320,13 +320,35 @@ function openChat(uid,name){
   delete unreadCounters[uid];
   updateFriendListBadges();
 
-  const chatId = getChatId(currentUserUid,uid);
-  if(currentChatListener) currentChatListener.off();
-  db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [uid]:true });
+const chatId = getChatId(currentUserUid, uid);
+if (currentChatListener) currentChatListener.off();
 
-  const chatRef=db.ref('chats/'+chatId+'/messages');
-.limitToLast(50);    
- chatRef.once('value', snap=>{
+db.ref('chats/' + chatId + '/members').update({
+    [currentUserUid]: true,
+    [uid]: true
+});
+
+//  ✅ Correct chatRef with limit
+const chatRef = db
+  .ref('chats/' + chatId + '/messages')
+  .limitToLast(50);
+
+//  Load last 50 messages
+chatRef.once('value', snap => {
+    const msgs = snap.val() || {};
+    Object.keys(msgs)
+      .sort((a, b) => msgs[a].timestamp - msgs[b].timestamp)
+      .forEach(k => addOrUpdateMessageToChat({ ...msgs[k], _key: k }));
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+});
+
+//  Realtime listeners
+currentChatListener = chatRef;
+chatRef.on('child_added', snap => {
+    const msg = { ...snap.val(), _key: snap.key };
+    addOrUpdateMessageToChat(msg);
+    lastChatTimestamps[uid] = msg.timestamp;
+});
     const msgs=snap.val()||{};
     Object.keys(msgs).sort((a,b)=>msgs[a].timestamp-msgs[b].timestamp).forEach(k=>addOrUpdateMessageToChat({...msgs[k],_key:k}));
     chatMessages.scrollTop = chatMessages.scrollHeight;
