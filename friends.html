@@ -325,11 +325,19 @@ function openChat(uid,name){
   db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [uid]:true });
 
   const chatRef=db.ref('chats/'+chatId+'/messages');
- chatRef.once('value', snap=>{
-    const msgs=snap.val()||{};
-    Object.keys(msgs).sort((a,b)=>msgs[a].timestamp-msgs[b].timestamp).forEach(k=>addOrUpdateMessageToChat({...msgs[k],_key:k}));
+ // Load last 50 messages only
+chatRef
+  .orderByChild("timestamp")
+  .limitToLast(50)
+  .once("value", snap => {
+    const msgs = snap.val() || {};
+    Object.keys(msgs)
+      .sort((a,b)=>msgs[a].timestamp - msgs[b].timestamp)
+      .forEach(k => addOrUpdateMessageToChat({ ...msgs[k], _key: k }));
+
     chatMessages.scrollTop = chatMessages.scrollHeight;
   });
+
 
   currentChatListener=chatRef;
   chatRef.on('child_added', snap=>{
