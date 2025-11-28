@@ -325,18 +325,46 @@ function openChat(uid,name){
   db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [uid]:true });
 
   const chatRef=db.ref('chats/'+chatId+'/messages');
- // Load last 50 messages only
-chatRef
-  .orderByChild("timestamp")
-  .limitToLast(10)
-  .once("value", snap => {
+ const chatId = getChatId(currentUserUid, uid);
+
+// Stop previous listener
+if (currentChatListener) currentChatListener.off();
+
+// Update chat members
+db.ref(`chats/${chatId}/members`).update({
+    [currentUserUid]: true,
+    [uid]: true
+});
+
+// Reference limited to last 50
+const chatRef = db
+  .ref(`chats/${chatId}/messages`)
+  .orderByChild('timestamp')
+  .limitToLast(50);
+
+currentChatListener = chatRef;
+
+// First load ONLY last 50
+chatRef.once('value', snap => {
     const msgs = snap.val() || {};
-    Object.keys(msgs)
-      .sort((a,b)=>msgs[a].timestamp - msgs[b].timestamp)
-      .forEach(k => addOrUpdateMessageToChat({ ...msgs[k], _key: k }));
+
+    const sorted = Object.entries(msgs)
+        .sort((a, b) => a[1].timestamp - b[1].timestamp);
+
+    sorted.forEach(([key, msg]) => {
+        addOrUpdateMessageToChat({ ...msg, _key: key });
+    });
 
     chatMessages.scrollTop = chatMessages.scrollHeight;
-  });
+});
+
+// Real-time updates (ONLY new messages)
+chatRef.on('child_added', snap => {
+    const msg = snap.val();
+    if (!msg) return;
+
+    addOrUpdateMessageToChat({ ...msg, _key: snap.key });
+});
 
 
   currentChatListener=chatRef;
@@ -426,5 +454,4 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
-
 
