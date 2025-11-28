@@ -337,13 +337,13 @@ function openChat(uid, name) {
     [uid]: true
   });
 
-  // === NEW: LIMIT LAST 50 messages properly ===
+  // === NEW: LIMIT LAST 20 messages properly ===
   const chatRef = db
     .ref(`chats/${chatId}/messages`)
     .orderByChild("timestamp")
-    .limitToLast(50);
+    .limitToLast(20);
 
-  // Load last 50 messages
+  // Load last 20 messages
   chatRef.once("value", snap => {
     const msgs = snap.val() || {};
 
@@ -471,5 +471,6 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
