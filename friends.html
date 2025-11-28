@@ -324,21 +324,6 @@ function openChat(uid,name){
   if(currentChatListener) currentChatListener.off();
   db.ref('chats/'+chatId+'/members').update({ [currentUserUid]:true, [uid]:true });
 
-const chatId = getChatId(currentUserUid, uid);
-
-if (currentChatListener) currentChatListener.off();
-
-db.ref(`chats/${chatId}/members`).update({
-    [currentUserUid]: true,
-    [uid]: true
-});
-
-const chatRef = db
-  .ref(`chats/${chatId}/messages`)
-  .orderByChild('timestamp')
-  .limitToLast(50);
-
-currentChatListener = chatRef;
 
 // First load ONLY last 50
 chatRef.once('value', snap => {
@@ -433,5 +418,4 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
-
 
