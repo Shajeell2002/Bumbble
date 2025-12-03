@@ -33,6 +33,19 @@ nav a:hover { text-decoration: underline; }
 .hero-text p { font-size:18px; margin-bottom:20px; }
 .hero-text button { background:#b39ddb; border:none; padding:15px 30px; font-size:18px; font-weight:bold; cursor:pointer; border-radius:30px; color:white; }
 
+  .hero-title {
+  background: linear-gradient(90deg, #4a2e8e, #b39ddb);
+  -webkit-background-clip: text;
+  color: transparent;
+  font-weight: bold;
+  animation: softGlow 3s ease-in-out infinite;
+}
+
+@keyframes softGlow {
+  0% { text-shadow: 0 0 4px rgba(74, 46, 142, 0.4); }
+  50% { text-shadow: 0 0 12px rgba(179, 157, 219, 0.8); }
+  100% { text-shadow: 0 0 4px rgba(74, 46, 142, 0.4); }
+}
 /* Heart + Match */
 .heart { width:80px; height:80px; background-color:#b39ddb; position:relative; transform:rotate(-45deg); animation:heartbeat 1.5s infinite; margin:auto; }
 .heart::before,.heart::after{ content:""; width:80px;height:80px;background-color:#b39ddb; border-radius:50%; position:absolute; }
@@ -195,6 +208,7 @@ footer { text-align:center; padding:20px; background:#b39ddb; color:white; margi
 
 </body>
 </html>
+
 
 
 
