@@ -151,9 +151,9 @@ async function isImageNSFW(file) {
         const top = predictions.reduce((a, b) => (a.probability > b.probability ? a : b));
 
         const isUnsafe =
-          (top.className === "Porn" && top.probability > 0.55) ||
-          (top.className === "Hentai" && top.probability > 0.55) ||
-          (top.className === "Sexy" && top.probability > 0.7);
+          (top.className === "Porn" && top.probability > 0.35) ||
+          (top.className === "Hentai" && top.probability > 0.35) ||
+          (top.className === "Sexy" && top.probability > 0.4);
 
         if (isUnsafe) {
           console.warn("🚫 Blocked by NSFW Filter:", top);
@@ -508,5 +508,6 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
