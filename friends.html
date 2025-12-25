@@ -267,9 +267,7 @@ console.log("✅ Logged in as:", user.email);
     initUsersListener();
     setupUnreadListener();
     listenLastMessagesForUserList();
-    if (msg.receiver === currentUserUid) {
-    lastChatTimestamps[otherUid] = msg.timestamp;
-
+   
     // 🔥 FORCE LIST REORDER
     db.ref("users").once("value", snap => {
         renderUserList(snap.val() || {});
@@ -598,6 +596,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
