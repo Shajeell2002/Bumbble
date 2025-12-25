@@ -322,8 +322,6 @@ function initChatOrderListener() {
 // --- Users List ---
 
 function renderUserList() {
-  if (!cachedUsers) return;
-
   const friends = Object.keys(cachedUsers)
     .filter(uid => uid !== currentUserUid)
     .map(uid => {
@@ -579,6 +577,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
