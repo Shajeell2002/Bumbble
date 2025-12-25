@@ -334,6 +334,46 @@ function initUsersListener(){
   });
 }
 
+let cachedUsers = {};
+let lastChatTimestamps = {};
+
+function initUsersListener() {
+  db.ref("users").on("value", snap => {
+    cachedUsers = snap.val() || {};
+    renderUserList();
+  });
+}
+function initChatOrderListener() {
+  db.ref("chats").on("child_added", chatSnap => {
+
+    chatSnap
+      .child("messages")
+      .orderByChild("timestamp")
+      .limitToLast(1)
+      .on("child_added", snap => {
+
+        const msg = snap.val();
+        if (!msg) return;
+
+        // Ignore chats not involving me
+        if (
+          msg.sender !== currentUserUid &&
+          msg.receiver !== currentUserUid
+        ) return;
+
+        const otherUid =
+          msg.sender === currentUserUid
+            ? msg.receiver
+            : msg.sender;
+
+        // ⭐ THIS LINE MOVES USER TO TOP
+        lastChatTimestamps[otherUid] = msg.timestamp;
+
+        // Re-render list instantly
+        renderUserList();
+      });
+  });
+}
 
     
 
