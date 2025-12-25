@@ -347,9 +347,12 @@ function renderUserList() {
     const row = document.createElement("div");
     row.className = "user-row";
     row.dataset.uid = f.uid;
+    row.dataset.name = f.name;
     row.innerHTML = `
+      <div>
       <span class="status-dot ${f.online ? "online" : "offline"}"></span>
-      ${f.name}
+        ${escapeHtml(f.name)} (${escapeHtml(f.gender)})
+      </div>
     `;
     row.onclick = () => openChat(f.uid, f.name);
     userList.appendChild(row);
@@ -578,6 +581,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
