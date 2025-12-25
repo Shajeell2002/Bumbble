@@ -275,7 +275,32 @@ console.log("✅ Logged in as:", user.email);
     userList.innerHTML="<p style='padding:12px'>Please login to view users.</p>";
   }
 });
+function onIncomingMessage(senderId, senderName, messageText) {
+    const userList = document.getElementById("userList");
 
+    let userNode = userList.querySelector(
+        `li[data-user-id="${senderId}"]`
+    );
+
+    // If sender does not exist, create new
+    if (!userNode) {
+        userNode = document.createElement("li");
+        userNode.setAttribute("data-user-id", senderId);
+
+        userNode.innerHTML = `
+            <div class="user-name">${senderName}</div>
+            <div class="last-msg">${messageText}</div>
+        `;
+    } else {
+        // Update message
+        userNode.querySelector(".user-name").textContent = senderName;
+        userNode.querySelector(".last-msg").textContent = messageText;
+    }
+
+    // 🔥 MOVE SENDER TO TOP (WORKS 100%)
+    userList.insertBefore(userNode, userList.firstChild);
+}
+  
 // --- Online Status ---
 function setupOnlineStatus(){
   if(!currentUserUid) return;
@@ -565,6 +590,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
