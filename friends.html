@@ -454,9 +454,19 @@ chatRef.once("value", snap => {
   });
 
 function attachRealtimeListeners(chatRef, uid) {
-  // NEW messages
- 
-  // UPDATED messages (upload finished)
+  chatRef.on("child_added", snap => {
+    if (document.getElementById("msg-" + snap.key)) return;
+
+    const msg = { ...snap.val(), _key: snap.key };
+    addOrUpdateMessageToChat(msg);
+
+    lastChatTimestamps[uid] = msg.timestamp;
+
+    db.ref("users").once("value", snap => {
+      renderUserList(snap.val() || {});
+    });
+  });
+
   chatRef.on("child_changed", snap => {
     addOrUpdateMessageToChat({
       ...snap.val(),
@@ -464,6 +474,7 @@ function attachRealtimeListeners(chatRef, uid) {
     });
   });
 }
+
 
 
   // Updated messages (e.g., image finished uploading)
