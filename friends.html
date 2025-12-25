@@ -267,6 +267,14 @@ console.log("✅ Logged in as:", user.email);
     initUsersListener();
     setupUnreadListener();
     listenLastMessagesForUserList();
+    if (msg.receiver === currentUserUid) {
+    lastChatTimestamps[otherUid] = msg.timestamp;
+
+    // 🔥 FORCE LIST REORDER
+    db.ref("users").once("value", snap => {
+        renderUserList(snap.val() || {});
+    });
+}
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
     if(lastUid && lastName) openChat(lastUid,lastName);
@@ -590,6 +598,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
