@@ -455,7 +455,18 @@ chatRef.once("value", snap => {
 
 function attachRealtimeListeners(chatRef, uid) {
   // NEW messages
- 
+ function newMessage(userId, message) {
+    const userList = document.getElementById("userList");
+    const userItem = userList.querySelector(`[data-user-id="${userId}"]`);
+
+    if (!userItem) return;
+
+    // Update last message
+    userItem.querySelector(".last-msg").innerText = message;
+
+    // Move user to top
+    userList.prepend(userItem);
+}
   // UPDATED messages (upload finished)
   chatRef.on("child_changed", snap => {
     addOrUpdateMessageToChat({
@@ -547,3 +558,4 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
