@@ -329,7 +329,8 @@ function renderUserList() {
       return {
         uid,
         name: u.name || "Unknown",
-        online: !!u.online
+         gender: u.gender || "N/A",
+    online: !!u.online
       };
     });
 
@@ -577,6 +578,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
