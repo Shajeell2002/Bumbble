@@ -286,6 +286,18 @@ function loadUsersRealtime(){
       const u = users[uid].public || {};
       return {uid, name:u.name||"Unknown", gender:u.gender||"N/A", online:!!u.online};
     });
+friends.sort((a, b) => {
+  const aTime = lastChatTimestamps[a.uid] || 0;
+  const bTime = lastChatTimestamps[b.uid] || 0;
+
+  if (aTime && !bTime) return -1;
+  if (!aTime && bTime) return 1;
+  if (aTime && bTime) return bTime - aTime;
+
+  return a.name.localeCompare(b.name);
+});
+
+
     friends.sort((a, b) => {
   const aTime = lastChatTimestamps[a.uid] || 0;
   const bTime = lastChatTimestamps[b.uid] || 0;
