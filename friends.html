@@ -284,16 +284,6 @@ function setupOnlineStatus(){
     if(snap && snap.val()){ statusRef.set(true); statusRef.onDisconnect().set(false); }
   });
 }
-<ul id="userList">
-  <li class="user" data-user-id="1" data-last="0">
-    <span class="name">Alice</span>
-    <span class="last-msg"></span>
-  </li>
-  <li class="user" data-user-id="2" data-last="0">
-    <span class="name">Bob</span>
-    <span class="last-msg"></span>
-  </li>
-</ul>
   
 // --- Users List ---
 function renderUserList(users){
@@ -575,6 +565,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
