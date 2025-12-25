@@ -233,34 +233,8 @@ console.log("✅ Logged in as:", user.email);
       auth.signOut().then(()=>window.location.href="login.html");
     };
     setupOnlineStatus();
+    loadUsersRealtime();
     setupUnreadListener();
-    listenAllChatsForSorting(); {
-  loadUsersRealtime();
-function listenAllChatsForSorting() {
-  db.ref("chats").on("child_added", chatSnap => {
-    const members = chatSnap.child("members").val() || {};
-    if (!members[currentUserUid]) return;
-
-    chatSnap.ref
-      .child("messages")
-      .orderByChild("timestamp")
-      .limitToLast(1)
-      .on("child_added", msgSnap => {
-        const msg = msgSnap.val();
-        if (!msg) return;
-
-        const otherUser =
-          msg.sender === currentUserUid ? msg.receiver : msg.sender;
-
-        // ✅ Update timestamp immediately
-        lastChatTimestamps[otherUser] = msg.timestamp;
-
-        // ✅ Re-render list
-        renderUserList();
-      });
-  });
-}
-
 
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
@@ -288,20 +262,7 @@ function loadUsersRealtime(){
       const u = users[uid].public || {};
       return {uid, name:u.name||"Unknown", gender:u.gender||"N/A", online:!!u.online};
     });
-friends.sort((a, b) => {
-  const aTime = lastChatTimestamps[a.uid] || 0;
-  const bTime = lastChatTimestamps[b.uid] || 0;
-
-  if (aTime && !bTime) return -1;
-  if (!aTime && bTime) return 1;
-  if (aTime && bTime) return bTime - aTime;
-
-  return a.name.localeCompare(b.name);
-});
-
-
-
-
+    friends.sort((a,b)=>(lastChatTimestamps[b.uid]||0)-(lastChatTimestamps[a.uid]||0)||a.name.localeCompare(b.name));
     userList.innerHTML='';
     friends.forEach(f=>{
       const row = document.createElement('div');
