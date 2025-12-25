@@ -286,7 +286,16 @@ function setupOnlineStatus(){
 }
 
 // --- Users List ---
-
+<ul id="userList">
+  <li class="user" data-user-id="1" data-last="0">
+    <span class="name">Alice</span>
+    <span class="last-msg"></span>
+  </li>
+  <li class="user" data-user-id="2" data-last="0">
+    <span class="name">Bob</span>
+    <span class="last-msg"></span>
+  </li>
+</ul>
 function renderUserList(users){
   const friends = Object.keys(users)
     .filter(uid => uid !== currentUserUid)
@@ -566,5 +575,6 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
