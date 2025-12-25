@@ -267,13 +267,7 @@ console.log("✅ Logged in as:", user.email);
     initUsersListener();
     setupUnreadListener();
     listenLastMessagesForUserList();
-   
-    // 🔥 FORCE LIST REORDER
-    db.ref("users").once("value", snap => {
-        renderUserList(snap.val() || {});
-    });
-}
-    const lastUid = localStorage.getItem("lastChatFriendUid");
+   const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
     if(lastUid && lastName) openChat(lastUid,lastName);
   } else {
@@ -596,6 +590,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
