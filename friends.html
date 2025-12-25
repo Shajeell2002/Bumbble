@@ -265,7 +265,9 @@ console.log("✅ Logged in as:", user.email);
     };
     setupOnlineStatus();
     initUsersListener();
+    initUnreadListener();
     setupUnreadListener();
+    initChatOrderListener();
     listenLastMessagesForUserList();
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
@@ -276,6 +278,36 @@ console.log("✅ Logged in as:", user.email);
   }
 });
 
+function initChatOrderListener() {
+  db.ref("chats").on("child_added", chatSnap => {
+    const chatId = chatSnap.key;
+
+    chatSnap
+      .child("messages")
+      .orderByChild("timestamp")
+      .limitToLast(1)
+      .on("child_added", snap => {
+
+        const msg = snap.val();
+        if (!msg) return;
+
+        // Only care about chats involving me
+        if (msg.sender !== currentUserUid && msg.receiver !== currentUserUid) return;
+
+        const otherUid =
+          msg.sender === currentUserUid ? msg.receiver : msg.sender;
+
+        // ⭐ THIS IS THE MAGIC LINE
+        lastChatTimestamps[otherUid] = msg.timestamp;
+
+        // Re-render using cached users (NO DB READ)
+        renderUserList();
+      });
+  });
+}
+
+  
+  
 // --- Online Status ---
 function setupOnlineStatus(){
   if(!currentUserUid) return;
@@ -558,3 +590,4 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
