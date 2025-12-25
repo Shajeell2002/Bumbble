@@ -233,32 +233,34 @@ console.log("✅ Logged in as:", user.email);
       auth.signOut().then(()=>window.location.href="login.html");
     };
     setupOnlineStatus();
-    loadUsersRealtime();
     setupUnreadListener();
+    listenAllChatsForSorting(); {
+  loadUsersRealtime();
 function listenAllChatsForSorting() {
   db.ref("chats").on("child_added", chatSnap => {
-    const chatId = chatSnap.key;
     const members = chatSnap.child("members").val() || {};
-
-    // only chats involving current user
     if (!members[currentUserUid]) return;
 
-    db.ref(`chats/${chatId}/messages`)
+    chatSnap.ref
+      .child("messages")
       .orderByChild("timestamp")
       .limitToLast(1)
       .on("child_added", msgSnap => {
         const msg = msgSnap.val();
+        if (!msg) return;
+
         const otherUser =
           msg.sender === currentUserUid ? msg.receiver : msg.sender;
 
-        // 🔥 THIS is what was missing
+        // ✅ Update timestamp immediately
         lastChatTimestamps[otherUser] = msg.timestamp;
 
-        // force re-sort
-        loadUsersRealtime();
+        // ✅ Re-render list
+        renderUserList();
       });
   });
 }
+
 
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
@@ -298,20 +300,7 @@ friends.sort((a, b) => {
 });
 
 
-    friends.sort((a, b) => {
-  const aTime = lastChatTimestamps[a.uid] || 0;
-  const bTime = lastChatTimestamps[b.uid] || 0;
 
-  // 1️⃣ Users with chat history come first
-  if (aTime && !bTime) return -1;
-  if (!aTime && bTime) return 1;
-
-  // 2️⃣ If both have chat history → latest chat on top
-  if (aTime && bTime) return bTime - aTime;
-
-  // 3️⃣ If no chat history → alphabetical order (ascending)
-  return a.name.localeCompare(b.name);
-});
 
     userList.innerHTML='';
     friends.forEach(f=>{
