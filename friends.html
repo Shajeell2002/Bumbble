@@ -436,7 +436,11 @@ chatRef.once("value", snap => {
     addOrUpdateMessageToChat(msg);
 
     lastChatTimestamps[otheruid] = msg.timestamp;
-
+// Re-render list instantly
+        renderUserList();
+      });
+  });
+}
     // Handle unread for background chat
     if (
       msg.receiver === currentUserUid &&
