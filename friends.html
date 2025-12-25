@@ -213,6 +213,31 @@ let unreadCounters = {}, lastChatTimestamps = {}, typingTimeout;
 // --- Error Handling ---
 window.addEventListener('error', e=>{ showError(e.message || e); });
 function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(msg)+'</div>'; }
+function listenLastMessagesForUserList() {
+  db.ref("chats").on("child_added", chatSnap => {
+    const members = chatSnap.child("members").val() || {};
+    if (!members[currentUserUid]) return;
+
+    chatSnap.ref
+      .child("messages")
+      .orderByChild("timestamp")
+      .limitToLast(1)
+      .on("child_added", msgSnap => {
+        const msg = msgSnap.val();
+        if (!msg) return;
+
+        const otherUid =
+          msg.sender === currentUserUid ? msg.receiver : msg.sender;
+
+        // 🔥 THIS WAS MISSING
+        lastChatTimestamps[otherUid] = msg.timestamp;
+
+        // 🔥 FORCE RE-SORT
+        loadUsersRealtime();
+      });
+  });
+}
+
 
 // --- Auth ---
 auth.onAuthStateChanged(user=>{
@@ -235,7 +260,7 @@ console.log("✅ Logged in as:", user.email);
     setupOnlineStatus();
     loadUsersRealtime();
     setupUnreadListener();
-
+    listenLastMessagesForUserList();
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
     if(lastUid && lastName) openChat(lastUid,lastName);
@@ -508,6 +533,4 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
-
-
 
