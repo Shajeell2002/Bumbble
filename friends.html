@@ -266,7 +266,6 @@ console.log("✅ Logged in as:", user.email);
     setupOnlineStatus();
     initUsersListener();
     setupUnreadListener();
-    initChatOrderListener();
     listenLastMessagesForUserList();
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
@@ -277,9 +276,6 @@ console.log("✅ Logged in as:", user.email);
   }
 });
 
-
-  
-  
 // --- Online Status ---
 function setupOnlineStatus(){
   if(!currentUserUid) return;
@@ -458,19 +454,9 @@ chatRef.once("value", snap => {
   });
 
 function attachRealtimeListeners(chatRef, uid) {
-  chatRef.on("child_added", snap => {
-    if (document.getElementById("msg-" + snap.key)) return;
-
-    const msg = { ...snap.val(), _key: snap.key };
-    addOrUpdateMessageToChat(msg);
-
-    lastChatTimestamps[uid] = msg.timestamp;
-
-    db.ref("users").once("value", snap => {
-      renderUserList(snap.val() || {});
-    });
-  });
-
+  // NEW messages
+ 
+  // UPDATED messages (upload finished)
   chatRef.on("child_changed", snap => {
     addOrUpdateMessageToChat({
       ...snap.val(),
@@ -478,7 +464,6 @@ function attachRealtimeListeners(chatRef, uid) {
     });
   });
 }
-
 
 
   // Updated messages (e.g., image finished uploading)
@@ -562,6 +547,3 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
-
-
-
