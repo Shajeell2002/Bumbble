@@ -455,17 +455,25 @@ chatRef.once("value", snap => {
 
 function attachRealtimeListeners(chatRef, uid) {
   // NEW messages
- function newMessage(userId, message) {
+ function onNewMessage(userId, messageText) {
     const userList = document.getElementById("userList");
-    const userItem = userList.querySelector(`[data-user-id="${userId}"]`);
 
-    if (!userItem) return;
+    // Find existing user node
+    const userNode = userList.querySelector(
+        `li[data-user-id="${userId}"]`
+    );
+
+    if (!userNode) {
+        console.warn("User not found:", userId);
+        return;
+    }
 
     // Update last message
-    userItem.querySelector(".last-msg").innerText = message;
+    userNode.querySelector(".last-msg").textContent = messageText;
 
-    // Move user to top
-    userList.prepend(userItem);
+    // REMOVE then ADD to top (IMPORTANT)
+    userList.removeChild(userNode);
+    userList.insertBefore(userNode, userList.firstChild);
 }
   // UPDATED messages (upload finished)
   chatRef.on("child_changed", snap => {
@@ -558,4 +566,5 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
