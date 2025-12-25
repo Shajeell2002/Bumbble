@@ -285,57 +285,23 @@ function setupOnlineStatus(){
   });
 }
 
-function initChatOrderListener() {
-  db.ref("chats").on("child_added", chatSnap => {
-
-    chatSnap
-      .child("messages")
-      .orderByChild("timestamp")
-      .limitToLast(1)
-      .on("child_added", snap => {
-
-        const msg = snap.val();
-        if (!msg) return;
-
-        // Ignore chats not involving me
-        if (
-          msg.sender !== currentUserUid &&
-          msg.receiver !== currentUserUid
-        ) return;
-
-        const otherUid =
-          msg.sender === currentUserUid
-            ? msg.receiver
-            : msg.sender;
-
-        // ⭐ THIS LINE MOVES USER TO TOP
-        lastChatTimestamps[otherUid] = msg.timestamp;
-
-        // Re-render list instantly
-        renderUserList();
-      });
-  });
-}
-
-
-  
 // --- Users List ---
 
-function renderUserList() {
-  const friends = Object.keys(cachedUsers)
+function renderUserList(users){
+  const friends = Object.keys(users)
     .filter(uid => uid !== currentUserUid)
     .map(uid => {
-      const u = cachedUsers[uid].public || {};
+      const u = users[uid].public || {};
       return {
         uid,
         name: u.name || "Unknown",
-         gender: u.gender || "N/A",
-    online: !!u.online
+        gender: u.gender || "N/A",
+        online: !!u.online
       };
     });
 
   friends.sort(
-    (a, b) =>
+    (a,b) =>
       (lastChatTimestamps[b.uid] || 0) -
       (lastChatTimestamps[a.uid] || 0) ||
       a.name.localeCompare(b.name)
@@ -350,14 +316,13 @@ function renderUserList() {
     row.dataset.name = f.name;
     row.innerHTML = `
       <div>
-      <span class="status-dot ${f.online ? "online" : "offline"}"></span>
+        <span class="status-dot ${f.online ? "online" : "offline"}"></span>
         ${escapeHtml(f.name)} (${escapeHtml(f.gender)})
       </div>
     `;
     row.onclick = () => openChat(f.uid, f.name);
     userList.appendChild(row);
   });
-}
 
   updateFriendListBadges();
 }
@@ -369,7 +334,8 @@ function initUsersListener(){
   });
 }
 
-  
+
+    
 
 // --- Unread Badges ---
 function setupUnreadListener(){
@@ -469,7 +435,7 @@ chatRef.once("value", snap => {
 
     addOrUpdateMessageToChat(msg);
 
-    lastChatTimestamps[uid] = msg.timestamp;
+    lastChatTimestamps[otheruid] = msg.timestamp;
 
     // Handle unread for background chat
     if (
@@ -581,11 +547,3 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
-
-
-
-
-
-
-
-
