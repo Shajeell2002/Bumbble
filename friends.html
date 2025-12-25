@@ -214,7 +214,6 @@ let unreadCounters = {}, lastChatTimestamps = {}, typingTimeout;
 window.addEventListener('error', e=>{ showError(e.message || e); });
 function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(msg)+'</div>'; }
 function listenLastMessagesForUserList() {
-if (msg.receiver === currentUserUid) {
     lastChatTimestamps[otherUid] = msg.timestamp;
 
     // 🔥 FORCE LIST REORDER
@@ -599,6 +598,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
