@@ -435,9 +435,6 @@ chatRef.once("value", snap => {
 
     addOrUpdateMessageToChat(msg);
 
-    lastChatTimestamps[otheruid] = msg.timestamp;
-// Re-render list instantly
-        renderUserList();
       });
   });
 }
@@ -551,3 +548,4 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
