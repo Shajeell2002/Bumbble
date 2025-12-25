@@ -435,9 +435,8 @@ chatRef.once("value", snap => {
 
     addOrUpdateMessageToChat(msg);
 
-      });
-  });
-}
+    lastChatTimestamps[uid] = msg.timestamp;
+
     // Handle unread for background chat
     if (
       msg.receiver === currentUserUid &&
@@ -548,4 +547,3 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
-
