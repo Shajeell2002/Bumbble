@@ -214,6 +214,15 @@ let unreadCounters = {}, lastChatTimestamps = {}, typingTimeout;
 window.addEventListener('error', e=>{ showError(e.message || e); });
 function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(msg)+'</div>'; }
 function listenLastMessagesForUserList() {
+if (msg.receiver === currentUserUid) {
+    lastChatTimestamps[otherUid] = msg.timestamp;
+
+    // 🔥 FORCE LIST REORDER
+    db.ref("users").once("value", snap => {
+        renderUserList(snap.val() || {});
+    });
+}
+
   db.ref("chats").on("child_added", chatSnap => {
     const members = chatSnap.child("members").val() || {};
     if (!members[currentUserUid]) return;
@@ -590,6 +599,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
