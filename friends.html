@@ -214,9 +214,7 @@ let unreadCounters = {}, lastChatTimestamps = {}, typingTimeout;
 window.addEventListener('error', e=>{ showError(e.message || e); });
 function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(msg)+'</div>'; }
 function listenLastMessagesForUserList() {
-    lastChatTimestamps[otherUid] = msg.timestamp;
-
-    // 🔥 FORCE LIST REORDER
+     // 🔥 FORCE LIST REORDER
     db.ref("users").once("value", snap => {
         renderUserList(snap.val() || {});
     });
@@ -598,6 +596,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
