@@ -334,13 +334,7 @@ function initUsersListener(){
   });
 }
 
-function initUsersListener() {
-  db.ref("users").on("value", snap => {
-    cachedUsers = snap.val() || {};
-    renderUserList();
-  });
-}
-   
+  
 
 // --- Unread Badges ---
 function setupUnreadListener(){
@@ -552,5 +546,6 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
