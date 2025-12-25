@@ -262,7 +262,21 @@ function loadUsersRealtime(){
       const u = users[uid].public || {};
       return {uid, name:u.name||"Unknown", gender:u.gender||"N/A", online:!!u.online};
     });
-    friends.sort((a,b)=>(lastChatTimestamps[b.uid]||0)-(lastChatTimestamps[a.uid]||0)||a.name.localeCompare(b.name));
+    friends.sort((a, b) => {
+  const aTime = lastChatTimestamps[a.uid] || 0;
+  const bTime = lastChatTimestamps[b.uid] || 0;
+
+  // 1️⃣ Users with chat history come first
+  if (aTime && !bTime) return -1;
+  if (!aTime && bTime) return 1;
+
+  // 2️⃣ If both have chat history → latest chat on top
+  if (aTime && bTime) return bTime - aTime;
+
+  // 3️⃣ If no chat history → alphabetical order (ascending)
+  return a.name.localeCompare(b.name);
+});
+
     userList.innerHTML='';
     friends.forEach(f=>{
       const row = document.createElement('div');
@@ -508,6 +522,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
