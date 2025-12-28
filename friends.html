@@ -239,32 +239,33 @@ window.addEventListener('error', e=>{ showError(e.message || e); });
 function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(msg)+'</div>'; }
 function listenLastMessagesForUserList() {
     db.ref("chats").on("child_added", chatSnap => {
-    const members = chatSnap.child("members").val() || {};
-    if (!members[currentUserUid]) return;
+        const members = chatSnap.child("members").val() || {};
+        if (!members[currentUserUid]) return;
 
-    chatSnap.ref
-      .child("messages")
-      .orderByChild("timestamp")
-      .limitToLast(1)
-      .on("value", snap => {
-        if (!snap.exists()) return;
+        chatSnap.ref
+          .child("messages")
+          .orderByChild("timestamp")
+          .limitToLast(1)
+          .on("value", snap => {
+            if (!snap.exists()) return;
 
-        const msg = Object.values(snap.val())[0];
-        if (!msg) return;
+            const msg = Object.values(snap.val())[0];
+            const otherUid = msg.sender === currentUserUid ? msg.receiver : msg.sender;
 
-        const otherUid =
-          msg.sender === currentUserUid ? msg.receiver : msg.sender;
+            // 1. Update the timestamp for the sort logic
+            lastChatTimestamps[otherUid] = msg.timestamp;
 
-        // ⭐ THIS LINE pushes user to top
-        lastChatTimestamps[otherUid] = msg.timestamp;
-
-        // Re-render list immediately
-        db.ref("users").once("value", snap => {
-  renderUserList(snap.val() || {});
-});
-
-      });
-  });
+            // 2. Physically move the element to the top of the UI immediately
+            const listUI = document.getElementById("userList");
+            const rowUI = document.getElementById(`userrow-${otherUid}`);
+            
+            if (rowUI && listUI) {
+                listUI.prepend(rowUI); // This moves the existing element to the top
+                rowUI.classList.add('flash');
+                setTimeout(() => rowUI.classList.remove('flash'), 1000);
+            }
+          });
+    });
 }
 
 
@@ -615,5 +616,6 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
