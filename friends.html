@@ -121,6 +121,26 @@ const chatFileInput = document.getElementById("chatFileInput");
 const typingIndicator = document.getElementById("typingIndicator");
 const errorArea = document.getElementById("errorArea");
 
+
+function moveToTop(userId) {
+    const userList = document.getElementById('user-list');
+    const userItem = document.getElementById(userId);
+
+    if (userItem) {
+        // .prepend() moves the element to the top of the list
+        userList.prepend(userItem);
+        
+        // Optional: Add a brief highlight effect
+        userItem.style.backgroundColor = "#e1f5fe";
+        setTimeout(() => {
+            userItem.style.backgroundColor = "";
+        }, 1000);
+    }
+}
+
+// Example: When a message is received from Bob (user-2)
+// moveToTop('user-2');
+
   /* ---------- NSFW Filter Setup ---------- */
 let nsfwModel = null;
 
@@ -605,6 +625,5 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
-
 
 
