@@ -247,25 +247,17 @@ function listenLastMessagesForUserList() {
             const msg = Object.values(snap.val())[0];
             const otherUid = msg.sender === currentUserUid ? msg.receiver : msg.sender;
 
-            // Update timestamp for future re-renders
             lastChatTimestamps[otherUid] = msg.timestamp;
 
-            // GET THE HTML ELEMENTS
-            const listUI = document.getElementById("userList");
             const rowUI = document.getElementById(`userrow-${otherUid}`);
-            
-            if (rowUI && listUI) {
-                // MOVE TO TOP
-                listUI.prepend(rowUI); 
-                
-                // Visual Flash
+            if (rowUI && userList) {
+                userList.prepend(rowUI); // Moves sender to absolute top
                 rowUI.classList.add('flash');
                 setTimeout(() => rowUI.classList.remove('flash'), 1000);
             }
         });
     });
 }
-
 
 
 // --- Auth ---
