@@ -78,6 +78,21 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
   <div id="errorArea"></div>
 </div>
 
+<div id="user-list">
+    <div class="user-item" id="user-1">
+        <span class="status-dot"></span>
+        <span class="user-name">Alice</span>
+    </div>
+    <div class="user-item" id="user-2">
+        <span class="status-dot"></span>
+        <span class="user-name">Bob</span>
+    </div>
+    <div class="user-item" id="user-3">
+        <span class="status-dot"></span>
+        <span class="user-name">Charlie</span>
+    </div>
+</div>
+
 <script>
 // --- Firebase Init ---
 const firebaseConfig = {
@@ -590,16 +605,6 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
 
 
 
