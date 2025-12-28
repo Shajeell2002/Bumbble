@@ -78,6 +78,7 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
   <div id="errorArea"></div>
 </div>
 
+
 <script>
 // --- Firebase Init ---
 const firebaseConfig = {
@@ -125,6 +126,9 @@ function moveToTop(userId) {
 
 // Example: When a message is received from Bob (user-2)
 // moveToTop('user-2');
+
+
+
 
   /* ---------- NSFW Filter Setup ---------- */
 let nsfwModel = null;
@@ -344,18 +348,20 @@ function renderUserList(users){
       };
     });
 
-  friends.sort(
-    (a,b) =>
-      (lastChatTimestamps[b.uid] || 0) -
-      (lastChatTimestamps[a.uid] || 0) ||
-      a.name.localeCompare(b.name)
-  );
+  // This sorts the array so the newest timestamp is ALWAYS index 0 (top)
+  friends.sort((a,b) => {
+      const timeA = lastChatTimestamps[a.uid] || 0;
+      const timeB = lastChatTimestamps[b.uid] || 0;
+      return timeB - timeA || a.name.localeCompare(b.name);
+  });
 
   userList.innerHTML = "";
 
   friends.forEach(f => {
     const row = document.createElement("div");
     row.className = "user-row";
+    // IMPORTANT: This ID allows us to find the row later
+    row.id = `userrow-${f.uid}`; 
     row.dataset.uid = f.uid;
     row.dataset.name = f.name;
     row.innerHTML = `
@@ -370,7 +376,6 @@ function renderUserList(users){
 
   updateFriendListBadges();
 }
-
 
 function initUsersListener(){
   db.ref('users').on('value', snap=>{
@@ -610,6 +615,5 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
-
 
 
