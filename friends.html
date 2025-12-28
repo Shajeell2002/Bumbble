@@ -78,6 +78,9 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
   <div id="errorArea"></div>
 </div>
 
+const lastChatTimestamps = Object.create(null);
+let friendsLoaded = false;
+
 
 <script>
 // --- Firebase Init ---
@@ -108,24 +111,6 @@ const typingIndicator = document.getElementById("typingIndicator");
 const errorArea = document.getElementById("errorArea");
 
 
-function moveToTop(userId) {
-    const userList = document.getElementById('user-list');
-    const userItem = document.getElementById(userId);
-
-    if (userItem) {
-        // .prepend() moves the element to the top of the list
-        userList.prepend(userItem);
-        
-        // Optional: Add a brief highlight effect
-        userItem.style.backgroundColor = "#e1f5fe";
-        setTimeout(() => {
-            userItem.style.backgroundColor = "";
-        }, 1000);
-    }
-}
-
-// Example: When a message is received from Bob (user-2)
-// moveToTop('user-2');
 
 
 
@@ -242,7 +227,7 @@ function listenLastMessagesForUserList() {
         const members = chatSnap.child("members").val() || {};
         if (!members[currentUserUid]) return;
 
-        chatSnap.ref.child("messages").orderByChild("timestamp").limitToLast(1).on("value", snap => {
+        chatSnap.ref.child("messages").orderByChild("timestamp").limitToLast(1).once("value", snap => {
             if (!snap.exists()) return;
             const msg = Object.values(snap.val())[0];
             const otherUid = msg.sender === currentUserUid ? msg.receiver : msg.sender;
@@ -290,31 +275,6 @@ console.log("✅ Logged in as:", user.email);
     userList.innerHTML="<p style='padding:12px'>Please login to view users.</p>";
   }
 });
-function onIncomingMessage(senderId, senderName, messageText) {
-    const userList = document.getElementById("userList");
-
-    let userNode = userList.querySelector(
-        `li[data-user-id="${senderId}"]`
-    );
-
-    // If sender does not exist, create new
-    if (!userNode) {
-        userNode = document.createElement("li");
-        userNode.setAttribute("data-user-id", senderId);
-
-        userNode.innerHTML = `
-            <div class="user-name">${senderName}</div>
-            <div class="last-msg">${messageText}</div>
-        `;
-    } else {
-        // Update message
-        userNode.querySelector(".user-name").textContent = senderName;
-        userNode.querySelector(".last-msg").textContent = messageText;
-    }
-
-    // 🔥 MOVE SENDER TO TOP (WORKS 100%)
-    userList.insertBefore(userNode, userList.firstChild);
-}
   
 // --- Online Status ---
 function setupOnlineStatus(){
@@ -340,19 +300,14 @@ function renderUserList(users){
     });
 
   // This sorts the array so the newest timestamp is ALWAYS index 0 (top)
-  friends.sort((a,b) => {
-      const timeA = lastChatTimestamps[a.uid] || 0;
-      const timeB = lastChatTimestamps[b.uid] || 0;
-      return timeB - timeA || a.name.localeCompare(b.name);
-  });
+  // If no messages, sort by online status, then name.
+  friends.sort((a, b) => b.time - a.time || (b.online - a.online) || a.name.localeCompare(b.name));
 
   userList.innerHTML = "";
-
   friends.forEach(f => {
     const row = document.createElement("div");
-    row.className = "user-row";
-    // IMPORTANT: This ID allows us to find the row later
-    row.id = `userrow-${f.uid}`; 
+    row.className = "user-row" + (f.uid === currentChatFriendUid ? " active" : "");
+    row.id = `userrow-${f.uid}`;
     row.dataset.uid = f.uid;
     row.dataset.name = f.name;
     row.innerHTML = `
@@ -370,6 +325,7 @@ function renderUserList(users){
 
 function initUsersListener(){
   db.ref('users').on('value', snap=>{
+    cachedUsers = snap.val() || {};
     renderUserList(snap.val() || {});
   });
 }
@@ -457,10 +413,7 @@ chatRef.once("value", snap => {
 
   chatMessages.scrollTop = chatMessages.scrollHeight;
 
-  // Delay real-time listeners 50ms so DOM updates finish
-  setTimeout(() => {
-    attachRealtimeListeners(chatRef, uid);
-  }, 50);
+
 });
 
 
@@ -475,7 +428,19 @@ chatRef.once("value", snap => {
 
     addOrUpdateMessageToChat(msg);
 
-    lastChatTimestamps[uid] = msg.timestamp;
+const otherUid =
+  msg.sender === currentUserUid ? msg.receiver : msg.sender;
+
+lastChatTimestamps[otherUid] = msg.timestamp;
+
+// Move row instantly
+const row = document.getElementById(`userrow-${otherUid}`);
+if (row && userList) {
+  userList.prepend(row);
+  row.classList.add("flash");
+  setTimeout(() => row.classList.remove("flash"), 800);
+}
+
 
     // Handle unread for background chat
     if (
@@ -493,35 +458,10 @@ chatRef.once("value", snap => {
     }
   });
 
-function attachRealtimeListeners(chatRef, uid) {
+ {
   // NEW messages
- function onNewMessage(userId, messageText) {
-    const userList = document.getElementById("userList");
 
-    // Find existing user node
-    const userNode = userList.querySelector(
-        `li[data-user-id="${userId}"]`
-    );
 
-    if (!userNode) {
-        console.warn("User not found:", userId);
-        return;
-    }
-
-    // Update last message
-    userNode.querySelector(".last-msg").textContent = messageText;
-
-    // REMOVE then ADD to top (IMPORTANT)
-    userList.removeChild(userNode);
-    userList.insertBefore(userNode, userList.firstChild);
-}
-  // UPDATED messages (upload finished)
-  chatRef.on("child_changed", snap => {
-    addOrUpdateMessageToChat({
-      ...snap.val(),
-      _key: snap.key
-    });
-  });
 }
 
 
