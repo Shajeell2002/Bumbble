@@ -242,29 +242,27 @@ function listenLastMessagesForUserList() {
         const members = chatSnap.child("members").val() || {};
         if (!members[currentUserUid]) return;
 
-        chatSnap.ref
-          .child("messages")
-          .orderByChild("timestamp")
-          .limitToLast(1)
-          .on("value", snap => {
+        chatSnap.ref.child("messages").orderByChild("timestamp").limitToLast(1).on("value", snap => {
             if (!snap.exists()) return;
-
             const msg = Object.values(snap.val())[0];
             const otherUid = msg.sender === currentUserUid ? msg.receiver : msg.sender;
 
-            // 1. Update the timestamp for the sort logic
+            // Update timestamp for future re-renders
             lastChatTimestamps[otherUid] = msg.timestamp;
 
-            // 2. Physically move the element to the top of the UI immediately
+            // GET THE HTML ELEMENTS
             const listUI = document.getElementById("userList");
             const rowUI = document.getElementById(`userrow-${otherUid}`);
             
             if (rowUI && listUI) {
-                listUI.prepend(rowUI); // This moves the existing element to the top
+                // MOVE TO TOP
+                listUI.prepend(rowUI); 
+                
+                // Visual Flash
                 rowUI.classList.add('flash');
                 setTimeout(() => rowUI.classList.remove('flash'), 1000);
             }
-          });
+        });
     });
 }
 
