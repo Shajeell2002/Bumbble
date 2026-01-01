@@ -295,7 +295,8 @@ function renderUserList(users){
         uid,
         name: u.name || "Unknown",
         gender: u.gender || "N/A",
-        online: !!u.online
+        online: !!u.online,
+	time: lastChatTimestamps[uid] || 0,
       };
     });
 
@@ -546,6 +547,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
