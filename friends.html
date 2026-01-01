@@ -85,14 +85,15 @@ let friendsLoaded = false;
 <script>
 // --- Firebase Init ---
 const firebaseConfig = {
-  apiKey:"AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
-  authDomain:"bumbble-c061f.firebaseapp.com",
-  databaseURL:"https://bumbble-c061f-default-rtdb.firebaseio.com",
-  projectId:"bumbble-c061f",
-  storageBucket:"bumbble-c061f.appspot.com",
-  messagingSenderId:"213165886981",
-  appId:"1:213165886981:web:c18652003444869b1bd66c"
+  apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+  authDomain: "bumbble-c061f.firebaseapp.com",
+  databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
+  projectId: "bumbble-c061f",
+  storageBucket: "bumbble-c061f.appspot.com",
+  messagingSenderId: "213165886981",
+  appId: "1:213165886981:web:c18652003444869b1bd66c"
 };
+
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
@@ -227,24 +228,21 @@ function listenLastMessagesForUserList() {
         const members = chatSnap.child("members").val() || {};
         if (!members[currentUserUid]) return;
 
-        chatSnap.ref.child("messages").orderByChild("timestamp").limitToLast(1).once("value", snap => {
+        chatSnap.ref.child("messages").orderByChild("timestamp").limitToLast(1).on("value", snap => {
             if (!snap.exists()) return;
             const msg = Object.values(snap.val())[0];
             const otherUid = msg.sender === currentUserUid ? msg.receiver : msg.sender;
-
+            
+            // 1. Update the global tracker
             lastChatTimestamps[otherUid] = msg.timestamp;
-
-            const rowUI = document.getElementById(`userrow-${otherUid}`);
-            if (rowUI && userList) {
-                userList.prepend(rowUI); // Moves sender to absolute top
-                rowUI.classList.add('flash');
-                setTimeout(() => rowUI.classList.remove('flash'), 1000);
+            
+            // 2. Refresh the list. If cachedUsers exists, use it to avoid blank page.
+            if (cachedUsers) {
+                renderUserList(cachedUsers);
             }
         });
     });
-}
-
-
+}   
 // --- Auth ---
 auth.onAuthStateChanged(user=>{
   if(user && user.emailVerified){
@@ -286,7 +284,7 @@ function setupOnlineStatus(){
 }
   
 // --- Users List ---
-function renderUserList(users){
+function renderUserList(users) {
   const friends = Object.keys(users)
     .filter(uid => uid !== currentUserUid)
     .map(uid => {
@@ -295,13 +293,28 @@ function renderUserList(users){
         uid,
         name: u.name || "Unknown",
         gender: u.gender || "N/A",
-        online: !!u.online
+        online: !!u.online,
+        // ✅ CRITICAL: Pull the timestamp we've been saving in the global variable
+        time: lastChatTimestamps[uid] || 0 
       };
     });
 
-  // This sorts the array so the newest timestamp is ALWAYS index 0 (top)
-  // If no messages, sort by online status, then name.
-  friends.sort((a, b) => b.time - a.time || (b.online - a.online) || a.name.localeCompare(b.name));
+  // SORTING HIERARCHY:
+  // 1. Message Recency (Newest timestamp first)
+  // 2. Online Status (Online users above offline)
+  // 3. Alphabetical (A-Z)
+  friends.sort((a, b) => {
+    // Priority 1: Message time
+    if (b.time !== a.time) {
+      return b.time - a.time;
+    }
+    // Priority 2: Online status
+    if (b.online !== a.online) {
+      return b.online - a.online; 
+    }
+    // Priority 3: Alphabetical
+    return a.name.localeCompare(b.name);
+  });
 
   userList.innerHTML = "";
   friends.forEach(f => {
@@ -546,6 +559,5 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
-
 
 
