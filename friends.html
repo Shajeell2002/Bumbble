@@ -352,7 +352,7 @@ function setupUnreadListener(){
     unreadCounters={};
     const data = snap.val()||{};
     Object.keys(data).forEach(uid=>unreadCounters[uid]=Object.keys(data[uid]||{}).length);
-    updateFriendListBadges();
+    renderUserList(cachedUsers);
   });
 }
 function updateFriendListBadges(){
@@ -559,5 +559,6 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
