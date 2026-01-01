@@ -233,7 +233,6 @@ function listenLastMessagesForUserList() {
             const otherUid = msg.sender === currentUserUid ? msg.receiver : msg.sender;
 
             lastChatTimestamps[otherUid] = msg.timestamp;
-	renderUserList(cachedUsers);
 
             const rowUI = document.getElementById(`userrow-${otherUid}`);
             if (rowUI && userList) {
@@ -296,15 +295,13 @@ function renderUserList(users){
         uid,
         name: u.name || "Unknown",
         gender: u.gender || "N/A",
-        online: !!u.online,
-	time: lastChatTimestamps[uid] || "0",
+        online: !!u.online
       };
     });
 
   // This sorts the array so the newest timestamp is ALWAYS index 0 (top)
   // If no messages, sort by online status, then name.
-  friends.sort((a, b) => b.time - a.time || (b.online - a.online) || a.name.localeCompare(b.name)
-);
+  friends.sort((a, b) => b.time - a.time || (b.online - a.online) || a.name.localeCompare(b.name));
 
   userList.innerHTML = "";
   friends.forEach(f => {
@@ -549,8 +546,6 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
-
-
 
 
 
