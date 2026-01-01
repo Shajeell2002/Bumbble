@@ -233,8 +233,7 @@ function listenLastMessagesForUserList() {
             const msg = Object.values(snap.val())[0];
             const otherUid = msg.sender === currentUserUid ? msg.receiver : msg.sender;
             
-            // 1. Update the global tracker
-            lastChatTimestamps[otherUid] = msg.timestamp;
+           
             
             // 2. Refresh the list. If cachedUsers exists, use it to avoid blank page.
             if (cachedUsers) {
@@ -304,17 +303,37 @@ function renderUserList(users) {
   // 2. Online Status (Online users above offline)
   // 3. Alphabetical (A-Z)
   friends.sort((a, b) => {
-    // Priority 1: Message time
-    if (b.time !== a.time) {
-      return b.time - a.time;
-    }
-    // Priority 2: Online status
-    if (b.online !== a.online) {
-      return b.online - a.online; 
-    }
-    // Priority 3: Alphabetical
-    return a.name.localeCompare(b.name);
-  });
+  const unreadA = unreadCounters[a.uid] || 0;
+  const unreadB = unreadCounters[b.uid] || 0;
+
+  const timeA = a.time || 0;
+  const timeB = b.time || 0;
+
+  // 1️⃣ Unread chats ALWAYS on top
+  if ((unreadB > 0) !== (unreadA > 0)) {
+    return unreadB > 0 ? 1 : -1;
+  }
+
+  // 2️⃣ Users WITH messages above users WITHOUT messages
+  if ((timeB > 0) !== (timeA > 0)) {
+    return timeB > 0 ? 1 : -1;
+  }
+
+  // 3️⃣ Newest message first
+  if (timeB !== timeA) {
+    return timeB - timeA;
+  }
+
+  // 4️⃣ Online users above offline users
+  if (b.online !== a.online) {
+    return b.online - a.online;
+  }
+
+  // 5️⃣ Alphabetical
+  return a.name.localeCompare(b.name);
+});
+
+
 
   userList.innerHTML = "";
   friends.forEach(f => {
@@ -447,12 +466,10 @@ const otherUid =
 lastChatTimestamps[otherUid] = msg.timestamp;
 
 // Move row instantly
-const row = document.getElementById(`userrow-${otherUid}`);
-if (row && userList) {
-  userList.prepend(row);
-  row.classList.add("flash");
-  setTimeout(() => row.classList.remove("flash"), 800);
-}
+lastChatTimestamps[otherUid] = msg.timestamp;
+renderUserList(cachedUsers);
+flashUserRow(otherUid);
+
 
 
     // Handle unread for background chat
@@ -559,6 +576,5 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
-
 
 
