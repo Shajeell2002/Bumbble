@@ -78,6 +78,9 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
   <div id="errorArea"></div>
 </div>
 
+<  const lastChatTimestamps = Object.create(null);
+let friendsLoaded = false;>
+
 
 <script>
 // --- Firebase Init ---
@@ -573,6 +576,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
