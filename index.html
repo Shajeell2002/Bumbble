@@ -152,7 +152,8 @@ footer {
 const btn = document.getElementById("chatBtn");
 const box = document.getElementById("chatBox");
 const messages = document.getElementById("chatMessages");
-
+sendBtn.onclick=sendMessage;
+chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
 btn.onclick = () => {
   box.style.display = box.style.display === "block" ? "none" : "block";
 };
@@ -346,6 +347,7 @@ function sendMsg() {
 
 </body>
 </html>
+
 
 
 
