@@ -171,11 +171,16 @@ footer {
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
-  authDomain: "bumbble-c061f.firebaseapp.com",
-  projectId: "bumbble-c061f",
-};
+// Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+    authDomain: "bumbble-c061f.firebaseapp.com",
+    databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
+    projectId: "bumbble-c061f",
+    storageBucket: "bumbble-c061f.appspot.com",
+    messagingSenderId: "213165886981",
+    appId: "1:213165886981:web:c18652003444869b1bd66c"
+  };
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
@@ -208,4 +213,5 @@ auth.onAuthStateChanged(user => {
 
 </body>
 </html>
+
 
