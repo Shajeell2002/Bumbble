@@ -47,6 +47,34 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.0/dist/nsfwjs.min.js"></script>
 
+  <!-- WhatsApp Floating Button -->
+<a href="https://wa.me/91XXXXXXXXXX" 
+   class="whatsapp-float" 
+   target="_blank">
+   💬 Chat on WhatsApp
+</a>
+
+<style>
+.whatsapp-float{
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #25D366;
+  color: white;
+  padding: 14px 18px;
+  border-radius: 50px;
+  font-weight: bold;
+  text-decoration: none;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  z-index: 999;
+  transition: transform 0.3s ease;
+}
+.whatsapp-float:hover{
+  transform: scale(1.1);
+}
+</style>
+  
+  
 </head>
 <body>
 
@@ -572,6 +600,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
