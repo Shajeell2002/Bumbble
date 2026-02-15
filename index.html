@@ -142,11 +142,24 @@ footer {
 <div id="chatBox">
   <div id="chatHeader">Bumbble Support</div>
   <div id="chatMessages"></div>
+
   <div id="chatInput">
     <input type="text" id="userMsg" placeholder="Type message..." />
     <button onclick="sendMsg()">Send</button>
   </div>
 </div>
+
+<script>
+const input = document.getElementById("userMsg");
+
+/* ENTER key support */
+input.addEventListener("keydown", function(e) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    sendMsg();
+  }
+});
+</script>
 
 <script>
 const btn = document.getElementById("chatBtn");
@@ -345,7 +358,6 @@ function sendMsg() {
 
 </body>
 </html>
-
 
 
 
