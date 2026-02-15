@@ -181,13 +181,17 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const nav = document.getElementById("navLinks");
 
+ 
+  
 auth.onAuthStateChanged(user => {
   if (user) {
     nav.innerHTML = `
-      <a href="index.html">Home</a>
-      <a href="friends.html">Friends</a>
-      <a href="profile.html">Profile</a>
-      <a href="#" id="logout">Logout</a>
+        <a href="index.html">Home</a>
+        <a href="friends.html">Friends</a>
+        <a href="stories.html">Stories</a>
+        <a href="safety.html">Safety</a>
+        <a href="profile.html">Profile</a>
+        <a href="#" id="logoutBtn">Logout</a>
     `;
 
     document.getElementById("logout").onclick = () => {
@@ -204,3 +208,4 @@ auth.onAuthStateChanged(user => {
 
 </body>
 </html>
+
