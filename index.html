@@ -162,60 +162,61 @@ input.addEventListener("keydown", function(e) {
 </script>
 
 <script>
-const btn = document.getElementById("chatBtn");
-const box = document.getElementById("chatBox");
-const messages = document.getElementById("chatMessages");
-btn.onclick = () => {
-  box.style.display = box.style.display === "block" ? "none" : "block";
-};
+document.addEventListener("DOMContentLoaded", function () {
 
-const replies = {
-  "hi": "Welcome to Bumbble 💜, How can I help you?",
-   "how to signup": 'Click here to create account: <a href="signup.html" target="_blank">Sign Up</a>',
-"signup issue": 'Click here to create account: <a href="signup.html" target="_blank">Sign Up</a>',
-"signup problem": 'Click here to create account: <a href="signup.html" target="_blank">Sign Up</a>',
-  "how to login": 'Go to login page: <a href="login.html" target="_blank">Login</a>',
-"forgot password": "Use 'Forgot Password' on login page.",
-  "password not received": "Check your email spam folder or wait 2 minutes.",
-  "cannot login": "Ensure correct email & password.",
-  "how to delete account": "Go to profile → settings → delete account.",
-
-  "is bumbble safe": "Yes, profiles are verified and you can block/report anytime.",
-  "how to block user": "Open profile → click Block.",
-  "how to report user": "Open profile → click Report.",
-  "fake profile found": "Please report immediately for safety.",
-
-  "how matching works": "Our smart system suggests compatible users.",
-  "why no matches": "Complete profile & stay active to get matches.",
-  "how to send message": "Match first, then chat instantly.",
-
-  "is bumbble free": "Yes, basic features are completely free.",
-  "premium benefits": "Premium gives more visibility & unlimited chats.",
-
-  "otp not received": "Wait 60 seconds or request new OTP.",
-  "site not loading": "Check internet or refresh page.",
-
-  "help": "Email us at support@bumbble.in",
-  "contact support": "Support: support@bumbble.in"
-};
-
-function sendMsg() {
+  const messages = document.getElementById("chatMessages");
   const input = document.getElementById("userMsg");
-  const text = input.value.toLowerCase().trim();
-  if (!text) return;
+  const chatBtn = document.getElementById("chatBtn");
+  const chatBox = document.getElementById("chatBox");
 
-  messages.innerHTML += "<div><b>You:</b> " + text + "</div>";
+  // Toggle chat box
+  chatBtn.onclick = () => {
+    chatBox.style.display =
+      chatBox.style.display === "block" ? "none" : "block";
+  };
 
-  const reply = replies[text] || "Sorry, type 'help' for options.";
-  setTimeout(() => {
-    messages.innerHTML += "<div><b>Bot:</b> " + reply + "</div>";
-    messages.scrollTop = messages.scrollHeight;
-  }, 500);
+  // Send message function
+  function sendMsg() {
+    const text = input.value.trim().toLowerCase();
+    if (!text) return;
 
-  input.value = "";
-}
+    messages.innerHTML += "<div><b>You:</b> " + text + "</div>";
+
+    let reply = "";
+
+    if (text === "help") {
+      reply = `
+        Choose an option:<br><br>
+        🔐 <a href="login.html" target="_blank">Login</a><br>
+        📝 <a href="signup.html" target="_blank">Sign Up</a><br>
+	🔑 <a href="Login.html" target="_blank">Forgot Password</a>
+        
+      `;
+    } else {
+      reply = "🤖 Please type <b>HELP</b> to see all support options.";
+    }
+
+    setTimeout(() => {
+      messages.innerHTML += "<div><b>Bot:</b> " + reply + "</div>";
+      messages.scrollTop = messages.scrollHeight;
+    }, 400);
+
+    input.value = "";
+  }
+
+  // Button click
+  window.sendMsg = sendMsg;
+
+  // ENTER key
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      sendMsg();
+    }
+  });
+
+});
 </script>
-
 
 <!-- WhatsApp Floating Button -->
 <a href="https://wa.me/91XXXXXXXXXX" 
@@ -380,6 +381,8 @@ function sendMsg() {
 
 </body>
 </html>
+
+
 
 
 
