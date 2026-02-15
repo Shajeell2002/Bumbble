@@ -154,9 +154,6 @@ const box = document.getElementById("chatBox");
 const messages = document.getElementById("chatMessages");
 sendBtn.onclick=sendMessage;
 chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
-btn.onclick = () => {
-  box.style.display = box.style.display === "block" ? "none" : "block";
-};
 
 const replies = {
   hi: "Welcome to Bumbble 💜",
@@ -347,6 +344,7 @@ function sendMsg() {
 
 </body>
 </html>
+
 
 
 
