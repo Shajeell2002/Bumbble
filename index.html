@@ -64,7 +64,6 @@ border-radius:18px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); color: #4a2e8e; }
 footer {
   text-align: center;
   padding: 25px;
-  Bottom: 2px
   color: white;
   opacity: 0.9;
 }
@@ -74,6 +73,115 @@ footer {
   .hero img { max-width:90%; }
 }
 </style>
+
+<!-- Simple Chatbot UI -->
+<style>
+#chatBtn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #b30000;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 50%;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+#chatBox {
+  display: none;
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  width: 260px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+  overflow: hidden;
+  font-family: Arial;
+}
+
+#chatHeader {
+  background: #b30000;
+  color: white;
+  padding: 10px;
+  font-weight: bold;
+}
+
+#chatMessages {
+  height: 200px;
+  overflow-y: auto;
+  padding: 10px;
+  font-size: 14px;
+}
+
+#chatInput {
+  display: flex;
+  border-top: 1px solid #ddd;
+}
+
+#chatInput input {
+  flex: 1;
+  border: none;
+  padding: 10px;
+  outline: none;
+}
+
+#chatInput button {
+  background: #b30000;
+  color: white;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+}
+</style>
+
+<button id="chatBtn">💬</button>
+
+<div id="chatBox">
+  <div id="chatHeader">Bumbble Support</div>
+  <div id="chatMessages"></div>
+  <div id="chatInput">
+    <input type="text" id="userMsg" placeholder="Type message..." />
+    <button onclick="sendMsg()">Send</button>
+  </div>
+</div>
+
+<script>
+const btn = document.getElementById("chatBtn");
+const box = document.getElementById("chatBox");
+const messages = document.getElementById("chatMessages");
+
+btn.onclick = () => {
+  box.style.display = box.style.display === "block" ? "none" : "block";
+};
+
+const replies = {
+  hi: "Welcome to Bumbble 💜",
+  hello: "Hi there! How can I help you?",
+  signup: "Create your account here: signup.html",
+  safety: "Use block & report to stay safe on Bumbble.",
+  help: "Email us at support@bumbble.in"
+};
+
+function sendMsg() {
+  const input = document.getElementById("userMsg");
+  const text = input.value.toLowerCase().trim();
+  if (!text) return;
+
+  messages.innerHTML += "<div><b>You:</b> " + text + "</div>";
+
+  const reply = replies[text] || "Sorry, type 'help' for options.";
+  setTimeout(() => {
+    messages.innerHTML += "<div><b>Bot:</b> " + reply + "</div>";
+    messages.scrollTop = messages.scrollHeight;
+  }, 500);
+
+  input.value = "";
+}
+</script>
+
 
 <!-- WhatsApp Floating Button -->
 <a href="https://wa.me/91XXXXXXXXXX" 
@@ -86,10 +194,10 @@ footer {
 .whatsapp-float{
   position: fixed;
   bottom: 20px;
-  right: 20px;
+  right: 80px;
   background: #25D366;
   color: white;
-  padding: 14px 18px;
+  padding: 3px 8px;
   border-radius: 50px;
   font-weight: bold;
   text-decoration: none;
@@ -103,6 +211,10 @@ footer {
 </style>
 
 </head>
+
+
+
+
 <body>
 
 <header>
@@ -180,7 +292,7 @@ footer {
 </section>
 
 <footer>
-© 2021 Bumbble.in — Made with ❤️ for safe connections.
+© 2026 Bumbble.in — Made with ❤️ for safe connections.
 </footer>
 
 
@@ -234,9 +346,6 @@ footer {
 
 </body>
 </html>
-
-
-
 
 
 
