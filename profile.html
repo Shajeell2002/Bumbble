@@ -199,16 +199,23 @@ function setupRealtimeProfile(uid){
   const publicRef = db.ref(`users/${uid}/public`);
   const privateRef = db.ref(`users/${uid}/private`);
   
-  publicRef.on('value', snap=>{
-    const data = snap.val() || {};
-    document.getElementById("name").value = data.name || "";
-    document.getElementById("age").value = data.age || "";
-    document.getElementById("location").value = data.location || "";
-    document.getElementById("gender").value = data.gender || "";
-    profilePreview.src = data.pic || "images/profile1.png";
-    profileBase64 = data.pic || "";
-  });
-  
+ 
+publicRef.on('value', snap=>{
+  const data = snap.val() || {};
+  document.getElementById("name").value = data.name || "";
+  document.getElementById("age").value = data.age || "";
+  document.getElementById("location").value = data.location || "";
+  document.getElementById("gender").value = data.gender || "";
+  document.getElementById("bio").value = data.bio || "";
+  document.getElementById("interests").value = data.interests || "";
+  profilePreview.src = data.pic || "images/profile1.png";
+  profileBase64 = data.pic || "";
+});
+
+
+
+
+    
   privateRef.on('value', snap=>{
     const data = snap.val() || {};
     document.getElementById("email").value = data.email || "";
@@ -277,5 +284,6 @@ async function updateProfile() {
 </script>
 </body>
 </html>
+
 
 
