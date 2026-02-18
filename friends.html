@@ -421,7 +421,7 @@ function flashUserRow(uid){
 }
 
 // --- Open Chat (Clean Optimized Version) ---
-function openChat(uid, name) {
+function openChat(uid, name) checkFriendStatus(uid); {
 
   // Highlight user row
   document.querySelectorAll('.user-row').forEach(r => r.classList.remove('active'));
@@ -606,6 +606,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
