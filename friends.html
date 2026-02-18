@@ -421,7 +421,7 @@ function flashUserRow(uid){
 }
 
 // --- Open Chat (Clean Optimized Version) ---
-function openChat(uid, name) checkFriendStatus(uid); {
+function openChat(uid, name) {
 async function checkFriendStatus(friendUid) {
   const snap = await db.ref(`friends/${currentUserUid}/${friendUid}`).once("value");
 
@@ -621,6 +621,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
