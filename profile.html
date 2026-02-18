@@ -97,7 +97,10 @@ nav a:hover { text-decoration: underline; }
     <option value="Other">Other</option>
   </select>
   <input type="email" id="email" placeholder="Email" disabled>
-  <button onclick="updateProfile()">Update Profile</button>
+<textarea id="bio" placeholder="Write something about yourself..." rows="3"></textarea>
+
+<input type="text" id="interests" placeholder="Interests (music, travel, sports)">
+    <button onclick="updateProfile()">Update Profile</button>
   <p class="error-msg" id="errorMsg"></p>
 </div>
 
@@ -266,3 +269,4 @@ async function updateProfile() {
 </script>
 </body>
 </html>
+
