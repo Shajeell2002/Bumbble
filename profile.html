@@ -265,7 +265,7 @@ async function updateProfile() {
       return;
     }
 
-    await db.ref(`users/${uid}/public`).Set({
+    await db.ref(`users/${uid}/public`).update({
       name,
       age: age || "N/A",
       location: location || "",
@@ -286,6 +286,7 @@ async function updateProfile() {
 </script>
 </body>
 </html>
+
 
 
 
