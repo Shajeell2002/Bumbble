@@ -587,10 +587,7 @@ function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null;
 function getChatId(a,b){ return a<b? a+'_'+b : b+'_'+a; }
 function escapeHtml(str){ return str.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-  async function checkFriendStatus(friendUid) {
-  const snap = await db.ref(`friends/${currentUserUid}/${friendUid}`).once("value");
-
-  const btn = document.getElementById("addFriendBtn");
+ 
 
   if (snap.exists()) {
     // already friends → hide button
@@ -644,6 +641,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
