@@ -271,6 +271,8 @@ async function updateProfile() {
       location: location || "",
       gender: gender || "",
       pic: profileBase64 || "images/profile1.png"
+    const bio = document.getElementById("bio").value.trim();
+const interests = document.getElementById("interests").value.trim();
     });
 
     alert("Profile updated successfully!");
@@ -284,6 +286,7 @@ async function updateProfile() {
 </script>
 </body>
 </html>
+
 
 
 
