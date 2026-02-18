@@ -67,7 +67,15 @@ nav a:hover { text-decoration: underline; }
     cursor: pointer;
     color: white;
 }
-.profile-container button:hover { background: #3b2370; }
+.profile-container textarea{
+  width:100%;
+  padding:8px;
+  margin:8px 0;
+  border:1px solid #ccc;
+  border-radius:5px;
+  resize:none;
+}
+    .profile-container button:hover { background: #3b2370; }
 .error-msg { color: red; font-size: 14px; margin-top: 5px; }
 #profilePreview { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin: 10px 0; }
 </style>
@@ -269,4 +277,5 @@ async function updateProfile() {
 </script>
 </body>
 </html>
+
 
