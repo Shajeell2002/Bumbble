@@ -4,7 +4,619 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Friends & Chat</title>
+<style><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bumbble - Friends & Chat</title>
 <style>
+body { font-family: Arial, sans-serif; margin:0; background:#f8f6fb; color:#333; display:flex; min-height:100vh; flex-direction: column; }
+header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#d8cce5; box-shadow:0 3px 6px rgba(0,0,0,0.1); position:fixed; top:0; left:0; right:0; z-index:500; }
+header h1{ font-size:24px; margin:0; }
+nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
+.friends-container { width:250px; background:#e6e0f0; border-right:1px solid #ccc; padding:10px; overflow-y:auto; position:fixed; top:60px; bottom:0; left:0; }
+.main-content { flex:1; margin-left:250px; padding:80px 20px 20px 20px; }
+.user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
+.user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #ccc; cursor:pointer; transition:0.2s; }
+.user-row:hover, .user-row.active { background:#ddd6f3; }
+.user-row.flash { animation:flashLavender 0.5s; }
+@keyframes flashLavender { 0%{background:#e0b3ff;} 100%{background:#ddd6f3;} }
+.status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
+.online { background:green; } .offline { background:red; }
+.badge { background:#9b59b6; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
+#chatModal { position:fixed; bottom:0; right:20px; width:360px; height:500px; max-height:80vh; border:1px solid #ccc; background:#d8cce5; border-radius:10px; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); overflow:hidden; z-index:1000; resize:none; }
+#chatHeader { background:#d8cce5; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; cursor:move; }
+#chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:#f8f6fb; scroll-behavior:smooth; }
+#typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
+.message { max-width:80%; padding:8px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
+.message.self { background:#9b59b6; color:white; align-self:flex-end; }
+.message.friend { background:#ece6f2; color:#111; align-self:flex-start; }
+.timestamp { font-size:10px; color:#666; margin-top:6px; text-align:right; display:block; }
+.timestamp.friend { color:#666; }
+.uploading-badge { font-size:11px; color:#444; margin-top:6px; display:inline-block; background:#e6e0f0; padding:3px 6px; border-radius:6px; border:1px solid #d0c4e0; }
+#chatInputContainer { display:flex; border-top:1px solid #ccc; align-items:center; gap:6px; padding:8px; background:#e6e0f0; }
+#chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:8px; background:#f0e6fa; }
+#sendBtn, #fileBtn { padding:8px 12px; border:none; background:#b39ddb; cursor:pointer; border-radius:8px; color:white; font-weight:bold; }
+#sendBtn:hover, #fileBtn:hover { background:#9775c2; }
+.friends-container::-webkit-scrollbar { width:6px; }
+.friends-container::-webkit-scrollbar-thumb { background:#b39ddb; border-radius:3px; }
+.friends-container::-webkit-scrollbar-track { background:#f0e6fa; }
+.error-banner { background:#f2e6ff; color:#800; padding:8px 12px; border:1px solid #d8b3ff; margin:10px; border-radius:6px; }
+.chat-image { max-width:100%; height:auto; display:block; margin-top:4px; }
+</style>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<!-- ✅ Add TensorFlow.js before NSFWJS -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.0/dist/nsfwjs.min.js"></script>
+
+  <!-- WhatsApp Floating Button -->
+<a href="https://wa.me/91XXXXXXXXXX" 
+   class="whatsapp-float" 
+   target="_blank">
+   💬 Chat on WhatsApp
+</a>
+
+<style>
+.whatsapp-float{
+  position: fixed;
+  Top: 60px;
+  right: 20px;
+  background: #25D366;
+  color: white;
+  padding: 14px 18px;
+  border-radius: 50px;
+  font-weight: bold;
+  text-decoration: none;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  z-index: 999;
+  transition: transform 0.3s ease;
+}
+.whatsapp-float:hover{
+  transform: scale(1.1);
+}
+</style>
+  
+  
+</head>
+<body>
+
+<header>
+  <h1>Bumbble</h1>
+  <nav id="navLinks">
+  </nav>
+</header>
+
+<div class="friends-container">
+  <div class="user-list" id="userList"></div>
+</div>
+
+<div class="main-content">
+  <div id="chatModal">
+    <div id="chatHeader">
+      <span id="chatWith">Friend</span>
+      <button onclick="closeChat()">X</button>
+    </div>
+    <div id="chatMessages"></div>
+    <div id="typingIndicator"></div>
+    <div id="chatInputContainer">
+      <button id="fileBtn">📎</button>
+      <input type="text" id="chatInput" placeholder="Type a message">
+      <button id="sendBtn">Send</button>
+      <input type="file" id="chatFileInput" style="display:none;" multiple>
+    </div>
+  </div>
+  <div id="errorArea"></div>
+</div>
+
+<script>
+// --- Firebase Init ---
+const firebaseConfig = {
+  apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+  authDomain: "bumbble-c061f.firebaseapp.com",
+  databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
+  projectId: "bumbble-c061f",
+  storageBucket: "bumbble-c061f.appspot.com",
+  messagingSenderId: "213165886981",
+  appId: "1:213165886981:web:c18652003444869b1bd66c"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+ 
+// --- DOM ---
+const nav = document.getElementById("navLinks");
+const userList = document.getElementById("userList");
+const chatModal = document.getElementById("chatModal");
+const chatMessages = document.getElementById("chatMessages");
+const chatWith = document.getElementById("chatWith");
+const chatInput = document.getElementById("chatInput");
+const sendBtn = document.getElementById("sendBtn");
+const fileBtn = document.getElementById("fileBtn");
+const chatFileInput = document.getElementById("chatFileInput");
+const typingIndicator = document.getElementById("typingIndicator");
+const errorArea = document.getElementById("errorArea");
+
+
+
+
+
+
+  /* ---------- NSFW Filter Setup ---------- */
+let nsfwModel = null;
+
+async function loadNsfwModel() {
+  try {
+    console.log("🔄 Loading NSFW model from /assets/nsfw-model/model.json...");
+    nsfwModel = await nsfwjs.load("./assets/nsfw-model/");
+    console.log("✅ NSFW model loaded successfully.");
+  } catch (err) {
+    console.error("❌ Failed to load NSFW model:", err);
+    showError("⚠️ Image safety filter failed to load. Some uploads may be restricted.");
+  }
+}
+loadNsfwModel();
+
+/* ---------- NSFW Check Before Upload ---------- */
+async function isImageNSFW(file) {
+  return new Promise(async (resolve) => {
+    if (!nsfwModel) {
+      console.warn("⚠️ NSFW model not ready, skipping check.");
+      return resolve(false);
+    }
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = async () => {
+      try {
+        // Draw the image onto a hidden canvas
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        // Convert to tensor
+        const imageTensor = tf.browser.fromPixels(canvas);
+        const predictions = await nsfwModel.classify(imageTensor);
+        imageTensor.dispose();
+
+        console.log("🔍 NSFW Predictions:", predictions);
+
+        // Get highest probability
+        const top = predictions.reduce((a, b) => (a.probability > b.probability ? a : b));
+
+        const isUnsafe =
+          (top.className === "Porn" && top.probability > 0.01) ||
+          (top.className === "Hentai" && top.probability > 0.01) ||
+          (top.className === "Sexy" && top.probability > 0.01);
+
+        if (isUnsafe) {
+          console.warn("🚫 Blocked by NSFW Filter:", top);
+        }
+
+        resolve(isUnsafe);
+      } catch (err) {
+        console.error("⚠️ NSFW check failed:", err);
+        resolve(false);
+      }
+    };
+
+    img.onerror = () => resolve(false);
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+
+/* ---------- Override File Upload with NSFW Check ---------- */
+chatFileInput.addEventListener("change", async (e) => {
+  const files = Array.from(e.target.files);
+  for (const f of files) {
+    const isUnsafe = await isImageNSFW(f);
+    if (isUnsafe) {
+      showError("🚫 NSFW image detected. Upload blocked for safety.");
+      continue;
+    }
+
+    const chatId = getChatId(currentUserUid, currentChatFriendUid);
+    const tempMsgRef = db.ref("chats/" + chatId + "/messages").push({
+      sender: currentUserUid,
+      receiver: currentChatFriendUid,
+      uploading: true,
+      fileName: f.name,
+      timestamp: Date.now(),
+    });
+
+    const reader = new FileReader();
+    reader.onload = function (ev) {
+      const data = ev.target.result;
+      tempMsgRef.update({
+        uploading: false,
+        fileData: data,
+        fileType: f.type,
+      });
+      db.ref("unread/" + currentChatFriendUid + "/" + currentUserUid + "/" + tempMsgRef.key).set(true);
+    };
+    reader.readAsDataURL(f);
+  }
+});
+  
+  
+  
+let currentUserUid = "", currentChatFriendUid = "", currentChatListener = null;
+let unreadCounters = {}, lastChatTimestamps = {}, typingTimeout;
+
+// --- Error Handling ---
+window.addEventListener('error', e=>{ showError(e.message || e); });
+function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(msg)+'</div>'; }
+function listenLastMessagesForUserList() {
+    db.ref("chats").on("child_added", chatSnap => {
+        const members = chatSnap.child("members").val() || {};
+        if (!members[currentUserUid]) return;
+
+        chatSnap.ref.child("messages").orderByChild("timestamp").limitToLast(1).on("value", snap => {
+            if (!snap.exists()) return;
+            const msg = Object.values(snap.val())[0];
+            const otherUid = msg.sender === currentUserUid ? msg.receiver : msg.sender;
+            
+           
+            
+            // 2. Refresh the list. If cachedUsers exists, use it to avoid blank page.
+            if (cachedUsers) {
+                renderUserList(cachedUsers);
+            }
+        });
+    });
+}   
+// --- Auth ---
+auth.onAuthStateChanged(user=>{
+  if(user && user.emailVerified){
+console.log("✅ Logged in as:", user.email);
+    currentUserUid = user.uid;
+    nav.innerHTML = `
+      <a href="index.html">Home</a>
+      <a href="friends.html">Friends</a>
+      <a href="stories.html">Stories</a>
+      <a href="safety.html">Safety</a>
+      <a href="profile.html">Profile</a>
+      <a href="#" id="logoutBtn">Logout</a>`;
+    document.getElementById("logoutBtn").onclick = ()=>{
+      db.ref('users/'+currentUserUid+'/public/online').set(false);
+      localStorage.removeItem("lastChatFriendUid");
+      localStorage.removeItem("lastChatFriendName");
+      auth.signOut().then(()=>window.location.href="login.html");
+    };
+    setupOnlineStatus();
+    initUsersListener();
+    setupUnreadListener();
+    listenLastMessagesForUserList();
+   const lastUid = localStorage.getItem("lastChatFriendUid");
+    const lastName = localStorage.getItem("lastChatFriendName");
+    if(lastUid && lastName) openChat(lastUid,lastName);
+  } else {
+    nav.innerHTML = '<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>';
+    userList.innerHTML="<p style='padding:12px'>Please login to view users.</p>";
+  }
+});
+  
+// --- Online Status ---
+function setupOnlineStatus(){
+  if(!currentUserUid) return;
+  const statusRef = db.ref('users/'+currentUserUid+'/public/online');
+  db.ref('.info/connected').on('value', snap=>{
+    if(snap && snap.val()){ statusRef.set(true); statusRef.onDisconnect().set(false); }
+  });
+}
+  
+// --- Users List ---
+function renderUserList(users) {
+  const friends = Object.keys(users)
+    .filter(uid => uid !== currentUserUid)
+    .map(uid => {
+      const u = users[uid].public || {};
+      return {
+        uid,
+        name: u.name || "Unknown",
+        gender: u.gender || "N/A",
+        online: !!u.online,
+        // ✅ CRITICAL: Pull the timestamp we've been saving in the global variable
+        time: lastChatTimestamps[uid] || 0 
+      };
+    });
+
+  // SORTING HIERARCHY:
+  // 1. Message Recency (Newest timestamp first)
+  // 2. Online Status (Online users above offline)
+  // 3. Alphabetical (A-Z)
+  friends.sort((a, b) => {
+  const unreadA = unreadCounters[a.uid] || 0;
+  const unreadB = unreadCounters[b.uid] || 0;
+
+  const timeA = a.time || 0;
+  const timeB = b.time || 0;
+
+  // 1️⃣ Unread chats ALWAYS on top
+  if ((unreadB > 0) !== (unreadA > 0)) {
+    return unreadB > 0 ? 1 : -1;
+  }
+
+  // 2️⃣ Users WITH messages above users WITHOUT messages
+  if ((timeB > 0) !== (timeA > 0)) {
+    return timeB > 0 ? 1 : -1;
+  }
+
+  // 3️⃣ Newest message first
+  if (timeB !== timeA) {
+    return timeB - timeA;
+  }
+
+  // 4️⃣ Online users above offline users
+  if (b.online !== a.online) {
+    return b.online - a.online;
+  }
+
+  // 5️⃣ Alphabetical
+  return a.name.localeCompare(b.name);
+});
+
+
+
+  userList.innerHTML = "";
+  friends.forEach(f => {
+    const row = document.createElement("div");
+    row.className = "user-row" + (f.uid === currentChatFriendUid ? " active" : "");
+    row.id = `userrow-${f.uid}`;
+    row.dataset.uid = f.uid;
+    row.dataset.name = f.name;
+    row.innerHTML = `
+      <div>
+        <span class="status-dot ${f.online ? "online" : "offline"}"></span>
+        ${escapeHtml(f.name)} (${escapeHtml(f.gender)})
+      </div>
+    `;
+    row.onclick = () => openChat(f.uid, f.name);
+    userList.appendChild(row);
+  });
+
+  updateFriendListBadges();
+}
+
+function initUsersListener(){
+  db.ref('users').on('value', snap=>{
+    cachedUsers = snap.val() || {};
+    renderUserList(snap.val() || {});
+  });
+}
+
+
+    
+
+// --- Unread Badges ---
+function setupUnreadListener(){
+  db.ref('unread/'+currentUserUid).on('value', snap=>{
+    unreadCounters={};
+    const data = snap.val()||{};
+    Object.keys(data).forEach(uid=>unreadCounters[uid]=Object.keys(data[uid]||{}).length);
+    renderUserList(cachedUsers);
+  });
+}
+function updateFriendListBadges(){
+  document.querySelectorAll('.user-row').forEach(r=>{
+    const uid=r.dataset.uid;
+    let badge=r.querySelector('.badge');
+    const count = Number(unreadCounters[uid]||0);
+    if(count>0){
+      if(!badge){ badge=document.createElement('span'); badge.className='badge'; r.querySelector('div').appendChild(badge); }
+      badge.textContent=count;
+    } else if(badge) badge.remove();
+  });
+}
+function flashUserRow(uid){
+  const row=document.querySelector(`.user-row[data-uid="${uid}"]`);
+  if(row){ row.classList.add('flash'); setTimeout(()=>row.classList.remove('flash'),800); }
+}
+
+// --- Open Chat (Clean Optimized Version) ---
+function openChat(uid, name) {
+
+  // Highlight user row
+  document.querySelectorAll('.user-row').forEach(r => r.classList.remove('active'));
+  const activeRow = document.querySelector(`.user-row[data-uid="${uid}"]`);
+  if (activeRow) activeRow.classList.add('active');
+
+  // Setup chat state
+  currentChatFriendUid = uid;
+  chatWith.textContent = name;
+  localStorage.setItem("lastChatFriendUid", uid);
+  localStorage.setItem("lastChatFriendName", name);
+
+  chatModal.style.display = 'flex';
+  chatMessages.innerHTML = '';
+  typingIndicator.textContent = '';
+
+  // Clear unread
+  db.ref(`unread/${currentUserUid}/${uid}`).remove();
+  delete unreadCounters[uid];
+  updateFriendListBadges();
+
+  // Compute chat ID
+  const chatId = getChatId(currentUserUid, uid);
+
+  // Remove old listener
+  if (currentChatListener) currentChatListener.off();
+
+  // Ensure both users exist in chat
+  db.ref(`chats/${chatId}/members`).update({
+    [currentUserUid]: true,
+    [uid]: true
+  });
+
+  // === NEW: LIMIT LAST 20 messages properly ===
+  const chatRef = db
+    .ref(`chats/${chatId}/messages`)
+    .orderByChild("timestamp")
+    .limitToLast(20);
+
+  // === Load last 20 messages first ===
+chatRef.once("value", snap => {
+  const msgs = snap.val() || {};
+
+  const sorted = Object.entries(msgs).sort(
+    (a, b) => a[1].timestamp - b[1].timestamp
+  );
+
+  sorted.forEach(([key, msg]) =>
+    addOrUpdateMessageToChat({ ...msg, _key: key })
+  );
+
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+
+
+});
+
+
+  // Realtime listeners: ONLY new messages
+  currentChatListener = chatRef;
+
+  chatRef.on("child_added", snap => {
+    const msg = { ...snap.val(), _key: snap.key };
+
+    // Skip messages already loaded in the initial batch
+    if (document.getElementById("msg-" + snap.key)) return;
+
+    addOrUpdateMessageToChat(msg);
+
+const otherUid =
+  msg.sender === currentUserUid ? msg.receiver : msg.sender;
+
+lastChatTimestamps[otherUid] = msg.timestamp;
+
+// Move row instantly
+lastChatTimestamps[otherUid] = msg.timestamp;
+renderUserList(cachedUsers);
+flashUserRow(otherUid);
+
+
+
+    // Handle unread for background chat
+    if (
+      msg.receiver === currentUserUid &&
+      msg.sender !== currentUserUid
+    ) {
+      if (currentChatFriendUid !== msg.sender) {
+        db.ref(`unread/${currentUserUid}/${msg.sender}/${msg._key}`).set(true);
+        flashUserRow(msg.sender);
+      } else {
+        db.ref(`unread/${currentUserUid}/${msg.sender}`).remove();
+        delete unreadCounters[msg.sender];
+        updateFriendListBadges();
+      }
+    }
+  });
+
+ {
+  // NEW messages
+
+
+}
+
+
+  // Updated messages (e.g., image finished uploading)
+  chatRef.on("child_changed", snap => {
+    addOrUpdateMessageToChat({ ...snap.val(), _key: snap.key });
+  });
+
+  // Typing listener
+  listenTyping(uid);
+}
+
+
+// --- Messages ---
+function addOrUpdateMessageToChat(msg){
+  if(!msg||!msg._key) return;
+  const id='msg-'+msg._key;
+  let el=document.getElementById(id);
+  const isSelf=(msg.sender===currentUserUid);
+  if(!el){ el=document.createElement('div'); el.id=id; el.className='message '+(isSelf?'self':'friend'); chatMessages.appendChild(el); }
+
+  if(msg.fileData){
+    const isImage=msg.fileType?.startsWith('image/') || /\.(jpg|jpeg|png|gif)$/i.test(msg.fileName||'');
+    if(isImage){ el.innerHTML=`<img class="chat-image" src="${msg.fileData}"/><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`; }
+    else{ el.innerHTML=`<a href="${msg.fileData}" download="${msg.fileName||'file'}">⬇️</a><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`; }
+  } else if(msg.uploading){ el.innerHTML=`<span class="uploading-badge">Sending ${escapeHtml(msg.fileName||'...')}</span><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`; }
+  else if(msg.text){ el.innerHTML = escapeHtml(msg.text)+'<div class="timestamp '+(isSelf?'':'friend')+'">'+new Date(msg.timestamp).toLocaleString()+'</div>'; }
+  else{ el.innerHTML='<div class="small-muted">Unknown message</div>'; }
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// --- Typing ---
+chatInput.addEventListener('input', ()=>{
+  if(!currentChatFriendUid) return;
+  db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).set(true);
+  clearTimeout(typingTimeout);
+  typingTimeout=setTimeout(()=>db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove(),1000);
+});
+function listenTyping(uid){ db.ref('typing/'+currentUserUid+'/'+uid).on('value', snap=>{ typingIndicator.textContent = snap.exists()? chatWith.textContent+' is typing...' : ''; }); }
+
+// --- Send Message ---
+function sendMessage(){
+  const text=chatInput.value.trim();
+  if(!text||!currentChatFriendUid) return;
+  const chatId=getChatId(currentUserUid,currentChatFriendUid);
+  const msg={sender:currentUserUid,receiver:currentChatFriendUid,text:text,timestamp:Date.now()};
+  chatInput.value='';
+  const msgRef=db.ref('chats/'+chatId+'/messages').push(msg);
+  db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+msgRef.key).set(true);
+}
+sendBtn.onclick=sendMessage;
+chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
+
+// --- File Upload ---
+fileBtn.onclick=()=>chatFileInput.click();
+
+
+// --- Close Chat ---
+function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null; if(currentChatListener) currentChatListener.off(); }
+function getChatId(a,b){ return a<b? a+'_'+b : b+'_'+a; }
+function escapeHtml(str){ return str.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+// --- Resizable Chat Anywhere ---
+let isResizing=false,lastX,lastY,lastWidth,lastHeight;
+chatModal.addEventListener('mousedown', e=>{
+  if(e.target!==chatInput && e.target.tagName!=='BUTTON'){
+    isResizing=true; lastX=e.clientX; lastY=e.clientY;
+    const rect=chatModal.getBoundingClientRect();
+    lastWidth=rect.width; lastHeight=rect.height;
+    document.body.style.userSelect='none';
+  }
+});
+document.addEventListener('mousemove', e=>{
+  if(!isResizing) return;
+  const dx=e.clientX-lastX, dy=e.clientY-lastY;
+  const newWidth=Math.min(Math.max(lastWidth+dx,300),window.innerWidth-40);
+  const newHeight=Math.min(Math.max(lastHeight+dy,200),window.innerHeight-60);
+  chatModal.style.width=newWidth+'px'; chatModal.style.height=newHeight+'px';
+});
+document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; document.body.style.userSelect='auto'; } });
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
 body { font-family: Arial, sans-serif; margin:0; background:#f8f6fb; color:#333; display:flex; min-height:100vh; flex-direction: column; }
 header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#d8cce5; box-shadow:0 3px 6px rgba(0,0,0,0.1); position:fixed; top:0; left:0; right:0; z-index:500; }
 header h1{ font-size:24px; margin:0; }
@@ -641,6 +1253,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
