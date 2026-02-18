@@ -587,6 +587,41 @@ function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null;
 function getChatId(a,b){ return a<b? a+'_'+b : b+'_'+a; }
 function escapeHtml(str){ return str.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
+  async function checkFriendStatus(friendUid) {
+  const snap = await db.ref(`friends/${currentUserUid}/${friendUid}`).once("value");
+
+  const btn = document.getElementById("addFriendBtn");
+
+  if (snap.exists()) {
+    // already friends → hide button
+    btn.style.display = "none";
+  } else {
+    // not friends → show button
+    btn.style.display = "inline-block";
+  }
+}
+
+  async function checkFriendStatus(friendUid) {
+  const snap = await db.ref(`friends/${currentUserUid}/${friendUid}`).once("value");
+  const btn = document.getElementById("addFriendBtn");
+
+  if (snap.exists()) {
+    btn.style.display = "none";   // already friends
+  } else {
+    btn.style.display = "inline-block"; // not friends
+  }
+}
+
+  async function sendFriendRequest() {
+  if (!currentChatFriendUid) return;
+
+  await db.ref(`friendRequests/${currentChatFriendUid}/${currentUserUid}`).set(true);
+
+  alert("Friend request sent!");
+  document.getElementById("addFriendBtn").style.display = "none";
+}
+
+  
 // --- Resizable Chat Anywhere ---
 let isResizing=false,lastX,lastY,lastWidth,lastHeight;
 chatModal.addEventListener('mousedown', e=>{
@@ -609,6 +644,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
