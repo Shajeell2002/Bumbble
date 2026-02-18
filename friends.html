@@ -424,8 +424,7 @@ function flashUserRow(uid){
 
 async function openChat(uid, name) {
 
-  // 👉 check friend status FIRST
-  await checkFriendStatus(uid);
+
   
   // Highlight user row
   document.querySelectorAll('.user-row').forEach(r => r.classList.remove('active'));
@@ -610,6 +609,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
