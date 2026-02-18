@@ -241,13 +241,15 @@ async function isNameUnique(name, currentUid) {
 // Update profile with unique name restriction
 async function updateProfile() {
   const user = auth.currentUser;
-  if(!user) return;
+  if (!user) return;
 
   const uid = user.uid;
   const name = document.getElementById("name").value.trim();
   const age = document.getElementById("age").value.trim();
   const location = document.getElementById("location").value.trim();
   const gender = document.getElementById("gender").value;
+  const bio = document.getElementById("bio").value.trim();
+  const interests = document.getElementById("interests").value.trim();
 
   errorMsg.textContent = "";
 
@@ -257,26 +259,23 @@ async function updateProfile() {
   }
 
   try {
-    // Check name uniqueness across all users
     const isUnique = await isNameUnique(name, uid);
     if (!isUnique) {
       errorMsg.textContent = "This name is already taken. Please choose another.";
       return;
     }
 
-    // Update profile
-   await db.ref(`users/${uid}/public`).update({
-  name,
-  age: age || "N/A",
-  location: location || "",
-  gender: gender || "",
-  bio: bio || "",
-  interests: interests || "",
-  pic: profileBase64 || "images/profile1.png"
+    await db.ref(`users/${uid}/public`).update({
+      name,
+      age: age || "N/A",
+      location: location || "",
+      gender: gender || "",
+      bio: bio || "",
+      interests: interests || "",
+      pic: profileBase64 || "images/profile1.png"
     });
 
     alert("Profile updated successfully!");
-
   } catch (err) {
     console.error(err);
     errorMsg.textContent = "Failed to save profile.";
@@ -286,6 +285,7 @@ async function updateProfile() {
 </script>
 </body>
 </html>
+
 
 
 
