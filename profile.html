@@ -265,13 +265,15 @@ async function updateProfile() {
     }
 
     // Update profile
-    await db.ref(`users/${uid}/public`).update({
-      name,
-      age: age || "N/A",
-      location: location || "",
-      gender: gender || "",
-      pic: profileBase64 || "images/profile1.png"
-    const bio = document.getElementById("bio").value.trim();
+   await db.ref(`users/${uid}/public`).update({
+  name,
+  age: age || "N/A",
+  location: location || "",
+  gender: gender || "",
+  bio: bio || "",
+  interests: interests || "",
+  pic: profileBase64 || "images/profile1.png"
+      const bio = document.getElementById("bio").value.trim();
 const interests = document.getElementById("interests").value.trim();
     });
 
@@ -286,6 +288,7 @@ const interests = document.getElementById("interests").value.trim();
 </script>
 </body>
 </html>
+
 
 
 
