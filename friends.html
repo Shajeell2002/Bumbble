@@ -624,13 +624,25 @@ async function checkFriendStatus(friendUid) {
 
 // --- Send Request ---
 async function sendFriendRequest() {
-  if (!currentChatFriendUid) return;
+  try {
+    if (!currentChatFriendUid) {
+      alert("No user selected");
+      return;
+    }
 
-  await db.ref(`friendRequests/${currentChatFriendUid}/${currentUserUid}`).set(true);
+    console.log("Sending request to:", currentChatFriendUid);
 
-  alert("Friend request sent!");
-  document.getElementById("addFriendBtn").style.display = "none";
+    await db.ref(`friendRequests/${currentChatFriendUid}/${currentUserUid}`).set(true);
+
+    alert("Friend request sent!");
+    document.getElementById("addFriendBtn").style.display = "none";
+
+  } catch (err) {
+    console.error("Friend request error:", err);
+    alert("Error sending request. Check console.");
+  }
 }
+  
 </script>
 
   <script>function listenFriendRequests() {
@@ -680,6 +692,7 @@ async function sendFriendRequest() {
 </script>
 </body>
 </html>
+
 
 
 
