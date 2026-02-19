@@ -646,37 +646,39 @@ async function sendFriendRequest() {
 }
   
 </script>
+function listenFriendsList() {
+  const list = document.getElementById("friendsList");
 
-  <script>function listenFriendRequests() {
-  db.ref("friendRequests/" + currentUserUid).on("value", async snap => {
-    const list = document.getElementById("requestList");
+  db.ref("friends/" + currentUserUid).on("value", (snapshot) => {
     list.innerHTML = "";
 
-    const requests = snap.val();
-    if (!requests) {
-      list.innerHTML = "<p>No pending requests</p>";
+    if (!snapshot.exists()) {
+      list.innerHTML = "<li>No friends yet</li>";
       return;
     }
 
-    for (const senderUid of Object.keys(requests)) {
-      const userSnap = await db.ref("users/" + senderUid + "/public").once("value");
-      const name = userSnap.val()?.name || "Unknown";
+    const friends = snapshot.val();
 
-      const div = document.createElement("div");
-      div.className = "request-item";
-      div.innerHTML = `
-        <span>${escapeHtml(name)}</span>
-        <div>
-          <button class="accept-btn" onclick="acceptRequest('${senderUid}')">Accept</button>
-          <button class="reject-btn" onclick="rejectRequest('${senderUid}')">Reject</button>
-        </div>
-      `;
-      list.appendChild(div);
-    }
+    Object.keys(friends).forEach((friendUid) => {
+
+      db.ref("users/" + friendUid + "/public").once("value").then((userSnap) => {
+
+        if (!userSnap.exists()) return;
+
+        const name = userSnap.val().name || "User";
+
+        const li = document.createElement("li");
+        li.textContent = name;
+
+        li.onclick = () => openChat(friendUid, name);
+
+        list.appendChild(li);
+      });
+
+    });
   });
 }
-  </script>
-<script>
+  <script>
   async function acceptRequest(senderUid) {
   // add both as friends
   await db.ref("friends/" + currentUserUid + "/" + senderUid).set(true);
@@ -726,6 +728,7 @@ async function sendFriendRequest() {
   
 </body>
 </html>
+
 
 
 
