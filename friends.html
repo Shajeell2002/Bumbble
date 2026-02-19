@@ -703,21 +703,29 @@ async function sendFriendRequest() {
 }
   </script>
 <script>
-function acceptFriendRequest(senderUid) {
-  const updates = {};
+async function acceptRequest(senderUid) {
+  try {
+    const updates = {};
 
-  updates["friends/" + currentUserUid + "/" + senderUid] = true;
-  updates["friends/" + senderUid + "/" + currentUserUid] = true;
-  updates["friendRequests/" + currentUserUid + "/" + senderUid] = null;
+    updates["friends/" + currentUserUid + "/" + senderUid] = true;
+    updates["friends/" + senderUid + "/" + currentUserUid] = true;
+    updates["friendRequests/" + currentUserUid + "/" + senderUid] = null;
 
-  db.ref().update(updates);
-} 
-  // remove request
-  await db.ref("friendRequests/" + currentUserUid + "/" + senderUid).remove();
+    await db.ref().update(updates);
 
-  alert("Friend request accepted!");
+    alert("Friend request accepted!");
+  } catch (err) {
+    console.error(err);
+  }
 }
 
+async function rejectRequest(senderUid) {
+  try {
+    await db.ref("friendRequests/" + currentUserUid + "/" + senderUid).remove();
+  } catch (err) {
+    console.error(err);
+  }
+}
   async function rejectRequest(senderUid) {
   await db.ref("friendRequests/" + currentUserUid + "/" + senderUid).remove();
 }
@@ -764,6 +772,7 @@ init();
   
 </body>
 </html>
+
 
 
 
