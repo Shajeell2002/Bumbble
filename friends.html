@@ -693,8 +693,41 @@ async function sendFriendRequest() {
   await db.ref("friendRequests/" + currentUserUid + "/" + senderUid).remove();
 }
 </script>
+
+  <script>// --- Listen Friends List ---
+function listenFriendsList() {
+  const list = document.getElementById("friendsList");
+
+  db.ref("friends/" + currentUserUid).on("value", async (snapshot) => {
+    list.innerHTML = "";
+
+    if (!snapshot.exists()) {
+      list.innerHTML = "<li>No friends yet</li>";
+      return;
+    }
+
+    const friends = snapshot.val();
+
+    for (const friendUid of Object.keys(friends)) {
+      const userSnap = await db.ref("users/" + friendUid + "/public").once("value");
+
+      if (!userSnap.exists()) continue;
+
+      const name = userSnap.val().name || "User";
+
+      const li = document.createElement("li");
+      li.textContent = name;
+
+      // click friend → open chat
+      li.onclick = () => openChat(friendUid, name);
+
+      list.appendChild(li);
+    }
+  });
+}</script>
 </body>
 </html>
+
 
 
 
