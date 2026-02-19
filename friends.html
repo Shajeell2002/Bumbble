@@ -388,14 +388,15 @@ function renderUserList(users) {
   updateFriendListBadges();
 }
 
-function initUsersListener(){
-  db.ref('users').on('value', snap=>{
+function initUsersListener() {
+  db.ref('users').on('value', snap => {
     cachedUsers = snap.val() || {};
-    renderUserList(snap.val() || {});
+
+    // 🔥 AFTER users load → refresh friends list
+    listenFriendsList();
+    renderUserList(cachedUsers);
   });
 }
-
-
     
 
 // --- Unread Badges ---
@@ -732,4 +733,5 @@ function listenFriendsList() {
 
 </body>
 </html>
+
 
