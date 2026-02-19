@@ -398,7 +398,29 @@ function initUsersListener() {
   });
 }
   
-  
+function refreshFriendsListUI() {
+  const list = document.getElementById("friendsList");
+
+  db.ref("friends/" + currentUserUid).once("value").then(snapshot => {
+    list.innerHTML = "";
+
+    if (!snapshot.exists()) {
+      list.innerHTML = "<li>No friends yet</li>";
+      return;
+    }
+
+    Object.keys(snapshot.val()).forEach(friendUid => {
+      const name =
+        cachedUsers?.[friendUid]?.public?.name || "Unknown User";
+
+      const li = document.createElement("li");
+      li.textContent = name;
+      li.onclick = () => openChat(friendUid, name);
+
+      list.appendChild(li);
+    });
+  });
+}  
 
 // --- Unread Badges ---
 function setupUnreadListener(){
@@ -723,6 +745,7 @@ function listenFriendsList() {
 
 </body>
 </html>
+
 
 
 
