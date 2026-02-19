@@ -698,7 +698,7 @@ async function sendFriendRequest() {
 function listenFriendsList() {
   const list = document.getElementById("friendsList");
 
-  db.ref("friends/" + currentUserUid).on("value", async (snapshot) => {
+  db.ref("friends/" + currentUserUid).on("value", (snapshot) => {
     list.innerHTML = "";
 
     if (!snapshot.exists()) {
@@ -706,32 +706,22 @@ function listenFriendsList() {
       return;
     }
 
-    
-    const friendUids = Object.keys(snapshot.val());
+    Object.keys(snapshot.val()).forEach((friendUid) => {
+      const name =
+        cachedUsers?.[friendUid]?.public?.name || "Unknown User";
 
-    for (const friendUid of friendUids) {
-      try {
-        const userSnap = await db
-          .ref("users/" + friendUid + "/public")
-          .once("value");
+      const li = document.createElement("li");
+      li.textContent = name;
+      li.onclick = () => openChat(friendUid, name);
 
-        const userData = userSnap.val() || {};
-        const name = userData.name || "Unknown User";
-
-        const li = document.createElement("li");
-        li.textContent = name;
-        li.onclick = () => openChat(friendUid, name);
-
-        list.appendChild(li);
-      } catch (err) {
-        console.error("Error loading friend:", friendUid, err);
-      }
-    }
+      list.appendChild(li);
+    });
   });
 }
   </script>
 
 </body>
 </html>
+
 
 
