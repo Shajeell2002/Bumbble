@@ -285,10 +285,13 @@ console.log("✅ Logged in as:", user.email);
       localStorage.removeItem("lastChatFriendName");
       auth.signOut().then(()=>window.location.href="login.html");
     };
-    setupOnlineStatus();
-    initUsersListener();
-    setupUnreadListener();
-    listenLastMessagesForUserList();
+setupOnlineStatus();
+initUsersListener();
+setupUnreadListener();
+listenLastMessagesForUserList();
+listenFriendRequests();   // 👈 ADD THIS
+
+    
    const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
     if(lastUid && lastName) openChat(lastUid,lastName);
@@ -623,6 +626,7 @@ async function sendFriendRequest() {
   
 </body>
 </html>
+
 
 
 
