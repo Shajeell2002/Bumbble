@@ -692,13 +692,8 @@ async function sendFriendRequest() {
   await db.ref("friendRequests/" + currentUserUid + "/" + senderUid).remove();
 }
 </script>
-
-<script>
-auth.onAuthStateChanged(user => {
-  if (!user) return;
-
-  const uid = user.uid;
-  const friendsRef = db.ref("friends/" + uid);
+  <script>function listenFriendsList() {
+  const friendsRef = db.ref("friends/" + currentUserUid);
 
   friendsRef.on("value", async (snapshot) => {
     const list = document.getElementById("friendsList");
@@ -712,29 +707,24 @@ auth.onAuthStateChanged(user => {
     const friends = snapshot.val();
 
     for (const friendUid in friends) {
-      try {
-        const userSnap = await db.ref("users/" + friendUid + "/public").once("value");
+      const userSnap = await db.ref("users/" + friendUid + "/public").once("value");
 
-        if (userSnap.exists()) {
-          const name = userSnap.val().name || "User";
+      if (userSnap.exists()) {
+        const name = userSnap.val().name || "User";
 
-          const li = document.createElement("li");
-          li.textContent = name;
+        const li = document.createElement("li");
+        li.textContent = name;
 
-          // open chat with UID + name
-          li.onclick = () => openChat(friendUid, name);
+        li.onclick = () => openChat(friendUid, name);
 
-          list.appendChild(li);
-        }
-      } catch (err) {
-        console.error("Failed to load friend:", err);
+        list.appendChild(li);
       }
     }
   });
-});
-</script>
-
+}
+  </script>
   
 </body>
 </html>
+
 
