@@ -89,6 +89,10 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 </div>
 
 <div class="main-content">
+<div id="requestPanel" style="margin-top:10px;">
+  <h3>Friend Requests</h3>
+  <div id="requestList"></div>
+</div>
 <h3>My Friends</h3> 
   <ul id="friendsList"></ul>
   <div id="chatModal">
@@ -279,9 +283,7 @@ auth.onAuthStateChanged(user=>{
       <a href="stories.html">Stories</a>
       <a href="safety.html">Safety</a>
       <a href="profile.html">Profile</a>
-      <a href="Notification.html">
-    Notification <span id="notifBadge" class="badge" style="display:none;"></span>
-  </a>
+      <a href="Notification.html">Notification</a>
       <a href="#" id="logoutBtn">Logout</a>`;
     document.getElementById("logoutBtn").onclick = ()=>{
       db.ref('users/'+currentUserUid+'/public/online').set(false);
@@ -293,8 +295,8 @@ auth.onAuthStateChanged(user=>{
     initUsersListener();
     setupUnreadListener();
     listenLastMessagesForUserList();
-      listenFriendsList();
-    listenNotificationCount();
+   listenFriendRequests();
+   listenFriendsList();
     
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
@@ -669,7 +671,37 @@ async function sendFriendRequest() {
   }
 }
   
+</script>
 
+  <script>function listenFriendRequests() {
+  db.ref("friendRequests/" + currentUserUid).on("value", async snap => {
+    const list = document.getElementById("requestList");
+    list.innerHTML = "";
+
+    const requests = snap.val();
+    if (!requests) {
+      list.innerHTML = "<p>No pending requests</p>";
+      return;
+    }
+
+    for (const senderUid of Object.keys(requests)) {
+      const userSnap = await db.ref("users/" + senderUid + "/public").once("value");
+      const name = userSnap.val()?.name || "Unknown";
+
+      const div = document.createElement("div");
+      div.className = "request-item";
+      div.innerHTML = `
+        <span>${escapeHtml(name)}</span>
+        <div>
+          <button class="accept-btn" onclick="acceptRequest('${senderUid}')">Accept</button>
+          <button class="reject-btn" onclick="rejectRequest('${senderUid}')">Reject</button>
+        </div>
+      `;
+      list.appendChild(div);
+    }
+  });
+}
+  </script>
 <script>
 async function acceptRequest(senderUid) {
   try {
@@ -725,28 +757,9 @@ function listenFriendsList() {
   });
 }
   </script>
-<script>function listenNotificationCount() {
-  const badge = document.getElementById("notifBadge");
-
-  db.ref("friendRequests/" + currentUserUid).on("value", snap => {
-    const count = snap.exists() ? Object.keys(snap.val()).length : 0;
-
-    if (count > 0) {
-      badge.style.display = "inline-block";
-      badge.textContent = count;
-    } else {
-      badge.style.display = "none";
-    }
-  });
-}
-</script>
-
   
 </body>
 </html>
-
-
-
 
 
 
