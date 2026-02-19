@@ -391,12 +391,14 @@ function initUsersListener() {
   db.ref('users').on('value', snap => {
     cachedUsers = snap.val() || {};
 
-    // 🔥 AFTER users load → refresh friends list
-    listenFriendsList();
     renderUserList(cachedUsers);
+
+    // 🔥 FORCE refresh of friends list AFTER users exist
+    refreshFriendsListUI();
   });
 }
-    
+  
+  
 
 // --- Unread Badges ---
 function setupUnreadListener(){
@@ -721,6 +723,7 @@ function listenFriendsList() {
 
 </body>
 </html>
+
 
 
 
