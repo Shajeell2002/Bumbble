@@ -89,10 +89,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 </div>
 
 <div class="main-content">
-  <div id="requestPanel" style="margin-bottom:15px;">
-  <h3>Friend Requests</h3>
-  <div id="requestList"></div>
-</div>
   <div id="chatModal">
     <div id="chatHeader">
       <span id="chatWith">Friend</span>
@@ -289,13 +285,10 @@ console.log("✅ Logged in as:", user.email);
       localStorage.removeItem("lastChatFriendName");
       auth.signOut().then(()=>window.location.href="login.html");
     };
-setupOnlineStatus();
-initUsersListener();
-setupUnreadListener();
-listenLastMessagesForUserList();
-listenFriendRequests();   // 👈 ADD THIS
-
-    
+    setupOnlineStatus();
+    initUsersListener();
+    setupUnreadListener();
+    listenLastMessagesForUserList();
    const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
     if(lastUid && lastName) openChat(lastUid,lastName);
@@ -426,7 +419,27 @@ function flashUserRow(uid){
 function openChat(uid, name) {
     checkFriendStatus(uid);
 
-  
+  async function checkFriendStatus(friendUid) {
+  const snap = await db.ref(`friends/${currentUserUid}/${friendUid}`).once("value");
+
+  const btn = document.getElementById("addFriendBtn");
+
+  if (snap.exists()) {
+    // already friends → hide button
+    btn.style.display = "none";
+  } else {
+    // not friends → show button
+    btn.style.display = "inline-block";
+  }
+}
+ async function sendFriendRequest() {
+  if (!currentChatFriendUid) return;
+
+  await db.ref(`friendRequests/${currentChatFriendUid}/${currentUserUid}`).set(true);
+
+  alert("Friend request sent!");
+  document.getElementById("addFriendBtn").style.display = "none";
+} 
   // Highlight user row
   document.querySelectorAll('.user-row').forEach(r => r.classList.remove('active'));
   const activeRow = document.querySelector(`.user-row[data-uid="${uid}"]`);
@@ -607,32 +620,9 @@ document.addEventListener('mousemove', e=>{
 });
 document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; document.body.style.userSelect='auto'; } });
 </script>
-<script>
-  // --- Friend Status ---
-async function checkFriendStatus(friendUid) {
-  const snap = await db.ref(`friends/${currentUserUid}/${friendUid}`).once("value");
-  const btn = document.getElementById("addFriendBtn");
 
-  if (snap.exists()) btn.style.display = "none";
-  else btn.style.display = "inline-block";
-}
-
-// --- Send Request ---
-async function sendFriendRequest() {
-  if (!currentChatFriendUid) return;
-
-  await db.ref(`friendRequests/${currentChatFriendUid}/${currentUserUid}`).set(true);
-
-  alert("Friend request sent!");
-  document.getElementById("addFriendBtn").style.display = "none";
-}
-</script>
-  
 </body>
 </html>
-
-
-
 
 
 
