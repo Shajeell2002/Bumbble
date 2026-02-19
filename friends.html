@@ -432,7 +432,14 @@ function openChat(uid, name) {
     btn.style.display = "inline-block";
   }
 }
-  
+ async function sendFriendRequest() {
+  if (!currentChatFriendUid) return;
+
+  await db.ref(`friendRequests/${currentChatFriendUid}/${currentUserUid}`).set(true);
+
+  alert("Friend request sent!");
+  document.getElementById("addFriendBtn").style.display = "none";
+} 
   // Highlight user row
   document.querySelectorAll('.user-row').forEach(r => r.classList.remove('active'));
   const activeRow = document.querySelector(`.user-row[data-uid="${uid}"]`);
@@ -616,6 +623,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
