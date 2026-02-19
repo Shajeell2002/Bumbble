@@ -693,6 +693,7 @@ async function sendFriendRequest() {
 }
 </script>
 
+  <script>
 const uid = auth.currentUser.uid;
 const friendsRef = db.ref("friends/" + uid);
 
@@ -721,30 +722,8 @@ friendsRef.on("value", async (snapshot) => {
     }
   }
 });
-
+</script>
 
   
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
