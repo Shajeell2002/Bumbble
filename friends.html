@@ -296,6 +296,7 @@ console.log("✅ Logged in as:", user.email);
     setupUnreadListener();
     listenLastMessagesForUserList();
    listenFriendRequests();
+    listenFriendsList();
    
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
@@ -694,5 +695,6 @@ async function sendFriendRequest() {
 </script>
 </body>
 </html>
+
 
 
