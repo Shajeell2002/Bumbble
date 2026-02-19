@@ -726,9 +726,26 @@ function listenFriendsList() {
   });
 }
   </script>
-  
+
+  <script>
+    function listenNotificationCount() {
+  const badge = document.getElementById("notifBadge");
+
+  db.ref("friendRequests/" + currentUserUid).on("value", snap => {
+    const count = snap.exists() ? Object.keys(snap.val()).length : 0;
+
+    if (count > 0) {
+      badge.style.display = "inline-block";
+      badge.textContent = count;
+    } else {
+      badge.style.display = "none";
+    }
+  });
+}
+  </script>
 </body>
 </html>
+
 
 
 
