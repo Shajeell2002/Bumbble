@@ -464,6 +464,38 @@ function openChat(uid, name) {
   alert("Friend request sent!");
   document.getElementById("addFriendBtn").style.display = "none";
 } 
+
+  function listenFriendRequests() {
+  db.ref("friendRequests/" + currentUserUid).on("value", async snap => {
+    const list = document.getElementById("requestList");
+    list.innerHTML = "";
+
+    const requests = snap.val();
+    if (!requests) {
+      list.innerHTML = "<p>No pending requests</p>";
+      return;
+    }
+
+    for (const senderUid of Object.keys(requests)) {
+      const userSnap = await db.ref("users/" + senderUid + "/public").once("value");
+      const name = userSnap.val()?.name || "Unknown";
+
+      const div = document.createElement("div");
+      div.className = "request-item";
+      div.innerHTML = `
+        <span>${escapeHtml(name)}</span>
+        <div>
+          <button class="accept-btn" onclick="acceptRequest('${senderUid}')">Accept</button>
+          <button class="reject-btn" onclick="rejectRequest('${senderUid}')">Reject</button>
+        </div>
+      `;
+      list.appendChild(div);
+    }
+  });
+}
+  
+  
+  
   // Highlight user row
   document.querySelectorAll('.user-row').forEach(r => r.classList.remove('active'));
   const activeRow = document.querySelector(`.user-row[data-uid="${uid}"]`);
@@ -647,6 +679,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
