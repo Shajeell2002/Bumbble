@@ -419,30 +419,11 @@ function flashUserRow(uid){
 
 // --- Open Chat (Clean Optimized Version) ---
 function openChat(uid, name) {
+  
  // 👉 check friend status FIRST
   await checkFriendStatus(uid);
   
-  async function checkFriendStatus(friendUid) {
-  const snap = await db.ref(`friends/${currentUserUid}/${friendUid}`).once("value");
-
-  const btn = document.getElementById("addFriendBtn");
-
-  if (snap.exists()) {
-    // already friends → hide button
-    btn.style.display = "none";
-  } else {
-    // not friends → show button
-    btn.style.display = "inline-block";
-  }
-}
-async function sendFriendRequest() {
-  if (!currentChatFriendUid) return;
-
-  await db.ref(`friendRequests/${currentChatFriendUid}/${currentUserUid}`).set(true);
-
-  alert("Friend request sent!");
-  document.getElementById("addFriendBtn").style.display = "none";
-}
+  
 
 
   
@@ -629,6 +610,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
