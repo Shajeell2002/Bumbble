@@ -696,12 +696,7 @@ async function sendFriendRequest() {
 function listenFriendsList() {
   const list = document.getElementById("friendsList");
 
-  if (!currentUserUid) {
-    console.warn("UID not ready for friends list");
-    return;
-  }
-
-  db.ref("friends/" + currentUserUid).on("value", async (snapshot) => {
+  db.ref("friends/" + currentUserUid).on("value", (snapshot) => {
     list.innerHTML = "";
 
     if (!snapshot.exists()) {
@@ -711,29 +706,25 @@ function listenFriendsList() {
 
     const friends = snapshot.val();
 
-    for (const friendUid of Object.keys(friends)) {
-      try {
-        const userSnap = await db.ref("users/" + friendUid + "/public").once("value");
+    Object.keys(friends).forEach((friendUid) => {
+      db.ref("users/" + friendUid + "/public/name")
+        .once("value")
+        .then((nameSnap) => {
+          const name = nameSnap.val() || "User";
 
-        if (!userSnap.exists()) continue;
+          const li = document.createElement("li");
+          li.textContent = name;
+          li.onclick = () => openChat(friendUid, name);
 
-        const name = userSnap.val().name || "User";
-
-        const li = document.createElement("li");
-        li.textContent = name;
-        li.onclick = () => openChat(friendUid, name);
-
-        list.appendChild(li);
-      } catch (err) {
-        console.error("Friend load error:", err);
-      }
-    }
+          list.appendChild(li);
+        });
+    });
   });
-}
-  </script>
+}  </script>
 
 </body>
 </html>
+
 
 
 
