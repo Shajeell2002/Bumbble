@@ -73,27 +73,7 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
   transform: scale(1.1);
 }
 </style>
-<style>
-  .request-item{
-  background:#ece6f2;
-  padding:8px;
-  border-radius:8px;
-  margin-bottom:6px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-.request-item button{
-  margin-left:6px;
-  padding:4px 8px;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
-}
-.accept-btn{ background:#6abf69; color:white; }
-.reject-btn{ background:#e57373; color:white; }
-</style>
-
+  
   
 </head>
 <body>
@@ -109,10 +89,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 </div>
 
 <div class="main-content">
-  <div id="requestPanel" style="margin-bottom:10px;">
-  <h3>Friend Requests</h3>
-  <div id="requestList"></div>
-</div>
   <div id="chatModal">
     <div id="chatHeader">
       <span id="chatWith">Friend</span>
@@ -310,11 +286,9 @@ console.log("✅ Logged in as:", user.email);
       auth.signOut().then(()=>window.location.href="login.html");
     };
     setupOnlineStatus();
-initUsersListener();
-setupUnreadListener();
-listenLastMessagesForUserList();
-listenFriendRequests();   // 👈 ADD THIS
-    
+    initUsersListener();
+    setupUnreadListener();
+    listenLastMessagesForUserList();
    const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
     if(lastUid && lastName) openChat(lastUid,lastName);
@@ -466,10 +440,6 @@ function openChat(uid, name) {
   alert("Friend request sent!");
   document.getElementById("addFriendBtn").style.display = "none";
 } 
-
-
- 
-  
   // Highlight user row
   document.querySelectorAll('.user-row').forEach(r => r.classList.remove('active'));
   const activeRow = document.querySelector(`.user-row[data-uid="${uid}"]`);
@@ -653,28 +623,5 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
