@@ -279,8 +279,10 @@ auth.onAuthStateChanged(user=>{
       <a href="stories.html">Stories</a>
       <a href="safety.html">Safety</a>
       <a href="profile.html">Profile</a>
-      <a href="Notification.html">Notification</a>
-      <a href="#" id="logoutBtn">Logout</a>`;
+<a href="Notification.html">
+    Notification <span id="notifBadge" class="badge" style="display:none;"></span>
+  </a>
+  <a href="#" id="logoutBtn">Logout</a>`;
     document.getElementById("logoutBtn").onclick = ()=>{
       db.ref('users/'+currentUserUid+'/public/online').set(false);
       localStorage.removeItem("lastChatFriendUid");
@@ -727,6 +729,7 @@ function listenFriendsList() {
   
 </body>
 </html>
+
 
 
 
