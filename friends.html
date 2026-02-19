@@ -722,6 +722,7 @@ function listenFriendsList() {
   const list = document.getElementById("friendsList");
 
   db.ref("friends/" + currentUserUid).on("value", (snapshot) => {
+ refreshFriendsListUI(); // always rebuild using cached users
     list.innerHTML = "";
 
     if (!snapshot.exists()) {
@@ -745,6 +746,7 @@ function listenFriendsList() {
 
 </body>
 </html>
+
 
 
 
