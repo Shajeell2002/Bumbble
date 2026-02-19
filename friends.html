@@ -703,11 +703,15 @@ async function sendFriendRequest() {
 }
   </script>
 <script>
-  async function acceptRequest(senderUid) {
-  // add both as friends
-  await db.ref("friends/" + currentUserUid + "/" + senderUid).set(true);
-  await db.ref("friends/" + senderUid + "/" + currentUserUid).set(true);
+function acceptFriendRequest(senderUid) {
+  const updates = {};
 
+  updates["friends/" + currentUserUid + "/" + senderUid] = true;
+  updates["friends/" + senderUid + "/" + currentUserUid] = true;
+  updates["friendRequests/" + currentUserUid + "/" + senderUid] = null;
+
+  db.ref().update(updates);
+} 
   // remove request
   await db.ref("friendRequests/" + currentUserUid + "/" + senderUid).remove();
 
@@ -748,12 +752,4 @@ function listenFriendsList() {
 
 </body>
 </html>
-
-
-
-
-
-
-
-
 
