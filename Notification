@@ -1,0 +1,51 @@
+<h2>Friend Requests</h2>
+<div id="notificationList"></div>
+
+<script>
+const auth = firebase.auth();
+const db = firebase.database();
+
+auth.onAuthStateChanged(user => {
+  if (!user) return;
+  const uid = user.uid;
+
+  db.ref("friendRequests/" + uid).on("value", async snap => {
+    const container = document.getElementById("notificationList");
+    container.innerHTML = "";
+
+    if (!snap.exists()) {
+      container.innerHTML = "<p>No new notifications</p>";
+      return;
+    }
+
+    for (const senderUid of Object.keys(snap.val())) {
+      const userSnap = await db.ref("users/" + senderUid + "/public").once("value");
+      const name = userSnap.val()?.name || "Unknown";
+
+      const div = document.createElement("div");
+      div.innerHTML = `
+        <p>${name} sent you a friend request</p>
+        <button onclick="accept('${senderUid}')">Accept</button>
+        <button onclick="reject('${senderUid}')">Reject</button>
+      `;
+      container.appendChild(div);
+    }
+  });
+});
+
+async function accept(senderUid) {
+  const currentUid = firebase.auth().currentUser.uid;
+  const updates = {};
+
+  updates["friends/" + currentUid + "/" + senderUid] = true;
+  updates["friends/" + senderUid + "/" + currentUid] = true;
+  updates["friendRequests/" + currentUid + "/" + senderUid] = null;
+
+  await db.ref().update(updates);
+}
+
+async function reject(senderUid) {
+  const currentUid = firebase.auth().currentUser.uid;
+  await db.ref("friendRequests/" + currentUid + "/" + senderUid).remove();
+}
+</script>
