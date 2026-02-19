@@ -244,11 +244,12 @@ chatFileInput.addEventListener("change", async (e) => {
   }
 });
   
-  
-  
 let currentUserUid = "", currentChatFriendUid = "", currentChatListener = null;
 let unreadCounters = {}, lastChatTimestamps = {}, typingTimeout;
+let cachedUsers = {};   // ⭐ ADD THIS LINE
 
+
+  
 // --- Error Handling ---
 window.addEventListener('error', e=>{ showError(e.message || e); });
 function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(msg)+'</div>'; }
@@ -724,6 +725,7 @@ function listenFriendsList() {
 
 </body>
 </html>
+
 
 
 
