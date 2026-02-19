@@ -291,7 +291,8 @@ auth.onAuthStateChanged(user=>{
     initUsersListener();
     setupUnreadListener();
     listenLastMessagesForUserList();
-   listenFriendsList();
+listenFriendRequests();
+    listenFriendsList();
     
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
@@ -727,6 +728,7 @@ function listenFriendsList() {
   
 </body>
 </html>
+
 
 
 
