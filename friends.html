@@ -646,7 +646,8 @@ async function sendFriendRequest() {
 }
   
 </script>
-function listenFriendsList() {
+<script>
+  function listenFriendsList() {
   const list = document.getElementById("friendsList");
 
   db.ref("friends/" + currentUserUid).on("value", (snapshot) => {
@@ -728,6 +729,7 @@ function listenFriendsList() {
   
 </body>
 </html>
+
 
 
 
