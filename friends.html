@@ -310,9 +310,11 @@ console.log("✅ Logged in as:", user.email);
       auth.signOut().then(()=>window.location.href="login.html");
     };
     setupOnlineStatus();
-    initUsersListener();
-    setupUnreadListener();
-    listenLastMessagesForUserList();
+initUsersListener();
+setupUnreadListener();
+listenLastMessagesForUserList();
+listenFriendRequests();   // 👈 ADD THIS
+    
    const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
     if(lastUid && lastName) openChat(lastUid,lastName);
@@ -691,6 +693,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
