@@ -419,7 +419,21 @@ function flashUserRow(uid){
 
 // --- Open Chat (Clean Optimized Version) ---
 function openChat(uid, name) {
+checkFriendStatus(uid);
+  async function checkFriendStatus(friendUid) {
+  const snap = await db.ref(`friends/${currentUserUid}/${friendUid}`).once("value");
 
+  const btn = document.getElementById("addFriendBtn");
+
+  if (snap.exists()) {
+    // already friends → hide button
+    btn.style.display = "none";
+  } else {
+    // not friends → show button
+    btn.style.display = "inline-block";
+  }
+}
+  
   // Highlight user row
   document.querySelectorAll('.user-row').forEach(r => r.classList.remove('active'));
   const activeRow = document.querySelector(`.user-row[data-uid="${uid}"]`);
@@ -603,6 +617,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
