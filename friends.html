@@ -506,9 +506,7 @@ function openChat(uid, name) {
 
   alert("Friend request accepted!");
 }
- async function rejectRequest(senderUid) {
-  await db.ref("friendRequests/" + currentUserUid + "/" + senderUid).remove();
-} 
+ 
   
   // Highlight user row
   document.querySelectorAll('.user-row').forEach(r => r.classList.remove('active'));
@@ -693,6 +691,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
