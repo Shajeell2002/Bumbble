@@ -93,6 +93,10 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
   <h3>Friend Requests</h3>
   <div id="requestList"></div>
 </div>
+<h3>My Friends</h3>
+<ul id="friendsList"></ul>
+  
+  
     <div id="chatModal">
     <div id="chatHeader">
       <span id="chatWith">Friend</span>
@@ -294,6 +298,7 @@ console.log("✅ Logged in as:", user.email);
     setupUnreadListener();
     listenLastMessagesForUserList();
    listenFriendRequests();
+    listenFriendsList();
    
     const lastUid = localStorage.getItem("lastChatFriendUid");
     const lastName = localStorage.getItem("lastChatFriendName");
@@ -692,3 +697,4 @@ async function sendFriendRequest() {
 </script>
 </body>
 </html>
+
