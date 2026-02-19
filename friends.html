@@ -601,11 +601,30 @@ document.addEventListener('mousemove', e=>{
 document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; document.body.style.userSelect='auto'; } });
 </script>
 
+  <script>
+// --- Friend Status ---
+async function checkFriendStatus(friendUid) {
+  const snap = await db.ref(`friends/${currentUserUid}/${friendUid}`).once("value");
+  const btn = document.getElementById("addFriendBtn");
 
+  if (snap.exists()) btn.style.display = "none";
+  else btn.style.display = "inline-block";
+}
 
+// --- Send Request ---
+async function sendFriendRequest() {
+  if (!currentChatFriendUid) return;
+
+  await db.ref(`friendRequests/${currentChatFriendUid}/${currentUserUid}`).set(true);
+
+  alert("Friend request sent!");
+  document.getElementById("addFriendBtn").style.display = "none";
+}
+</script>
   
 </body>
 </html>
+
 
 
 
