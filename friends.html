@@ -73,7 +73,27 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
   transform: scale(1.1);
 }
 </style>
-  
+<style>
+  .request-item{
+  background:#ece6f2;
+  padding:8px;
+  border-radius:8px;
+  margin-bottom:6px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.request-item button{
+  margin-left:6px;
+  padding:4px 8px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+.accept-btn{ background:#6abf69; color:white; }
+.reject-btn{ background:#e57373; color:white; }
+</style>
+
   
 </head>
 <body>
@@ -627,6 +647,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
