@@ -93,7 +93,9 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
   <h3>Friend Requests</h3>
   <div id="requestList"></div>
 </div>
-    <div id="chatModal">
+<h3>My Friends</h3>
+<ul id="friendsList"></ul>
+  <div id="chatModal">
     <div id="chatHeader">
       <span id="chatWith">Friend</span>
     <button id="addFriendBtn" style="display:none;" onclick="sendFriendRequest()">Add Friend</button>
@@ -690,8 +692,41 @@ async function sendFriendRequest() {
   await db.ref("friendRequests/" + currentUserUid + "/" + senderUid).remove();
 }
 </script>
+
+const uid = auth.currentUser.uid;
+const friendsRef = db.ref("friends/" + uid);
+
+friendsRef.on("value", async (snapshot) => {
+  const list = document.getElementById("friendsList");
+  list.innerHTML = "";
+
+  if (!snapshot.exists()) {
+    list.innerHTML = "<li>No friends yet</li>";
+    return;
+  }
+
+  for (const friendUid in snapshot.val()) {
+    const userSnap = await db.ref("users/" + friendUid + "/public").get();
+
+    if (userSnap.exists()) {
+      const name = userSnap.val().name || "User";
+
+      const li = document.createElement("li");
+      li.textContent = name;
+
+      // open chat when clicking friend
+      li.onclick = () => openChat(friendUid);
+
+      list.appendChild(li);
+    }
+  }
+});
+
+
+  
 </body>
 </html>
+
 
 
 
