@@ -421,8 +421,14 @@ function flashUserRow(uid){
 
 // --- Open Chat (Clean Optimized Version) ---
 function openChat(uid, name) {
-    checkFriendStatus(uid);
 
+  // set active friend FIRST
+  currentChatFriendUid = uid;
+
+  // THEN check friend status
+  checkFriendStatus(uid);
+
+          
   async function checkFriendStatus(friendUid) {
   const snap = await db.ref(`friends/${currentUserUid}/${friendUid}`).once("value");
 
@@ -688,6 +694,7 @@ async function sendFriendRequest() {
   
 </body>
 </html>
+
 
 
 
