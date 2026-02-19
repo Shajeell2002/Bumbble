@@ -749,7 +749,12 @@ function listenFriendsList() {
   });
 }
   </script>
-
+<script>async function loadFriends() {
+  const snapshot = await db.ref("friends/" + currentUserUid).once("value");
+}
+</script>
+  
 </body>
 </html>
+
 
