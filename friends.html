@@ -90,12 +90,9 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 
 <div class="main-content">
   <div id="chatModal">
-    <div id="chatHeader">
+<div id="chatHeader">
   <span id="chatWith">Friend</span>
-  <div>
-    <button id="addFriendBtn" style="display:none;" onclick="sendFriendRequest()">Add Friend</button>
-    <button onclick="closeChat()">X</button>
- 
+  <button onclick="closeChat()">X</button>
 </div>
     <div id="chatMessages"></div>
     <div id="typingIndicator"></div>
@@ -609,6 +606,7 @@ document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; doc
 
 </body>
 </html>
+
 
 
 
