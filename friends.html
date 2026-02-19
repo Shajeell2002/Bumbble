@@ -725,8 +725,20 @@ function listenFriendsList() {
     }
   });
 }</script>
+
+  <script>async function acceptRequest(senderUid) {
+  await db.ref("friends/" + currentUserUid + "/" + senderUid).set(true);
+  await db.ref("friends/" + senderUid + "/" + currentUserUid).set(true);
+
+  await db.ref("friendRequests/" + currentUserUid + "/" + senderUid).remove();
+
+  alert("Friend request accepted!");
+
+  listenFriendsList(); // 🔥 instant refresh
+}</script>
 </body>
 </html>
+
 
 
 
