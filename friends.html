@@ -152,7 +152,6 @@ let nsfwModel = null;
 
 async function loadNsfwModel() {
   try {
-    console.log("🔄 Loading NSFW model from /assets/nsfw-model/model.json...");
     nsfwModel = await nsfwjs.load("./assets/nsfw-model/");
   } catch (err) {
     console.error("❌ Failed to load NSFW model:", err);
@@ -185,7 +184,7 @@ async function isImageNSFW(file) {
         const predictions = await nsfwModel.classify(imageTensor);
         imageTensor.dispose();
 
-        console.log("🔍 NSFW Predictions:", predictions);
+        
 
         // Get highest probability
         const top = predictions.reduce((a, b) => (a.probability > b.probability ? a : b));
@@ -632,7 +631,7 @@ async function sendFriendRequest() {
       return;
     }
 
-    console.log("Sending request to:", currentChatFriendUid);
+   
 
     await db.ref(`friendRequests/${currentChatFriendUid}/${currentUserUid}`).set(true);
 
@@ -735,6 +734,7 @@ function listenFriendsList() {
 
 </body>
 </html>
+
 
 
 
