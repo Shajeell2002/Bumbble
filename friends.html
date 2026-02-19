@@ -680,21 +680,18 @@ async function sendFriendRequest() {
 }
   </script>
 <script>
-  async function acceptRequest(senderUid) {
-  // add both as friends
+ async function acceptRequest(senderUid) {
   await db.ref("friends/" + currentUserUid + "/" + senderUid).set(true);
   await db.ref("friends/" + senderUid + "/" + currentUserUid).set(true);
 
-  // remove request
   await db.ref("friendRequests/" + currentUserUid + "/" + senderUid).remove();
 
   alert("Friend request accepted!");
-}
 
-  async function rejectRequest(senderUid) {
-  await db.ref("friendRequests/" + currentUserUid + "/" + senderUid).remove();
+  listenFriendsList(); // 🔥 refresh UI
 }
 </script>
 </body>
 </html>
+
 
