@@ -1,7 +1,50 @@
-<script>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Bumbble - Notifications</title>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+body { font-family: Arial; background:#f8f6fb; padding:20px; }
+.card { border:1px solid #ccc; padding:10px; margin-bottom:10px; background:white; border-radius:6px; }
+button { padding:6px 10px; margin-right:8px; }
+</style>
+</head>
+<body>
+
+<h2>Friend Requests</h2>
+<div id="notificationList"></div>
+
+<script>
+console.log("Auth check starting...");
+
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const db = firebase.database();
+
+auth.onAuthStateChanged(user => {
+  console.log("Auth state:", user);
+
+  const container = document.getElementById("notificationList");
+
+  if (!user) {
+    container.innerHTML = "<p>Please login</p>";
+    return;
+  }
+
+  // rest of your code...
+});
+</script>  
+  
+<script>
+// 🔥 SAME Firebase config
 const firebaseConfig = {
-  apiKey: "YOUR_REAL_API_KEY",
+apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
   authDomain: "bumbble-c061f.firebaseapp.com",
   databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
   projectId: "bumbble-c061f",
@@ -10,9 +53,7 @@ const firebaseConfig = {
   appId: "1:213165886981:web:c18652003444869b1bd66c"
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
 const db = firebase.database();
@@ -26,7 +67,9 @@ auth.onAuthStateChanged(user => {
     return;
   }
 
-  db.ref("friendRequests/" + user.uid).on("value", async snap => {
+  const uid = user.uid;
+
+  db.ref("friendRequests/" + uid).on("value", async snap => {
 
     container.innerHTML = "";
 
@@ -41,6 +84,8 @@ auth.onAuthStateChanged(user => {
       const name = userSnap.val()?.name || "Unknown User";
 
       const div = document.createElement("div");
+      div.className = "card";
+
       div.innerHTML = `
         <p>${name} sent you a friend request</p>
         <button onclick="acceptRequest('${senderUid}')">Accept</button>
@@ -50,6 +95,7 @@ auth.onAuthStateChanged(user => {
       container.appendChild(div);
     }
   });
+
 });
 
 async function acceptRequest(senderUid) {
@@ -67,5 +113,8 @@ async function rejectRequest(senderUid) {
   const currentUid = firebase.auth().currentUser.uid;
   await db.ref("friendRequests/" + currentUid + "/" + senderUid).remove();
 }
-
 </script>
+
+
+</body>
+</html>
