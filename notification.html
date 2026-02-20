@@ -41,20 +41,13 @@ const db = firebase.database();
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
 auth.onAuthStateChanged(user => {
-
   console.log("USER STATE:", user);
-
+});
+  
+  const uid = user.uid;
   const container = document.getElementById("notificationList");
 
-  if (!user) {
-    container.innerHTML = "<p>Please login</p>";
-    return;
-  }
-
-  const uid = user.uid;
-
   db.ref("friendRequests/" + uid).on("value", async snap => {
-
     container.innerHTML = "";
 
     if (!snap.exists()) {
@@ -79,7 +72,6 @@ auth.onAuthStateChanged(user => {
       container.appendChild(div);
     }
   });
-
 });
 
 async function acceptRequest(senderUid) {
@@ -100,6 +92,6 @@ async function rejectRequest(senderUid) {
   await db.ref("friendRequests/" + currentUid + "/" + senderUid).remove();
 }
 </script>
-  
+
 </body>
 </html>
