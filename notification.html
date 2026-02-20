@@ -22,7 +22,7 @@ button { padding:6px 10px; margin-right:8px; }
 
 <script>
 // 🔥 SAME Firebase config
-  const firebaseConfig = {
+const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "bumbble-c061f.firebaseapp.com",
   databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
@@ -32,12 +32,10 @@ button { padding:6px 10px; margin-right:8px; }
   appId: "1:213165886981:web:c18652003444869b1bd66c"
 };
 
-// Initialize Firebase properly
 firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
 const db = firebase.database();
-
 
 auth.onAuthStateChanged(user => {
 
@@ -61,9 +59,7 @@ auth.onAuthStateChanged(user => {
 
     for (const senderUid of Object.keys(snap.val())) {
 
-      const userSnap = await db.ref("users/" + senderUid).once("value");
-      console.log("USER DATA:", userSnap.val());
-
+      const userSnap = await db.ref("users/" + senderUid + "/public").once("value");
       const name = userSnap.val()?.name || "Unknown User";
 
       const div = document.createElement("div");
@@ -97,5 +93,7 @@ async function rejectRequest(senderUid) {
   await db.ref("friendRequests/" + currentUid + "/" + senderUid).remove();
 }
 </script>
+
+
 </body>
 </html>
