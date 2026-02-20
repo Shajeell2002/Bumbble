@@ -19,27 +19,6 @@ button { padding:6px 10px; margin-right:8px; }
 <h2>Friend Requests</h2>
 <div id="notificationList"></div>
 
-<script>
-console.log("Auth check starting...");
-
-firebase.initializeApp(firebaseConfig);
-
-const auth = firebase.auth();
-const db = firebase.database();
-
-auth.onAuthStateChanged(user => {
-  console.log("Auth state:", user);
-
-  const container = document.getElementById("notificationList");
-
-  if (!user) {
-    container.innerHTML = "<p>Please login</p>";
-    return;
-  }
-
-  // rest of your code...
-});
-</script>  
   
 <script>
 // 🔥 SAME Firebase config
