@@ -18,11 +18,12 @@ button { padding:6px 10px; margin-right:8px; }
 
 <h2>Friend Requests</h2>
 <div id="notificationList"></div>
+<script>
 firebase.auth().onAuthStateChanged(user => {
   console.log("Auth state changed:", user);
 });
-<script>
-const firebaseConfig = {
+
+  const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "bumbble-c061f.firebaseapp.com",
   databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
