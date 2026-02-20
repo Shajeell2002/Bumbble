@@ -54,7 +54,20 @@ auth.onAuthStateChanged(user => {
       container.innerHTML = "<p>No new notifications</p>";
       return;
     }
+auth.onAuthStateChanged(user => {
+  console.log("USER STATE:", user);
 
+  if (!user) {
+    document.getElementById("notificationList").innerHTML = "<p>Please login</p>";
+    return;
+  }
+
+  console.log("User UID:", user.uid);
+});
+
+
+
+    
     for (const senderUid of Object.keys(snap.val())) {
 
       const userSnap = await db.ref("users/" + senderUid + "/public").once("value");
