@@ -1,100 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Bumbble - Notifications</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+body { font-family: Arial; background:#f8f6fb; padding:20px; }
+.card { border:1px solid #ccc; padding:10px; margin-bottom:10px; background:white; border-radius:6px; }
+button { padding:6px 10px; margin-right:8px; }
+</style>
+</head>
+<body>
+
 <h2>Friend Requests</h2>
 <div id="notificationList"></div>
 
 <script>
-  // Initialize Firebase references
-  const auth = firebase.auth();
-  const db = firebase.database();
+// 🔥 SAME Firebase config
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "bumbble-c061f.firebaseapp.com",
+  databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
+  projectId: "bumbble-c061f",
+  storageBucket: "bumbble-c061f.appspot.com",
+  messagingSenderId: "213165886981",
+  appId: "1:213165886981:web:c18652003444869b1bd66c"
+};
 
-  auth.onAuthStateChanged(user => {
-    if (!user) {
-      document.getElementById("notificationList").innerHTML = "<p>Please login</p>";
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+
+auth.onAuthStateChanged(user => {
+  if (!user) {
+    document.getElementById("notificationList").innerHTML = "<p>Please login</p>";
+    return;
+  }
+
+  const uid = user.uid;
+  const container = document.getElementById("notificationList");
+
+  db.ref("friendRequests/" + uid).on("value", async snap => {
+    container.innerHTML = "";
+
+    if (!snap.exists()) {
+      container.innerHTML = "<p>No new notifications</p>";
       return;
     }
 
-    const uid = user.uid;
-    const container = document.getElementById("notificationList");
+    for (const senderUid of Object.keys(snap.val())) {
 
-    db.ref("friendRequests/" + uid).on("value", async (snap) => {
-      container.innerHTML = "";
+      const userSnap = await db.ref("users/" + senderUid + "/public").once("value");
+      const name = userSnap.val()?.name || "Unknown User";
 
-      if (!snap.exists()) {
-        container.innerHTML = "<p>No new notifications</p>";
-        return;
-      }
+      const div = document.createElement("div");
+      div.className = "card";
 
-      const requests = snap.val();
+      div.innerHTML = `
+        <p>${name} sent you a friend request</p>
+        <button onclick="acceptRequest('${senderUid}')">Accept</button>
+        <button onclick="rejectRequest('${senderUid}')">Reject</button>
+      `;
 
-      for (const senderUid in requests) {
-        try {
-          const userSnap = await db.ref("users/" + senderUid + "/public").once("value");
-          const userData = userSnap.val();
-          const name = userData && userData.name ? userData.name : "Unknown User";
-
-          const div = document.createElement("div");
-          div.style.border = "1px solid #ccc";
-          div.style.padding = "10px";
-          div.style.marginBottom = "10px";
-
-          const text = document.createElement("p");
-          text.textContent = `${name} sent you a friend request`;
-
-          const acceptBtn = document.createElement("button");
-          acceptBtn.textContent = "Accept";
-          acceptBtn.onclick = () => acceptRequest(senderUid);
-
-          const rejectBtn = document.createElement("button");
-          rejectBtn.textContent = "Reject";
-          rejectBtn.style.marginLeft = "10px";
-          rejectBtn.onclick = () => rejectRequest(senderUid);
-
-          div.appendChild(text);
-          div.appendChild(acceptBtn);
-          div.appendChild(rejectBtn);
-
-          container.appendChild(div);
-
-        } catch (error) {
-          console.error("Error loading user data:", error);
-        }
-      }
-    });
+      container.appendChild(div);
+    }
   });
+});
 
-  async function acceptRequest(senderUid) {
-    try {
-      const currentUser = firebase.auth().currentUser;
-      if (!currentUser) return;
+async function acceptRequest(senderUid) {
+  const currentUid = firebase.auth().currentUser.uid;
 
-      const currentUid = currentUser.uid;
-      const updates = {};
+  const updates = {};
+  updates["friends/" + currentUid + "/" + senderUid] = true;
+  updates["friends/" + senderUid + "/" + currentUid] = true;
+  updates["friendRequests/" + currentUid + "/" + senderUid] = null;
 
-      updates["friends/" + currentUid + "/" + senderUid] = true;
-      updates["friends/" + senderUid + "/" + currentUid] = true;
-      updates["friendRequests/" + currentUid + "/" + senderUid] = null;
+  await db.ref().update(updates);
 
-      await db.ref().update(updates);
+  alert("Friend request accepted ✅");
+}
 
-      alert("Friend request accepted ✅");
-
-    } catch (error) {
-      console.error("Error accepting request:", error);
-    }
-  }
-
-  async function rejectRequest(senderUid) {
-    try {
-      const currentUser = firebase.auth().currentUser;
-      if (!currentUser) return;
-
-      const currentUid = currentUser.uid;
-
-      await db.ref("friendRequests/" + currentUid + "/" + senderUid).remove();
-
-      alert("Friend request rejected ❌");
-
-    } catch (error) {
-      console.error("Error rejecting request:", error);
-    }
-  }
+async function rejectRequest(senderUid) {
+  const currentUid = firebase.auth().currentUser.uid;
+  await db.ref("friendRequests/" + currentUid + "/" + senderUid).remove();
+}
 </script>
+
+</body>
+</html>
