@@ -1,80 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Bumbble - Notifications</title>
+
+<!-- 🔥 Firebase SDKs MUST BE ABOVE your script -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+</head>
+<body>
+
+<h2>Friend Requests</h2>
+<div id="notificationList"></div>
+
+<!-- 🔥 Your script MUST come AFTER Firebase scripts -->
 <script>
-
-// 🔥 CONFIG
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "bumbble-c061f.firebaseapp.com",
-  databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
-  projectId: "bumbble-c061f",
-  storageBucket: "bumbble-c061f.appspot.com",
-  messagingSenderId: "213165886981",
-  appId: "1:213165886981:web:c18652003444869b1bd66c"
-};
-
-// 🔥 INITIALIZE ONLY IF NOT ALREADY INITIALIZED
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
-
-// 🔥 SERVICES
-const auth = firebase.auth();
-const db = firebase.database();
-
-console.log("Firebase initialized");
-
-// 🔥 AUTH CHECK
-auth.onAuthStateChanged(user => {
-
-  const container = document.getElementById("notificationList");
-
-  if (!user) {
-    container.innerHTML = "<p>Please login</p>";
-    return;
-  }
-
-  db.ref("friendRequests/" + user.uid).on("value", async snap => {
-
-    container.innerHTML = "";
-
-    if (!snap.exists()) {
-      container.innerHTML = "<p>No new notifications</p>";
-      return;
-    }
-
-    for (const senderUid of Object.keys(snap.val())) {
-
-      const userSnap = await db.ref("users/" + senderUid + "/public").once("value");
-      const name = userSnap.val()?.name || "Unknown User";
-
-      const div = document.createElement("div");
-      div.className = "card";
-
-      div.innerHTML = `
-        <p>${name} sent you a friend request</p>
-        <button onclick="acceptRequest('${senderUid}')">Accept</button>
-        <button onclick="rejectRequest('${senderUid}')">Reject</button>
-      `;
-
-      container.appendChild(div);
-    }
-  });
-
-});
-
-async function acceptRequest(senderUid) {
-  const currentUid = firebase.auth().currentUser.uid;
-
-  const updates = {};
-  updates["friends/" + currentUid + "/" + senderUid] = true;
-  updates["friends/" + senderUid + "/" + currentUid] = true;
-  updates["friendRequests/" + currentUid + "/" + senderUid] = null;
-
-  await db.ref().update(updates);
-}
-
-async function rejectRequest(senderUid) {
-  const currentUid = firebase.auth().currentUser.uid;
-  await db.ref("friendRequests/" + currentUid + "/" + senderUid).remove();
-}
-
+  // your firebase config and code here
 </script>
+
+</body>
+</html>
