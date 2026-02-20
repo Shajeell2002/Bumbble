@@ -42,7 +42,6 @@ auth.onAuthStateChanged(user => {
 </script>  
   
 <script>
-// 🔥 SAME Firebase config
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "bumbble-c061f.firebaseapp.com",
@@ -53,6 +52,7 @@ const firebaseConfig = {
   appId: "1:213165886981:web:c18652003444869b1bd66c"
 };
 
+// Initialize only once
 firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
@@ -82,7 +82,7 @@ auth.onAuthStateChanged(user => {
 
     for (const senderUid of Object.keys(snap.val())) {
 
-      const userSnap = await db.ref("users/" + senderUid).once("value");
+      const userSnap = await db.ref("users/" + senderUid + "/public").once("value");
 
       console.log("User data:", userSnap.val());
 
@@ -118,6 +118,5 @@ async function rejectRequest(senderUid) {
   await db.ref("friendRequests/" + currentUid + "/" + senderUid).remove();
 }
 </script>
-
 </body>
 </html>
