@@ -1,29 +1,134 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Notifications</title>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-body { font-family: Arial; background:#f8f6fb; padding:20px; }
-.card { border:1px solid #ccc; padding:10px; margin-bottom:10px; background:white; border-radius:6px; }
-button { padding:6px 10px; margin-right:8px; }
+body {
+  font-family: Arial, sans-serif;
+  margin:0;
+  background: linear-gradient(135deg,#f8f6fb,#e6e0f0);
+  color:#333;
+}
+
+/* Header */
+header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:15px 20px;
+  background:#d8cce5;
+  box-shadow:0 3px 6px rgba(0,0,0,0.1);
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  z-index:500;
+}
+header h1 { margin:0; font-size:22px; }
+nav a {
+  margin-left:12px;
+  text-decoration:none;
+  font-weight:bold;
+  color:#333;
+  transition:0.3s;
+}
+nav a:hover { color:#6a1b9a; }
+
+/* Main */
+.container {
+  padding:90px 20px 40px 20px;
+  max-width:700px;
+  margin:auto;
+}
+
+h2 {
+  margin-bottom:20px;
+  font-size:22px;
+  border-left:5px solid #9b59b6;
+  padding-left:10px;
+}
+
+/* Cards */
+.card {
+  background:white;
+  padding:15px 18px;
+  margin-bottom:15px;
+  border-radius:12px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  transition:0.3s;
+  animation:fadeIn 0.4s ease-in-out;
+}
+
+.card:hover {
+  transform:translateY(-3px);
+  box-shadow:0 6px 18px rgba(0,0,0,0.15);
+}
+
+.card p {
+  margin:0;
+  font-weight:500;
+}
+
+/* Buttons */
+.btn {
+  padding:6px 12px;
+  border:none;
+  border-radius:8px;
+  font-weight:bold;
+  cursor:pointer;
+  transition:0.3s;
+}
+
+.accept {
+  background:#9b59b6;
+  color:white;
+}
+.accept:hover { background:#7e3ea8; }
+
+.reject {
+  background:#ddd;
+}
+.reject:hover { background:#bbb; }
+
+.empty {
+  text-align:center;
+  color:#777;
+  padding:30px;
+}
+
+@keyframes fadeIn {
+  from {opacity:0; transform:translateY(5px);}
+  to {opacity:1; transform:translateY(0);}
+}
 </style>
 </head>
+
 <body>
 
-<h2>Friend Requests</h2>
-<div id="notificationList"></div>
+<header>
+  <h1>Bumbble</h1>
+  <nav id="navLinks"></nav>
+</header>
 
-  
+<div class="container">
+  <h2>Friend Requests</h2>
+  <div id="notificationList"></div>
+</div>
+
 <script>
-// 🔥 SAME Firebase config
 const firebaseConfig = {
-apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+  apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
   authDomain: "bumbble-c061f.firebaseapp.com",
   databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
   projectId: "bumbble-c061f",
@@ -36,24 +141,34 @@ firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
 const db = firebase.database();
+const nav = document.getElementById("navLinks");
 
 auth.onAuthStateChanged(user => {
 
   const container = document.getElementById("notificationList");
 
   if (!user) {
-    container.innerHTML = "<p>Please login</p>";
+    nav.innerHTML = '<a href="login.html">Login</a>';
+    container.innerHTML = "<div class='empty'>Please login</div>";
     return;
   }
 
   const uid = user.uid;
+
+  nav.innerHTML = `
+    <a href="index.html">Home</a>
+    <a href="friends.html">Friends</a>
+    <a href="stories.html">Stories</a>
+    <a href="profile.html">Profile</a>
+    <a href="#" onclick="logout()">Logout</a>
+  `;
 
   db.ref("friendRequests/" + uid).on("value", async snap => {
 
     container.innerHTML = "";
 
     if (!snap.exists()) {
-      container.innerHTML = "<p>No new notifications</p>";
+      container.innerHTML = "<div class='empty'>No new notifications</div>";
       return;
     }
 
@@ -66,15 +181,16 @@ auth.onAuthStateChanged(user => {
       div.className = "card";
 
       div.innerHTML = `
-        <p>${name} sent you a friend request</p>
-        <button onclick="acceptRequest('${senderUid}')">Accept</button>
-        <button onclick="rejectRequest('${senderUid}')">Reject</button>
+        <p><strong>${name}</strong> sent you a friend request</p>
+        <div>
+          <button class="btn accept" onclick="acceptRequest('${senderUid}')">Accept</button>
+          <button class="btn reject" onclick="rejectRequest('${senderUid}')">Reject</button>
+        </div>
       `;
 
       container.appendChild(div);
     }
   });
-
 });
 
 async function acceptRequest(senderUid) {
@@ -92,8 +208,11 @@ async function rejectRequest(senderUid) {
   const currentUid = firebase.auth().currentUser.uid;
   await db.ref("friendRequests/" + currentUid + "/" + senderUid).remove();
 }
-</script>
 
+function logout(){
+  auth.signOut().then(()=>window.location.href="login.html");
+}
+</script>
 
 </body>
 </html>
