@@ -43,7 +43,6 @@ auth.onAuthStateChanged(user => {
   
 <script>
 // 🔥 SAME Firebase config
-<script>
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "bumbble-c061f.firebaseapp.com",
@@ -60,7 +59,6 @@ const auth = firebase.auth();
 const db = firebase.database();
 
 auth.onAuthStateChanged(user => {
-  console.log("Logged in UID:", user?.uid);
 
   const container = document.getElementById("notificationList");
 
@@ -69,11 +67,11 @@ auth.onAuthStateChanged(user => {
     return;
   }
 
-  db.ref("friendRequests/" + user.uid).on("value", snap => {
-    console.log("Requests:", snap.val());
-  const uid = user.uid;
+  console.log("Logged in UID:", user.uid);
 
-  db.ref("friendRequests/" + uid).on("value", async snap => {
+  db.ref("friendRequests/" + user.uid).on("value", async snap => {
+
+    console.log("Requests snapshot:", snap.val());
 
     container.innerHTML = "";
 
@@ -85,6 +83,9 @@ auth.onAuthStateChanged(user => {
     for (const senderUid of Object.keys(snap.val())) {
 
       const userSnap = await db.ref("users/" + senderUid + "/public").once("value");
+
+      console.log("User data:", userSnap.val());
+
       const name = userSnap.val()?.name || "Unknown User";
 
       const div = document.createElement("div");
@@ -99,7 +100,6 @@ auth.onAuthStateChanged(user => {
       container.appendChild(div);
     }
   });
-
 });
 
 async function acceptRequest(senderUid) {
@@ -118,7 +118,6 @@ async function rejectRequest(senderUid) {
   await db.ref("friendRequests/" + currentUid + "/" + senderUid).remove();
 }
 </script>
-
 
 </body>
 </html>
