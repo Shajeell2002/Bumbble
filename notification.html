@@ -33,19 +33,17 @@ const firebaseConfig = {
 
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
-}  
-  
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-const db = firebase.database();
-  
-auth.onAuthStateChanged(user => {
-  if (!user) {
-    document.getElementById("notificationList").innerHTML = "<p>Please login</p>";
-    return;
-  }
+}
 
+const auth = firebase.auth();
+const db = firebase.database();
+
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+auth.onAuthStateChanged(user => {
+  console.log("USER STATE:", user);
+});
+  
   const uid = user.uid;
   const container = document.getElementById("notificationList");
 
