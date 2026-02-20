@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Notifications</title>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -56,60 +55,77 @@ h2 {
   padding-left:10px;
 }
 
-/* Cards */
-.card {
-  background:white;
-  padding:15px 18px;
-  margin-bottom:15px;
-  border-radius:12px;
-  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+/* === Modern Social Style Notification === */
+
+.request-item {
   display:flex;
-  justify-content:space-between;
   align-items:center;
-  transition:0.3s;
-  animation:fadeIn 0.4s ease-in-out;
+  gap:15px;
+  padding:14px 10px;
+  border-bottom:1px solid #e0e0e0;
+  background:white;
+  transition:0.2s ease;
 }
 
-.card:hover {
-  transform:translateY(-3px);
-  box-shadow:0 6px 18px rgba(0,0,0,0.15);
+.request-item:hover {
+  background:#f3eef8;
 }
 
-.card p {
+.avatar {
+  width:55px;
+  height:55px;
+  border-radius:50%;
+  object-fit:cover;
+  background:#ccc;
+}
+
+.request-content {
+  flex:1;
+}
+
+.request-content p {
   margin:0;
-  font-weight:500;
+  font-size:15px;
 }
 
-/* Buttons */
-.btn {
-  padding:6px 12px;
+.actions {
+  display:flex;
+  gap:8px;
+}
+
+.btn-primary {
+  padding:6px 14px;
   border:none;
-  border-radius:8px;
+  border-radius:6px;
   font-weight:bold;
   cursor:pointer;
-  transition:0.3s;
-}
-
-.accept {
   background:#9b59b6;
   color:white;
+  transition:0.2s;
 }
-.accept:hover { background:#7e3ea8; }
 
-.reject {
-  background:#ddd;
+.btn-primary:hover {
+  background:#7e3ea8;
 }
-.reject:hover { background:#bbb; }
+
+.btn-secondary {
+  padding:6px 14px;
+  border:none;
+  border-radius:6px;
+  font-weight:bold;
+  cursor:pointer;
+  background:#e4e4e4;
+  transition:0.2s;
+}
+
+.btn-secondary:hover {
+  background:#cccccc;
+}
 
 .empty {
   text-align:center;
   color:#777;
   padding:30px;
-}
-
-@keyframes fadeIn {
-  from {opacity:0; transform:translateY(5px);}
-  to {opacity:1; transform:translateY(0);}
 }
 </style>
 </head>
@@ -175,16 +191,23 @@ auth.onAuthStateChanged(user => {
     for (const senderUid of Object.keys(snap.val())) {
 
       const userSnap = await db.ref("users/" + senderUid + "/public").once("value");
-      const name = userSnap.val()?.name || "Unknown User";
+      const userData = userSnap.val() || {};
+      const name = userData.name || "Unknown User";
+      const photo = userData.photoURL || "https://via.placeholder.com/55";
 
       const div = document.createElement("div");
-      div.className = "card";
+      div.className = "request-item";
 
       div.innerHTML = `
-        <p><strong>${name}</strong> sent you a friend request</p>
-        <div>
-          <button class="btn accept" onclick="acceptRequest('${senderUid}')">Accept</button>
-          <button class="btn reject" onclick="rejectRequest('${senderUid}')">Reject</button>
+        <img src="${photo}" class="avatar">
+
+        <div class="request-content">
+          <p><strong>${name}</strong> sent you a friend request</p>
+        </div>
+
+        <div class="actions">
+          <button class="btn-primary" onclick="acceptRequest('${senderUid}')">Confirm</button>
+          <button class="btn-secondary" onclick="rejectRequest('${senderUid}')">Delete</button>
         </div>
       `;
 
