@@ -19,8 +19,8 @@ button { padding:6px 10px; margin-right:8px; }
 <h2>Friend Requests</h2>
 <div id="notificationList"></div>
 
-<script>
 // 🔥 SAME Firebase config
+<script>
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "bumbble-c061f.firebaseapp.com",
@@ -31,9 +31,8 @@ const firebaseConfig = {
   appId: "1:213165886981:web:c18652003444869b1bd66c"
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+// Initialize Firebase properly
+firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
 const db = firebase.database();
@@ -41,13 +40,18 @@ const db = firebase.database();
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
 auth.onAuthStateChanged(user => {
-  console.log("USER STATE:", user);
-});
-  
-  const uid = user.uid;
+
   const container = document.getElementById("notificationList");
 
+  if (!user) {
+    container.innerHTML = "<p>Please login</p>";
+    return;
+  }
+
+  const uid = user.uid;
+
   db.ref("friendRequests/" + uid).on("value", async snap => {
+
     container.innerHTML = "";
 
     if (!snap.exists()) {
@@ -57,7 +61,9 @@ auth.onAuthStateChanged(user => {
 
     for (const senderUid of Object.keys(snap.val())) {
 
-      const userSnap = await db.ref("users/" + senderUid + "/public").once("value");
+      const userSnap = await db.ref("users/" + senderUid).once("value");
+      console.log("USER DATA:", userSnap.val());
+
       const name = userSnap.val()?.name || "Unknown User";
 
       const div = document.createElement("div");
@@ -72,6 +78,7 @@ auth.onAuthStateChanged(user => {
       container.appendChild(div);
     }
   });
+
 });
 
 async function acceptRequest(senderUid) {
@@ -83,8 +90,6 @@ async function acceptRequest(senderUid) {
   updates["friendRequests/" + currentUid + "/" + senderUid] = null;
 
   await db.ref().update(updates);
-
-  alert("Friend request accepted ✅");
 }
 
 async function rejectRequest(senderUid) {
@@ -92,6 +97,5 @@ async function rejectRequest(senderUid) {
   await db.ref("friendRequests/" + currentUid + "/" + senderUid).remove();
 }
 </script>
-
 </body>
 </html>
