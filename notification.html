@@ -82,7 +82,7 @@ auth.onAuthStateChanged(user => {
 
     for (const senderUid of Object.keys(snap.val())) {
 
-      const userSnap = await db.ref("users/" + senderUid + "/public").once("value");
+      const userSnap = await db.ref("users/" + senderUid).once("value");
 
       console.log("User data:", userSnap.val());
 
