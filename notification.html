@@ -18,7 +18,9 @@ button { padding:6px 10px; margin-right:8px; }
 
 <h2>Friend Requests</h2>
 <div id="notificationList"></div>
-
+firebase.auth().onAuthStateChanged(user => {
+  console.log("Auth state changed:", user);
+});
 <script>
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
