@@ -499,7 +499,18 @@ function openChat(uid, name) {
 
   // Setup chat state
   currentChatFriendUid = uid;
-  chatWith.textContent = name;
+  chatWith.innerHTML = `
+  ${escapeHtml(name)}
+  <button id="viewProfileBtn" 
+    style="margin-left:10px;padding:4px 8px;border:none;border-radius:6px;
+    background:#b39ddb;color:white;cursor:pointer;">
+    View Profile
+  </button>
+`;
+
+document.getElementById("viewProfileBtn").onclick = () => {
+  window.location.href = "profile-view.html?uid=" + uid;
+};
   localStorage.setItem("lastChatFriendUid", uid);
   localStorage.setItem("lastChatFriendName", name);
 
@@ -780,6 +791,7 @@ function listenFriendsList() {
   </script>
 </body>
 </html>
+
 
 
 
