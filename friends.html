@@ -449,8 +449,9 @@ function refreshFriendsListUI() {
       list.innerHTML = "<li>No friends yet</li>";
       return;
     }
+const uniqueFriends = [...new Set(Object.keys(snapshot.val()))];
 
-    Object.keys(snapshot.val()).forEach((friendUid) => {
+uniqueFriends.forEach((friendUid) => {
       const name =
         cachedUsers?.[friendUid]?.public?.name || "Unknown User";
 
@@ -804,4 +805,5 @@ async function rejectRequest(senderUid) {
 
 </body>
 </html>
+
 
