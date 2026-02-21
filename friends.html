@@ -424,13 +424,17 @@ function renderUserList(users) {
 function initUsersListener() {
   db.ref('users').on('value', snap => {
     cachedUsers = snap.val() || {};
+
     renderUserList(cachedUsers);
+
+    // 🔥 FORCE refresh of friends list AFTER users exist
+    refreshFriendsListUI();
   });
 }
-    
-    function refreshFriendsListUI() {
+  
+function refreshFriendsListUI() {
   const list = document.getElementById("friendsList");
-console.log("refreshFriendsListUI running");
+
   db.ref("friends/" + currentUserUid).once("value").then(snapshot => {
     list.innerHTML = "";
     
@@ -732,16 +736,11 @@ async function rejectRequest(senderUid) {
 </script>
 
   <script>// --- Listen Friends List ---
-<script>
-// --- Listen Friends List ---
 function listenFriendsList() {
-  console.log("listenFriendsList running");
+  const list = document.getElementById("friendsList");
 
-  db.ref("friends/" + currentUserUid).on("value", snapshot => {
-
-    console.log("Friends data:", snapshot.val());
-
-    const list = document.getElementById("friendsList");
+  db.ref("friends/" + currentUserUid).on("value", (snapshot) => {
+ refreshFriendsListUI(); // always rebuild using cached users
     list.innerHTML = "";
 
     if (!snapshot.exists()) {
@@ -750,43 +749,21 @@ function listenFriendsList() {
     }
 
     Object.keys(snapshot.val()).forEach((friendUid) => {
-
       const name =
         cachedUsers?.[friendUid]?.public?.name || "Unknown User";
 
       const li = document.createElement("li");
-
-      li.style.display = "flex";
-      li.style.justifyContent = "space-between";
-      li.style.alignItems = "center";
-      li.style.padding = "6px 0";
-
-      li.innerHTML = `
-        <span style="cursor:pointer;">${escapeHtml(name)}</span>
-        <button 
-          onclick="viewProfile('${friendUid}')"
-          style="
-            padding:4px 8px;
-            border:none;
-            border-radius:6px;
-            background:#b39ddb;
-            color:white;
-            font-size:12px;
-            cursor:pointer;
-          ">
-          View
-        </button>
-      `;
-
-      li.querySelector("span").onclick = () => openChat(friendUid, name);
+      li.textContent = name;
+      li.onclick = () => openChat(friendUid, name);
 
       list.appendChild(li);
     });
   });
 }
+  </script>
 
-// --- Listen Notification Count ---
-function listenNotificationCount() {
+  <script>
+    function listenNotificationCount() {
   const badge = document.getElementById("notifBadge");
 
   db.ref("friendRequests/" + currentUserUid).on("value", snap => {
@@ -800,16 +777,7 @@ function listenNotificationCount() {
     }
   });
 }
-</script>
-  
-  <script>
-function viewProfile(uid) {
-  // Option 1: Redirect to profile page with UID
-  window.location.href = "profile.html?uid=" + uid;
-}
-</script>
-  
+  </script>
 </body>
 </html>
-
 
