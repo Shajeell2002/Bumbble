@@ -456,7 +456,8 @@ function refreshFriendsListUI() {
 
       const li = document.createElement("li");
       li.style.display = "flex";
-      li.style.justifyContent = "space-between";
+li.style.justifyContent = "flex-start";
+li.style.gap = "8px";
       li.style.alignItems = "center";
       li.style.marginBottom = "6px";
 
@@ -803,6 +804,7 @@ async function rejectRequest(senderUid) {
 
 </body>
 </html>
+
 
 
 
