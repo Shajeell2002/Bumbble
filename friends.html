@@ -499,15 +499,7 @@ function openChat(uid, name) {
 
   // Setup chat state
   currentChatFriendUid = uid;
-  chatWith.innerHTML = `
-  ${escapeHtml(name)}
-  <button id="viewProfileBtn" 
-    style="margin-left:10px;padding:4px 8px;border:none;border-radius:6px;
-    background:#b39ddb;color:white;cursor:pointer;">
-    View Profile
-  </button>
-`;
-
+  chatWith.textContent = name;
 document.getElementById("viewProfileBtn").onclick = () => {
   window.location.href = "profile-view.html?uid=" + uid;
 };
@@ -791,6 +783,7 @@ function listenFriendsList() {
   </script>
 </body>
 </html>
+
 
 
 
