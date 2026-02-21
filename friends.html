@@ -437,7 +437,6 @@ function refreshFriendsListUI() {
 
   db.ref("friends/" + currentUserUid).once("value").then(snapshot => {
     list.innerHTML = "";
-db.ref("friends/" + currentUid).on("value", snap => {
     
     if (!snapshot.exists()) {
       list.innerHTML = "<li>No friends yet</li>";
@@ -796,6 +795,7 @@ function listenFriendsList() {
   </script>
 </body>
 </html>
+
 
 
 
