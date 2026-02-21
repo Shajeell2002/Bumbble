@@ -74,15 +74,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
   transform: scale(1.1);
 }
 </style>
-#friendsList {
-  list-style: none;
-  padding-left: 20;
-  margin: 10;
-}
-
-#friendsList li {
-  padding: 6px 4px;
-}
   
   
 </head>
@@ -787,8 +778,29 @@ async function rejectRequest(senderUid) {
   });
 }
   </script>
+
+  #friendsList {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+<style>#friendsList {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+#friendsList li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 4px;
+}
+</style>
+
 </body>
 </html>
+
 
 
 
