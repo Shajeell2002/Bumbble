@@ -432,6 +432,13 @@ function initUsersListener() {
   });
 }      
 
+  function listenFriendsList() {
+  if (!currentUserUid) return;
+
+  db.ref("friends/" + currentUserUid).on("value", () => {
+    refreshFriendsListUI();
+  });
+}
   
 function refreshFriendsListUI() {
   const list = document.getElementById("friendsList");
@@ -796,6 +803,7 @@ async function rejectRequest(senderUid) {
 
 </body>
 </html>
+
 
 
 
