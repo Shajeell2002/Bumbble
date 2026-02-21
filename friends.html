@@ -433,38 +433,54 @@ function initUsersListener() {
 }
   
 function refreshFriendsListUI() {
-const li = document.createElement("li");
-li.style.display = "flex";
-li.style.justifyContent = "space-between";
-li.style.alignItems = "center";
-li.style.marginBottom = "6px";
+  const list = document.getElementById("friendsList");
+  list.innerHTML = "";
 
-// Name span
-const nameSpan = document.createElement("span");
-nameSpan.textContent = name;
-nameSpan.style.cursor = "pointer";
-nameSpan.onclick = () => openChat(friendUid, name);
+  db.ref("friends/" + currentUserUid).once("value", (snapshot) => {
+    if (!snapshot.exists()) {
+      list.innerHTML = "<li>No friends yet</li>";
+      return;
+    }
 
-// View button
-const viewBtn = document.createElement("button");
-viewBtn.textContent = "View";
-viewBtn.style.padding = "4px 8px";
-viewBtn.style.border = "none";
-viewBtn.style.borderRadius = "6px";
-viewBtn.style.background = "#9b59b6";
-viewBtn.style.color = "white";
-viewBtn.style.cursor = "pointer";
-viewBtn.style.fontSize = "12px";
+    Object.keys(snapshot.val()).forEach((friendUid) => {
+      const name =
+        cachedUsers?.[friendUid]?.public?.name || "Unknown User";
 
-viewBtn.onclick = (e) => {
-  e.stopPropagation(); // prevent chat opening
-  window.location.href = "profile.html?uid=" + friendUid;
-};
+      const li = document.createElement("li");
+      li.style.display = "flex";
+      li.style.justifyContent = "space-between";
+      li.style.alignItems = "center";
+      li.style.marginBottom = "6px";
 
-li.appendChild(nameSpan);
-li.appendChild(viewBtn);
-list.appendChild(li);
-// --- Unread Badges ---
+      // Name (click = chat)
+      const nameSpan = document.createElement("span");
+      nameSpan.textContent = name;
+      nameSpan.style.cursor = "pointer";
+      nameSpan.onclick = () => openChat(friendUid, name);
+
+      // View Button
+      const viewBtn = document.createElement("button");
+      viewBtn.textContent = "View";
+      viewBtn.style.padding = "4px 8px";
+      viewBtn.style.border = "none";
+      viewBtn.style.borderRadius = "6px";
+      viewBtn.style.background = "#9b59b6";
+      viewBtn.style.color = "white";
+      viewBtn.style.cursor = "pointer";
+      viewBtn.style.fontSize = "12px";
+
+      viewBtn.onclick = (e) => {
+        e.stopPropagation();
+        window.location.href = "profile.html?uid=" + friendUid;
+      };
+
+      li.appendChild(nameSpan);
+      li.appendChild(viewBtn);
+      list.appendChild(li);
+    });
+  });
+}
+    // --- Unread Badges ---
 function setupUnreadListener(){
   db.ref('unread/'+currentUserUid).on('value', snap=>{
     unreadCounters={};
@@ -745,16 +761,11 @@ async function rejectRequest(senderUid) {
 
   <script>// --- Listen Friends List ---
 function listenFriendsList() {
-  const list = document.getElementById("friendsList");
+  db.ref("friends/" + currentUserUid).on("value", () => {
+    refreshFriendsListUI();
+  });
+}
 
-  db.ref("friends/" + currentUserUid).on("value", (snapshot) => {
- refreshFriendsListUI(); // always rebuild using cached users
-    list.innerHTML = "";
-
-    if (!snapshot.exists()) {
-      list.innerHTML = "<li>No friends yet</li>";
-      return;
-    }
 
     Object.keys(snapshot.val()).forEach((friendUid) => {
       const name =
@@ -788,6 +799,7 @@ function listenFriendsList() {
   </script>
 </body>
 </html>
+
 
 
 
