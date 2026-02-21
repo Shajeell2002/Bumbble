@@ -718,7 +718,11 @@ async function sendFriendRequest() {
     alert("Friend request sent!");
     document.getElementById("addFriendBtn").style.display = "none";
 
-  } 
+  } catch (err) {
+    console.error("Friend request error:", err);
+    alert("Error sending request. Check console.");
+  }
+}
   
 </script>
 
@@ -802,13 +806,3 @@ async function acceptRequest(senderUid) {
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
