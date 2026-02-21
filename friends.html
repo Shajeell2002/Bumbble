@@ -480,6 +480,16 @@ function refreshFriendsListUI() {
     });
   });
 }
+    #friendsList {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+#friendsList li {
+  padding: 6px 4px;
+}
+    
     // --- Unread Badges ---
 function setupUnreadListener(){
   db.ref('unread/'+currentUserUid).on('value', snap=>{
@@ -777,6 +787,7 @@ async function rejectRequest(senderUid) {
   </script>
 </body>
 </html>
+
 
 
 
