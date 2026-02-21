@@ -429,8 +429,7 @@ function initUsersListener() {
 
     // 🔥 FORCE refresh of friends list AFTER users exist
     refreshFriendsListUI();
-  });
-}
+       
   
 function refreshFriendsListUI() {
   const list = document.getElementById("friendsList");
@@ -480,7 +479,9 @@ function refreshFriendsListUI() {
     });
   });
 }
-    #friendsList {
+
+    <style>
+#friendsList {
   list-style: none;
   padding-left: 0;
   margin: 0;
@@ -489,6 +490,8 @@ function refreshFriendsListUI() {
 #friendsList li {
   padding: 6px 4px;
 }
+</style>
+
     
     // --- Unread Badges ---
 function setupUnreadListener(){
@@ -787,6 +790,7 @@ async function rejectRequest(senderUid) {
   </script>
 </body>
 </html>
+
 
 
 
