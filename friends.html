@@ -733,19 +733,25 @@ async function rejectRequest(senderUid) {
 
   <script>// --- Listen Friends List ---
 function listenFriendsList() {
-    console.log("listenFriendsList running");
+  console.log("listenFriendsList running");
 
-  const list = document.getElementById("friendsList");
+  db.ref("friends/" + currentUserUid).on("value", snapshot => {
 
-  db.ref("friends/" + currentUserUid).on("value", (snapshot) => {
+    console.log("Friends data:", snapshot.val());  // MUST be here
 
-    list.innerHTML = "";
+    const friendsList = document.getElementById("friendsList");
+    friendsList.innerHTML = "";
 
     if (!snapshot.exists()) {
-      list.innerHTML = "<li>No friends yet</li>";
+      console.log("No friends found");
       return;
     }
 
+    snapshot.forEach(child => {
+      console.log("Child:", child.key, child.val());
+    });
+  });
+}
     Object.keys(snapshot.val()).forEach((friendUid) => {
       const name =
         cachedUsers?.[friendUid]?.public?.name || "Unknown User";
@@ -809,6 +815,7 @@ function viewProfile(uid) {
   
 </body>
 </html>
+
 
 
 
