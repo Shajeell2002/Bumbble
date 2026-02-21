@@ -350,75 +350,43 @@ function setupOnlineStatus(){
   
 // --- Users List ---
 function renderUserList(users) {
-  const friends = Object.keys(users)
-    .filter(uid => uid !== currentUserUid)
-    .map(uid => {
-      const u = users[uid].public || {};
-      return {
-        uid,
-        name: u.name || "Unknown",
-        gender: u.gender || "N/A",
-        online: !!u.online,
-        // ✅ CRITICAL: Pull the timestamp we've been saving in the global variable
-        time: lastChatTimestamps[uid] || 0 
-      };
+  db.ref("friends/" + currentUserUid).once("value").then(snap => {
+
+    const friendData = snap.val() || {};
+
+    const friends = Object.keys(friendData)
+      .filter(uid => users[uid])
+      .map(uid => {
+        const u = users[uid].public || {};
+        return {
+          uid,
+          name: u.name || "Unknown",
+          gender: u.gender || "N/A",
+          online: !!u.online,
+          time: lastChatTimestamps[uid] || 0
+        };
+      });
+
+    // your existing sorting logic stays same here
+
+    userList.innerHTML = "";
+    friends.forEach(f => {
+      const row = document.createElement("div");
+      row.className = "user-row";
+      row.dataset.uid = f.uid;
+      row.dataset.name = f.name;
+      row.innerHTML = `
+        <div>
+          <span class="status-dot ${f.online ? "online" : "offline"}"></span>
+          ${escapeHtml(f.name)} (${escapeHtml(f.gender)})
+        </div>
+      `;
+      row.onclick = () => openChat(f.uid, f.name);
+      userList.appendChild(row);
     });
 
-  // SORTING HIERARCHY:
-  // 1. Message Recency (Newest timestamp first)
-  // 2. Online Status (Online users above offline)
-  // 3. Alphabetical (A-Z)
-  friends.sort((a, b) => {
-  const unreadA = unreadCounters[a.uid] || 0;
-  const unreadB = unreadCounters[b.uid] || 0;
-
-  const timeA = a.time || 0;
-  const timeB = b.time || 0;
-
-  // 1️⃣ Unread chats ALWAYS on top
-  if ((unreadB > 0) !== (unreadA > 0)) {
-    return unreadB > 0 ? 1 : -1;
-  }
-
-  // 2️⃣ Users WITH messages above users WITHOUT messages
-  if ((timeB > 0) !== (timeA > 0)) {
-    return timeB > 0 ? 1 : -1;
-  }
-
-  // 3️⃣ Newest message first
-  if (timeB !== timeA) {
-    return timeB - timeA;
-  }
-
-  // 4️⃣ Online users above offline users
-  if (b.online !== a.online) {
-    return b.online - a.online;
-  }
-
-  // 5️⃣ Alphabetical
-  return a.name.localeCompare(b.name);
-});
-
-
-
-  userList.innerHTML = "";
-  friends.forEach(f => {
-    const row = document.createElement("div");
-    row.className = "user-row" + (f.uid === currentChatFriendUid ? " active" : "");
-    row.id = `userrow-${f.uid}`;
-    row.dataset.uid = f.uid;
-    row.dataset.name = f.name;
-    row.innerHTML = `
-      <div>
-        <span class="status-dot ${f.online ? "online" : "offline"}"></span>
-        ${escapeHtml(f.name)} (${escapeHtml(f.gender)})
-      </div>
-    `;
-    row.onclick = () => openChat(f.uid, f.name);
-    userList.appendChild(row);
+    updateFriendListBadges();
   });
-
-  updateFriendListBadges();
 }
 
 function initUsersListener() {
@@ -804,6 +772,7 @@ async function rejectRequest(senderUid) {
 
 </body>
 </html>
+
 
 
 
