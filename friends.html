@@ -690,9 +690,6 @@ async function sendFriendRequest() {
       return;
     }
 
-   function viewProfile(uid) {
-  window.location.href = "profile-view.html?uid=" + uid;
-}
 
     await db.ref(`friendRequests/${currentChatFriendUid}/${currentUserUid}`).set(true);
 
@@ -706,6 +703,10 @@ async function sendFriendRequest() {
 }
   
 </script>
+
+     function viewProfile(uid) {
+  window.location.href = "profile-view.html?uid=" + uid;
+}
 
  
 <script>
@@ -802,6 +803,7 @@ Object.keys(snapshot.val()).forEach((friendUid) => {
   </script>
 </body>
 </html>
+
 
 
 
