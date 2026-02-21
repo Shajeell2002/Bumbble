@@ -740,7 +740,7 @@ function listenFriendsList() {
   const list = document.getElementById("friendsList");
 
   db.ref("friends/" + currentUserUid).on("value", (snapshot) => {
- refreshFriendsListUI(); // always rebuild using cached users
+
     list.innerHTML = "";
 
     if (!snapshot.exists()) {
@@ -753,13 +753,37 @@ function listenFriendsList() {
         cachedUsers?.[friendUid]?.public?.name || "Unknown User";
 
       const li = document.createElement("li");
-      li.textContent = name;
-      li.onclick = () => openChat(friendUid, name);
+
+      li.style.display = "flex";
+      li.style.justifyContent = "space-between";
+      li.style.alignItems = "center";
+      li.style.padding = "6px 0";
+
+      li.innerHTML = `
+        <span style="cursor:pointer;">${escapeHtml(name)}</span>
+        <button 
+          onclick="viewProfile('${friendUid}')"
+          style="
+            padding:4px 8px;
+            border:none;
+            border-radius:6px;
+            background:#b39ddb;
+            color:white;
+            font-size:12px;
+            cursor:pointer;
+          ">
+          View
+        </button>
+      `;
+
+      li.querySelector("span").onclick = () => openChat(friendUid, name);
 
       list.appendChild(li);
     });
+
   });
 }
+  
   </script>
 
   <script>
@@ -780,3 +804,4 @@ function listenFriendsList() {
   </script>
 </body>
 </html>
+
