@@ -423,7 +423,7 @@ function renderUserList(users) {
 
 function initUsersListener() {
   db.ref('users').orderByChild('public/online').equalTo(true).on('value', snap => {
-  });
+ 
     cachedUsers = snap.val() || {};
 
     renderUserList(cachedUsers);
@@ -807,4 +807,5 @@ async function acceptRequest(senderUid) {
 
 </body>
 </html>
+
 
