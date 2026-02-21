@@ -424,15 +424,11 @@ function renderUserList(users) {
 function initUsersListener() {
   db.ref('users').on('value', snap => {
     cachedUsers = snap.val() || {};
-
     renderUserList(cachedUsers);
-
-    // 🔥 FORCE refresh of friends list AFTER users exist
-    refreshFriendsListUI();
   });
 }
-  
-function refreshFriendsListUI() {
+    
+    function refreshFriendsListUI() {
   const list = document.getElementById("friendsList");
 
   db.ref("friends/" + currentUserUid).once("value").then(snapshot => {
@@ -811,5 +807,6 @@ function viewProfile(uid) {
   
 </body>
 </html>
+
 
 
