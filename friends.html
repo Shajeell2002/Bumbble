@@ -433,20 +433,6 @@ function initUsersListener() {
 }
   
 function refreshFriendsListUI() {
-  const list = document.getElementById("friendsList");
-
-  db.ref("friends/" + currentUserUid).once("value").then(snapshot => {
-    list.innerHTML = "";
-    
-    if (!snapshot.exists()) {
-      list.innerHTML = "<li>No friends yet</li>";
-      return;
-    }
-
-    Object.keys(snapshot.val()).forEach(friendUid => {
-      const name =
-        cachedUsers?.[friendUid]?.public?.name || "Unknown User";
-
 const li = document.createElement("li");
 li.style.display = "flex";
 li.style.justifyContent = "space-between";
@@ -478,10 +464,6 @@ viewBtn.onclick = (e) => {
 li.appendChild(nameSpan);
 li.appendChild(viewBtn);
 list.appendChild(li);
-    });
-  });
-}  
-
 // --- Unread Badges ---
 function setupUnreadListener(){
   db.ref('unread/'+currentUserUid).on('value', snap=>{
@@ -806,5 +788,6 @@ function listenFriendsList() {
   </script>
 </body>
 </html>
+
 
 
