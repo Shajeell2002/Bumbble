@@ -421,44 +421,17 @@ function renderUserList(users) {
   updateFriendListBadges();
 }
 
-// --- Optimized Users Listener ---
 function initUsersListener() {
-  if (!currentUserUid) return;
-
-  // 1️⃣ Fetch all users once and cache
-  db.ref('users').once('value', snap => {
+  db.ref('users').on('value', snap => {
     cachedUsers = snap.val() || {};
-    renderUserList(cachedUsers); // initial render
+
+    renderUserList(cachedUsers);
+
+    // 🔥 FORCE refresh of friends list AFTER users exist
+    
   });
+}      
 
-  // 2️⃣ Listen only for online status changes
-  db.ref('users').on('child_changed', snap => {
-    const uid = snap.key;
-    const publicData = snap.val().public || {};
-
-    // Update cache
-    if (!cachedUsers[uid]) cachedUsers[uid] = {};
-    cachedUsers[uid].public = publicData;
-
-    // Only update row if it's not the current user
-    if (uid !== currentUserUid) updateUserRow(uid);
-  });
-}
-
-// --- Update single row instead of re-rendering all ---
-function updateUserRow(uid) {
-  const row = document.getElementById(`userrow-${uid}`);
-  const user = cachedUsers[uid]?.public;
-  if (!row || !user) return;
-
-  // Update status dot
-  const statusDot = row.querySelector('.status-dot');
-  if (statusDot) statusDot.className = 'status-dot ' + (user.online ? 'online' : 'offline');
-
-  // Update name and gender (optional if changed)
-  const nameText = row.querySelector('.user-name');
-  if (nameText) nameText.textContent = `${user.name || 'Unknown'} (${user.gender || 'N/A'})`;
-}
 function listenFriendsList() {
   if (!currentUserUid) return;
 
@@ -833,6 +806,4 @@ async function acceptRequest(senderUid) {
 
 </body>
 </html>
-
-
 
