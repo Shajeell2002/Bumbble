@@ -38,12 +38,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
 .friends-container::-webkit-scrollbar-track { background:#f0e6fa; }
 .error-banner { background:#f2e6ff; color:#800; padding:8px 12px; border:1px solid #d8b3ff; margin:10px; border-radius:6px; }
 .chat-image { max-width:100%; height:auto; display:block; margin-top:4px; }
-.friend-profile-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; z-index: 1500; }
-.friend-profile-card { background: #fff; width: 90%; max-width: 360px; border-radius: 12px; padding: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
-.friend-profile-card h4 { margin: 0 0 12px; color: #5b3a8f; }
-.friend-profile-card p { margin: 6px 0; font-size: 14px; }
-.friend-profile-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
-.friend-profile-actions button { border: none; border-radius: 6px; padding: 6px 10px; background: #b39ddb; color: #fff; cursor: pointer; }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -114,20 +108,6 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
     </div>
   </div>
   <div id="errorArea"></div>
-</div>
-
-<div id="friendProfileModal" class="friend-profile-modal" onclick="closeFriendProfileModal(event)">
-  <div class="friend-profile-card">
-    <h4 id="friendProfileTitle">Friend Profile</h4>
-    <p><strong>Age:</strong> <span id="friendProfileAge">N/A</span></p>
-    <p><strong>Location:</strong> <span id="friendProfileLocation">N/A</span></p>
-    <p><strong>Gender:</strong> <span id="friendProfileGender">N/A</span></p>
-    <p><strong>Bio:</strong> <span id="friendProfileBio">N/A</span></p>
-    <p><strong>Interests:</strong> <span id="friendProfileInterests">N/A</span></p>
-    <div class="friend-profile-actions">
-      <button onclick="closeFriendProfileModal()">Close</button>
-    </div>
-  </div>
 </div>
 
 <style>#addFriendBtn {
@@ -272,7 +252,7 @@ chatFileInput.addEventListener("change", async (e) => {
     }
 
     const chatId = getChatId(currentUserUid, currentChatFriendUid);
-    const tempMsgRef = db.ref("chats/"  chatId  "/messages").push({
+    const tempMsgRef = db.ref("chats/" + chatId + "/messages").push({
       sender: currentUserUid,
       receiver: currentChatFriendUid,
       uploading: true,
@@ -288,7 +268,7 @@ chatFileInput.addEventListener("change", async (e) => {
         fileData: data,
         fileType: f.type,
       });
-      db.ref("unread/"  currentChatFriendUid  "/"  currentUserUid  "/"  tempMsgRef.key).set(true);
+      db.ref("unread/" + currentChatFriendUid + "/" + currentUserUid + "/" + tempMsgRef.key).set(true);
     };
     reader.readAsDataURL(f);
   }
@@ -302,7 +282,7 @@ let cachedUsers = {};   // ⭐ ADD THIS LINE
   
 // --- Error Handling ---
 window.addEventListener('error', e=>{ showError(e.message || e); });
-function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'escapeHtml(msg)'</div>'; }
+function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(msg)+'</div>'; }
 function listenLastMessagesForUserList() {
     db.ref("chats").on("child_added", chatSnap => {
         const members = chatSnap.child("members").val() || {};
@@ -325,7 +305,7 @@ function listenLastMessagesForUserList() {
 // --- Auth ---
 auth.onAuthStateChanged(user=>{
   if(user && user.emailVerified){
-
+db.ref("friends/" + currentUid).on("value", snap => {
     currentUserUid = user.uid;
     nav.innerHTML = `
       <a href="index.html">Home</a>
@@ -338,7 +318,7 @@ auth.onAuthStateChanged(user=>{
   </a>
   <a href="#" id="logoutBtn">Logout</a>`;
     document.getElementById("logoutBtn").onclick = ()=>{
-      db.ref('users/'currentUserUid'/public/online').set(false);
+      db.ref('users/'+currentUserUid+'/public/online').set(false);
       localStorage.removeItem("lastChatFriendUid");
       localStorage.removeItem("lastChatFriendName");
       auth.signOut().then(()=>window.location.href="login.html");
@@ -362,7 +342,7 @@ listenNotificationCount();
 // --- Online Status ---
 function setupOnlineStatus(){
   if(!currentUserUid) return;
-  const statusRef = db.ref('users/'currentUserUid'/public/online');
+  const statusRef = db.ref('users/'+currentUserUid+'/public/online');
   db.ref('.info/connected').on('value', snap=>{
     if(snap && snap.val()){ statusRef.set(true); statusRef.onDisconnect().set(false); }
   });
@@ -424,7 +404,7 @@ function renderUserList(users) {
   userList.innerHTML = "";
   friends.forEach(f => {
     const row = document.createElement("div");
-    row.className = "user-row"  (f.uid === currentChatFriendUid ? " active" : "");
+    row.className = "user-row" + (f.uid === currentChatFriendUid ? " active" : "");
     row.id = `userrow-${f.uid}`;
     row.dataset.uid = f.uid;
     row.dataset.name = f.name;
@@ -446,6 +426,8 @@ function initUsersListener() {
     cachedUsers = snap.val() || {};
 
     renderUserList(cachedUsers);
+
+    // 🔥 FORCE refresh of friends list AFTER users exist
     refreshFriendsListUI();
   });
 }
@@ -453,69 +435,30 @@ function initUsersListener() {
 function refreshFriendsListUI() {
   const list = document.getElementById("friendsList");
 
-  db.ref("friends/"  currentUserUid).once("value").then(snapshot => {
+  db.ref("friends/" + currentUserUid).once("value").then(snapshot => {
     list.innerHTML = "";
-
+    
     if (!snapshot.exists()) {
       list.innerHTML = "<li>No friends yet</li>";
       return;
     }
 
     Object.keys(snapshot.val()).forEach(friendUid => {
-      const name = cachedUsers?.[friendUid]?.public?.name || "Unknown User";
-      const safeName = String(name).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+      const name =
+        cachedUsers?.[friendUid]?.public?.name || "Unknown User";
 
       const li = document.createElement("li");
-      li.style.display = "flex";
-      li.style.justifyContent = "space-between";
-      li.style.alignItems = "center";
-      li.style.padding = "8px 0";
-
-      li.innerHTML = `
-        <span>${escapeHtml(name)}</span>
-        <div>
-          <button onclick="openChat('${friendUid}', '${safeName}')"
-            style="margin-right:6px;padding:5px 10px;border:none;border-radius:6px;background:#d1c4e9;cursor:pointer;">
-            Chat
-          </button>
-
-          <button onclick="viewProfile('${friendUid}')"
-            style="padding:5px 10px;border:none;border-radius:6px;background:#b39ddb;color:white;cursor:pointer;">
-            View Profile
-          </button>
-        </div>
-      `;
+      li.textContent = name;
+      li.onclick = () => openChat(friendUid, name);
 
       list.appendChild(li);
     });
   });
-}
-
-function viewProfile(friendUid) {
-  const friendPublicData = cachedUsers?.[friendUid]?.public;
-  if (!friendPublicData) {
-    showError("Friend profile is not available yet. Please try again.");
-    return;
-  }
-
-  document.getElementById("friendProfileTitle").textContent = `${friendPublicData.name || "Friend"}'s Profile`;
-  document.getElementById("friendProfileAge").textContent = friendPublicData.age || "N/A";
-  document.getElementById("friendProfileLocation").textContent = friendPublicData.location || "N/A";
-  document.getElementById("friendProfileGender").textContent = friendPublicData.gender || "N/A";
-  document.getElementById("friendProfileBio").textContent = friendPublicData.bio || "N/A";
-  document.getElementById("friendProfileInterests").textContent = friendPublicData.interests || "N/A";
-  document.getElementById("friendProfileModal").style.display = "flex";
-}
-
-function closeFriendProfileModal(event) {
-  const modal = document.getElementById("friendProfileModal");
-  if (event && event.target.id !== "friendProfileModal") return;
-  modal.style.display = "none";
-}
+}  
 
 // --- Unread Badges ---
 function setupUnreadListener(){
-  db.ref('unread/'currentUserUid).on('value', snap=>{
+  db.ref('unread/'+currentUserUid).on('value', snap=>{
     unreadCounters={};
     const data = snap.val()||{};
     Object.keys(data).forEach(uid=>unreadCounters[uid]=Object.keys(data[uid]||{}).length);
@@ -612,7 +555,7 @@ chatRef.once("value", snap => {
     const msg = { ...snap.val(), _key: snap.key };
 
     // Skip messages already loaded in the initial batch
-    if (document.getElementById("msg-"  snap.key)) return;
+    if (document.getElementById("msg-" + snap.key)) return;
 
     addOrUpdateMessageToChat(msg);
 
@@ -664,17 +607,17 @@ flashUserRow(otherUid);
 // --- Messages ---
 function addOrUpdateMessageToChat(msg){
   if(!msg||!msg._key) return;
-  const id='msg-'msg._key;
+  const id='msg-'+msg._key;
   let el=document.getElementById(id);
   const isSelf=(msg.sender===currentUserUid);
-  if(!el){ el=document.createElement('div'); el.id=id; el.className='message '(isSelf?'self':'friend'); chatMessages.appendChild(el); }
+  if(!el){ el=document.createElement('div'); el.id=id; el.className='message '+(isSelf?'self':'friend'); chatMessages.appendChild(el); }
 
   if(msg.fileData){
     const isImage=msg.fileType?.startsWith('image/') || /\.(jpg|jpeg|png|gif)$/i.test(msg.fileName||'');
     if(isImage){ el.innerHTML=`<img class="chat-image" src="${msg.fileData}"/><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`; }
     else{ el.innerHTML=`<a href="${msg.fileData}" download="${msg.fileName||'file'}">⬇️</a><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`; }
   } else if(msg.uploading){ el.innerHTML=`<span class="uploading-badge">Sending ${escapeHtml(msg.fileName||'...')}</span><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`; }
-  else if(msg.text){ el.innerHTML = escapeHtml(msg.text)'<div class="timestamp '(isSelf?'':'friend')'">'new Date(msg.timestamp).toLocaleString()'</div>'; }
+  else if(msg.text){ el.innerHTML = escapeHtml(msg.text)+'<div class="timestamp '+(isSelf?'':'friend')+'">'+new Date(msg.timestamp).toLocaleString()+'</div>'; }
   else{ el.innerHTML='<div class="small-muted">Unknown message</div>'; }
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
@@ -682,11 +625,11 @@ function addOrUpdateMessageToChat(msg){
 // --- Typing ---
 chatInput.addEventListener('input', ()=>{
   if(!currentChatFriendUid) return;
-  db.ref('typing/'currentChatFriendUid'/'currentUserUid).set(true);
+  db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).set(true);
   clearTimeout(typingTimeout);
-  typingTimeout=setTimeout(()=>db.ref('typing/'currentChatFriendUid'/'currentUserUid).remove(),1000);
+  typingTimeout=setTimeout(()=>db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove(),1000);
 });
-function listenTyping(uid){ db.ref('typing/'currentUserUid'/'uid).on('value', snap=>{ typingIndicator.textContent = snap.exists()? chatWith.textContent' is typing...' : ''; }); }
+function listenTyping(uid){ db.ref('typing/'+currentUserUid+'/'+uid).on('value', snap=>{ typingIndicator.textContent = snap.exists()? chatWith.textContent+' is typing...' : ''; }); }
 
 // --- Send Message ---
 function sendMessage(){
@@ -695,8 +638,8 @@ function sendMessage(){
   const chatId=getChatId(currentUserUid,currentChatFriendUid);
   const msg={sender:currentUserUid,receiver:currentChatFriendUid,text:text,timestamp:Date.now()};
   chatInput.value='';
-  const msgRef=db.ref('chats/'chatId'/messages').push(msg);
-  db.ref('unread/'currentChatFriendUid'/'currentUserUid'/'msgRef.key).set(true);
+  const msgRef=db.ref('chats/'+chatId+'/messages').push(msg);
+  db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+msgRef.key).set(true);
 }
 sendBtn.onclick=sendMessage;
 chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
@@ -707,7 +650,7 @@ fileBtn.onclick=()=>chatFileInput.click();
 
 // --- Close Chat ---
 function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null; if(currentChatListener) currentChatListener.off(); }
-function getChatId(a,b){ return a<b? a'_'b : b'_'a; }
+function getChatId(a,b){ return a<b? a+'_'+b : b+'_'+a; }
 function escapeHtml(str){ return str.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
 // --- Resizable Chat Anywhere ---
@@ -723,9 +666,9 @@ chatModal.addEventListener('mousedown', e=>{
 document.addEventListener('mousemove', e=>{
   if(!isResizing) return;
   const dx=e.clientX-lastX, dy=e.clientY-lastY;
-  const newWidth=Math.min(Math.max(lastWidthdx,300),window.innerWidth-40);
-  const newHeight=Math.min(Math.max(lastHeightdy,200),window.innerHeight-60);
-  chatModal.style.width=newWidth'px'; chatModal.style.height=newHeight'px';
+  const newWidth=Math.min(Math.max(lastWidth+dx,300),window.innerWidth-40);
+  const newHeight=Math.min(Math.max(lastHeight+dy,200),window.innerHeight-60);
+  chatModal.style.width=newWidth+'px'; chatModal.style.height=newHeight+'px';
 });
 document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; document.body.style.userSelect='auto'; } });
 </script>
@@ -768,9 +711,9 @@ async function acceptRequest(senderUid) {
   try {
     const updates = {};
 
-    updates["friends/"  currentUserUid  "/"  senderUid] = true;
-    updates["friends/"  senderUid  "/"  currentUserUid] = true;
-    updates["friendRequests/"  currentUserUid  "/"  senderUid] = null;
+    updates["friends/" + currentUserUid + "/" + senderUid] = true;
+    updates["friends/" + senderUid + "/" + currentUserUid] = true;
+    updates["friendRequests/" + currentUserUid + "/" + senderUid] = null;
 
     await db.ref().update(updates);
 
@@ -782,20 +725,39 @@ async function acceptRequest(senderUid) {
 
 async function rejectRequest(senderUid) {
   try {
-    await db.ref("friendRequests/"  currentUserUid  "/"  senderUid).remove();
+    await db.ref("friendRequests/" + currentUserUid + "/" + senderUid).remove();
   } catch (err) {
     console.error(err);
   }
 }
   async function rejectRequest(senderUid) {
-  await db.ref("friendRequests/"  currentUserUid  "/"  senderUid).remove();
+  await db.ref("friendRequests/" + currentUserUid + "/" + senderUid).remove();
 }
 </script>
 
-<script>// --- Listen Friends List ---
+  <script>// --- Listen Friends List ---
 function listenFriendsList() {
-  db.ref("friends/"  currentUserUid).on("value", (snapshot) => {
-    refreshFriendsListUI();
+  const list = document.getElementById("friendsList");
+
+  db.ref("friends/" + currentUserUid).on("value", (snapshot) => {
+ refreshFriendsListUI(); // always rebuild using cached users
+    list.innerHTML = "";
+
+    if (!snapshot.exists()) {
+      list.innerHTML = "<li>No friends yet</li>";
+      return;
+    }
+
+    Object.keys(snapshot.val()).forEach((friendUid) => {
+      const name =
+        cachedUsers?.[friendUid]?.public?.name || "Unknown User";
+
+      const li = document.createElement("li");
+      li.textContent = name;
+      li.onclick = () => openChat(friendUid, name);
+
+      list.appendChild(li);
+    });
   });
 }
   </script>
@@ -804,7 +766,7 @@ function listenFriendsList() {
     function listenNotificationCount() {
   const badge = document.getElementById("notifBadge");
 
-  db.ref("friendRequests/"  currentUserUid).on("value", snap => {
+  db.ref("friendRequests/" + currentUserUid).on("value", snap => {
     const count = snap.exists() ? Object.keys(snap.val()).length : 0;
 
     if (count > 0) {
