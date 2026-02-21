@@ -731,9 +731,10 @@ async function rejectRequest(senderUid) {
 }
 </script>
 
-  console.log("listenFriendsList running");
   <script>// --- Listen Friends List ---
 function listenFriendsList() {
+    console.log("listenFriendsList running");
+
   const list = document.getElementById("friendsList");
 
   db.ref("friends/" + currentUserUid).on("value", (snapshot) => {
@@ -808,6 +809,7 @@ function viewProfile(uid) {
   
 </body>
 </html>
+
 
 
 
