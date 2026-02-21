@@ -110,25 +110,37 @@ nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
   <div id="errorArea"></div>
 </div>
 
-  <style>
-addFriend{
-  position: fixed;
-  Top: 55px;
-  right: 20px;
-  background: #25D366;
+<style>#addFriendBtn {
+  padding: 8px 18px;
+  border: none;
+  border-radius: 20px;              /* Rounded pill shape */
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  background: linear-gradient(135deg, #9b59b6, #7e3ea8);
   color: white;
-  padding: 2px 5px;
-  border-radius: 10px;
-  font-weight: bold;
-  text-decoration: none;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
-  z-index: 999;
- font-size: 12px;
- transition: transform 0.3s ease;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
-  </style>
-  
-<script>
+
+/* Hover effect */
+#addFriendBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+}
+
+/* Click effect */
+#addFriendBtn:active {
+  transform: scale(0.96);
+}
+
+/* Optional: small spacing from close button */
+#chatHeader button {
+  margin-left: 8px;
+}
+</style>  
+
+  <script>
 // --- Firebase Init ---
 const firebaseConfig = {
   apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
@@ -765,6 +777,7 @@ function listenFriendsList() {
   </script>
 </body>
 </html>
+
 
 
 
