@@ -447,11 +447,37 @@ function refreshFriendsListUI() {
       const name =
         cachedUsers?.[friendUid]?.public?.name || "Unknown User";
 
-      const li = document.createElement("li");
-      li.textContent = name;
-      li.onclick = () => openChat(friendUid, name);
+const li = document.createElement("li");
+li.style.display = "flex";
+li.style.justifyContent = "space-between";
+li.style.alignItems = "center";
+li.style.marginBottom = "6px";
 
-      list.appendChild(li);
+// Name span
+const nameSpan = document.createElement("span");
+nameSpan.textContent = name;
+nameSpan.style.cursor = "pointer";
+nameSpan.onclick = () => openChat(friendUid, name);
+
+// View button
+const viewBtn = document.createElement("button");
+viewBtn.textContent = "View";
+viewBtn.style.padding = "4px 8px";
+viewBtn.style.border = "none";
+viewBtn.style.borderRadius = "6px";
+viewBtn.style.background = "#9b59b6";
+viewBtn.style.color = "white";
+viewBtn.style.cursor = "pointer";
+viewBtn.style.fontSize = "12px";
+
+viewBtn.onclick = (e) => {
+  e.stopPropagation(); // prevent chat opening
+  window.location.href = "profile.html?uid=" + friendUid;
+};
+
+li.appendChild(nameSpan);
+li.appendChild(viewBtn);
+list.appendChild(li);
     });
   });
 }  
@@ -780,4 +806,5 @@ function listenFriendsList() {
   </script>
 </body>
 </html>
+
 
