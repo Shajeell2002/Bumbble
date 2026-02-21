@@ -500,9 +500,6 @@ function openChat(uid, name) {
   // Setup chat state
   currentChatFriendUid = uid;
   chatWith.textContent = name;
-document.getElementById("viewProfileBtn").onclick = () => {
-  window.location.href = "profile-view.html?uid=" + uid;
-};
   localStorage.setItem("lastChatFriendUid", uid);
   localStorage.setItem("lastChatFriendName", name);
 
@@ -783,6 +780,7 @@ function listenFriendsList() {
   </script>
 </body>
 </html>
+
 
 
 
