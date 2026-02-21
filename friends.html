@@ -743,13 +743,6 @@ async function acceptRequest(senderUid) {
   }
 }
 
-async function rejectRequest(senderUid) {
-  try {
-    await db.ref("friendRequests/" + currentUserUid + "/" + senderUid).remove();
-  } catch (err) {
-    console.error(err);
-  }
-}
   async function rejectRequest(senderUid) {
   await db.ref("friendRequests/" + currentUserUid + "/" + senderUid).remove();
 }
@@ -789,6 +782,7 @@ async function rejectRequest(senderUid) {
 
 </body>
 </html>
+
 
 
 
