@@ -1,76 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF8">
-<meta name="viewport" content="width=devicewidth, initialscale=1.0">
-<title>Bumbble  Friends & Chat</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bumbble - Friends & Chat</title>
 <style>
-body { fontfamily: Arial, sansserif; margin:0; background:#f8f6fb; color:#333; display:flex; minheight:100vh; flexdirection: column; }
-header { display:flex; justifycontent:spacebetween; alignitems:center; padding:15px 20px; background:#d8cce5; boxshadow:0 3px 6px rgba(0,0,0,0.1); position:fixed; top:0; left:0; right:0; zindex:500; }
-header h1{ fontsize:24px; margin:0; }
-nav a{ marginleft:10px; fontweight:bold; color:#333; textdecoration:none; }
-.friendscontainer { width:250px; background:#e6e0f0; borderright:1px solid #ccc; padding:10px; overflowy:auto; position:fixed; top:60px; bottom:0; left:0; }
-.maincontent { flex:1; marginleft:250px; padding:80px 20px 20px 20px; }
-.userlist { display:flex; flexdirection:column; gap:2px; fontsize:14px; }
-.userrow { display:flex; justifycontent:spacebetween; alignitems:center; padding:6px 8px; borderbottom:1px solid #ccc; cursor:pointer; transition:0.2s; }
-.userrow:hover, .userrow.active { background:#ddd6f3; }
-.userrow.flash { animation:flashLavender 0.5s; }
+body { font-family: Arial, sans-serif; margin:0; background:#f8f6fb; color:#333; display:flex; min-height:100vh; flex-direction: column; }
+header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#d8cce5; box-shadow:0 3px 6px rgba(0,0,0,0.1); position:fixed; top:0; left:0; right:0; z-index:500; }
+header h1{ font-size:24px; margin:0; }
+nav a{ margin-left:10px; font-weight:bold; color:#333; text-decoration:none; }
+.friends-container { width:250px; background:#e6e0f0; border-right:1px solid #ccc; padding:10px; overflow-y:auto; position:fixed; top:60px; bottom:0; left:0; }
+.main-content { flex:1; margin-left:250px; padding:80px 20px 20px 20px; }
+.user-list { display:flex; flex-direction:column; gap:2px; font-size:14px; }
+.user-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #ccc; cursor:pointer; transition:0.2s; }
+.user-row:hover, .user-row.active { background:#ddd6f3; }
+.user-row.flash { animation:flashLavender 0.5s; }
 @keyframes flashLavender { 0%{background:#e0b3ff;} 100%{background:#ddd6f3;} }
-.statusdot { width:10px; height:10px; borderradius:50%; display:inlineblock; marginright:6px; }
+.status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
 .online { background:green; } .offline { background:red; }
-.badge { background:#9b59b6; color:white; fontsize:10px; fontweight:bold; padding:1px 5px; borderradius:10px; marginleft:6px; }
-#chatModal { position:fixed; bottom:0; right:20px; width:360px; height:500px; maxheight:80vh; border:1px solid #ccc; background:#d8cce5; borderradius:10px; display:none; flexdirection:column; boxshadow:0 4px 12px rgba(0,0,0,0.2); overflow:hidden; zindex:1000; resize:none; }
-#chatHeader { background:#d8cce5; padding:10px; fontweight:bold; display:flex; justifycontent:spacebetween; alignitems:center; cursor:move; }
-#chatMessages { flex:1; padding:10px; overflowy:auto; display:flex; flexdirection:column; gap:8px; background:#f8f6fb; scrollbehavior:smooth; }
-#typingIndicator { fontsize:12px; color:#555; paddingleft:10px; height:18px; }
-.message { maxwidth:80%; padding:8px 10px; borderradius:10px; position:relative; wordwrap:breakword; }
-.message.self { background:#9b59b6; color:white; alignself:flexend; }
-.message.friend { background:#ece6f2; color:#111; alignself:flexstart; }
-.timestamp { fontsize:10px; color:#666; margintop:6px; textalign:right; display:block; }
+.badge { background:#9b59b6; color:white; font-size:10px; font-weight:bold; padding:1px 5px; border-radius:10px; margin-left:6px; }
+#chatModal { position:fixed; bottom:0; right:20px; width:360px; height:500px; max-height:80vh; border:1px solid #ccc; background:#d8cce5; border-radius:10px; display:none; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.2); overflow:hidden; z-index:1000; resize:none; }
+#chatHeader { background:#d8cce5; padding:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; cursor:move; }
+#chatMessages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:#f8f6fb; scroll-behavior:smooth; }
+#typingIndicator { font-size:12px; color:#555; padding-left:10px; height:18px; }
+.message { max-width:80%; padding:8px 10px; border-radius:10px; position:relative; word-wrap:break-word; }
+.message.self { background:#9b59b6; color:white; align-self:flex-end; }
+.message.friend { background:#ece6f2; color:#111; align-self:flex-start; }
+.timestamp { font-size:10px; color:#666; margin-top:6px; text-align:right; display:block; }
 .timestamp.friend { color:#666; }
-.uploadingbadge { fontsize:11px; color:#444; margintop:6px; display:inlineblock; background:#e6e0f0; padding:3px 6px; borderradius:6px; border:1px solid #d0c4e0; }
-#chatInputContainer { display:flex; bordertop:1px solid #ccc; alignitems:center; gap:6px; padding:8px; background:#e6e0f0; }
-#chatInput { flex:1; padding:8px; border:none; outline:none; borderradius:8px; background:#f0e6fa; }
-#sendBtn, #fileBtn { padding:8px 12px; border:none; background:#b39ddb; cursor:pointer; borderradius:8px; color:white; fontweight:bold; }
+.uploading-badge { font-size:11px; color:#444; margin-top:6px; display:inline-block; background:#e6e0f0; padding:3px 6px; border-radius:6px; border:1px solid #d0c4e0; }
+#chatInputContainer { display:flex; border-top:1px solid #ccc; align-items:center; gap:6px; padding:8px; background:#e6e0f0; }
+#chatInput { flex:1; padding:8px; border:none; outline:none; border-radius:8px; background:#f0e6fa; }
+#sendBtn, #fileBtn { padding:8px 12px; border:none; background:#b39ddb; cursor:pointer; border-radius:8px; color:white; font-weight:bold; }
 #sendBtn:hover, #fileBtn:hover { background:#9775c2; }
-.friendscontainer::webkitscrollbar { width:6px; }
-.friendscontainer::webkitscrollbarthumb { background:#b39ddb; borderradius:3px; }
-.friendscontainer::webkitscrollbartrack { background:#f0e6fa; }
-.errorbanner { background:#f2e6ff; color:#800; padding:8px 12px; border:1px solid #d8b3ff; margin:10px; borderradius:6px; }
-.chatimage { maxwidth:100%; height:auto; display:block; margintop:4px; }
+.friends-container::-webkit-scrollbar { width:6px; }
+.friends-container::-webkit-scrollbar-thumb { background:#b39ddb; border-radius:3px; }
+.friends-container::-webkit-scrollbar-track { background:#f0e6fa; }
+.error-banner { background:#f2e6ff; color:#800; padding:8px 12px; border:1px solid #d8b3ff; margin:10px; border-radius:6px; }
+.chat-image { max-width:100%; height:auto; display:block; margin-top:4px; }
+.friend-profile-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; z-index: 1500; }
+.friend-profile-card { background: #fff; width: 90%; max-width: 360px; border-radius: 12px; padding: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
+.friend-profile-card h4 { margin: 0 0 12px; color: #5b3a8f; }
+.friend-profile-card p { margin: 6px 0; font-size: 14px; }
+.friend-profile-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+.friend-profile-actions button { border: none; border-radius: 6px; padding: 6px 10px; background: #b39ddb; color: #fff; cursor: pointer; }
 </style>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebaseappcompat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebaseauthcompat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebasedatabasecompat.js"></script>
-<! ✅ Add TensorFlow.js before NSFWJS >
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<!-- ✅ Add TensorFlow.js before NSFWJS -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.0/dist/nsfwjs.min.js"></script>
 
-  <! WhatsApp Floating Button >
+  <!-- WhatsApp Floating Button -->
 <a href="https://wa.me/91XXXXXXXXXX" 
-   class="whatsappfloat" 
+   class="whatsapp-float" 
    target="_blank">
    💬 Chat on WhatsApp
 </a>
 
 <style>
-.whatsappfloat{
+.whatsapp-float{
   position: fixed;
   Top: 55px;
   right: 20px;
   background: #25D366;
   color: white;
   padding: 2px 5px;
-  borderradius: 10px;
-  fontweight: bold;
-  textdecoration: none;
-  boxshadow: 0 6px 18px rgba(0,0,0,0.25);
-  zindex: 999;
- fontsize: 12px;
+  border-radius: 10px;
+  font-weight: bold;
+  text-decoration: none;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  z-index: 999;
+ font-size: 12px;
  transition: transform 0.3s ease;
 }
-.whatsappfloat:hover{
+.whatsapp-float:hover{
   transform: scale(1.1);
 }
 </style>
@@ -85,11 +91,11 @@ nav a{ marginleft:10px; fontweight:bold; color:#333; textdecoration:none; }
   </nav>
 </header>
 
-<div class="friendscontainer">
-  <div class="userlist" id="userList"></div>
+<div class="friends-container">
+  <div class="user-list" id="userList"></div>
 </div>
 
-<div class="maincontent">
+<div class="main-content">
 <h3>My Friends</h3> 
   <ul id="friendsList"></ul>
   <div id="chatModal">
@@ -110,26 +116,40 @@ nav a{ marginleft:10px; fontweight:bold; color:#333; textdecoration:none; }
   <div id="errorArea"></div>
 </div>
 
+<div id="friendProfileModal" class="friend-profile-modal" onclick="closeFriendProfileModal(event)">
+  <div class="friend-profile-card">
+    <h4 id="friendProfileTitle">Friend Profile</h4>
+    <p><strong>Age:</strong> <span id="friendProfileAge">N/A</span></p>
+    <p><strong>Location:</strong> <span id="friendProfileLocation">N/A</span></p>
+    <p><strong>Gender:</strong> <span id="friendProfileGender">N/A</span></p>
+    <p><strong>Bio:</strong> <span id="friendProfileBio">N/A</span></p>
+    <p><strong>Interests:</strong> <span id="friendProfileInterests">N/A</span></p>
+    <div class="friend-profile-actions">
+      <button onclick="closeFriendProfileModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <style>#addFriendBtn {
   padding: 5px 8px;
 width: 80px;
 height: 30px;
   border: none;
-  borderradius: 10px;              /* Rounded pill shape */
-  fontsize: 13px;
-  fontweight: 400;
+  border-radius: 10px;              /* Rounded pill shape */
+  font-size: 13px;
+  font-weight: 400;
   cursor: pointer;
-  background: lineargradient(135deg, #9b59b6, #7e3ea8);
+  background: linear-gradient(135deg, #9b59b6, #7e3ea8);
   color: white;
   float: right;
   transition: all 0.25s ease;
-  boxshadow: 0 4px 10px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
 
 /* Hover effect */
 #addFriendBtn:hover {
-  transform: translateY(2px);
-  boxshadow: 0 6px 14px rgba(0,0,0,0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.25);
 }
 
 /* Click effect */
@@ -139,18 +159,18 @@ height: 30px;
 
 /* Optional: small spacing from close button */
 #chatHeader button {
-  marginleft: 8px;
+  margin-left: 8px;
 }
 </style>  
 
   <script>
-//  Firebase Init 
+// --- Firebase Init ---
 const firebaseConfig = {
   apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
-  authDomain: "bumbblec061f.firebaseapp.com",
-  databaseURL: "https://bumbblec061fdefaultrtdb.firebaseio.com",
-  projectId: "bumbblec061f",
-  storageBucket: "bumbblec061f.appspot.com",
+  authDomain: "bumbble-c061f.firebaseapp.com",
+  databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
+  projectId: "bumbble-c061f",
+  storageBucket: "bumbble-c061f.appspot.com",
   messagingSenderId: "213165886981",
   appId: "1:213165886981:web:c18652003444869b1bd66c"
 };
@@ -159,7 +179,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
  
-//  DOM 
+// --- DOM ---
 const nav = document.getElementById("navLinks");
 const userList = document.getElementById("userList");
 const chatModal = document.getElementById("chatModal");
@@ -177,12 +197,12 @@ const errorArea = document.getElementById("errorArea");
 
 
 
-  /*  NSFW Filter Setup  */
+  /* ---------- NSFW Filter Setup ---------- */
 let nsfwModel = null;
 
 async function loadNsfwModel() {
   try {
-    nsfwModel = await nsfwjs.load("./assets/nsfwmodel/");
+    nsfwModel = await nsfwjs.load("./assets/nsfw-model/");
   } catch (err) {
     console.error("❌ Failed to load NSFW model:", err);
     showError("⚠️ Image safety filter failed to load. Some uploads may be restricted.");
@@ -190,7 +210,7 @@ async function loadNsfwModel() {
 }
 loadNsfwModel();
 
-/*  NSFW Check Before Upload  */
+/* ---------- NSFW Check Before Upload ---------- */
 async function isImageNSFW(file) {
   return new Promise(async (resolve) => {
     if (!nsfwModel) {
@@ -241,7 +261,7 @@ async function isImageNSFW(file) {
 }
 
 
-/*  Override File Upload with NSFW Check  */
+/* ---------- Override File Upload with NSFW Check ---------- */
 chatFileInput.addEventListener("change", async (e) => {
   const files = Array.from(e.target.files);
   for (const f of files) {
@@ -252,7 +272,7 @@ chatFileInput.addEventListener("change", async (e) => {
     }
 
     const chatId = getChatId(currentUserUid, currentChatFriendUid);
-    const tempMsgRef = db.ref("chats/" + chatId + "/messages").push({
+    const tempMsgRef = db.ref("chats/"  chatId  "/messages").push({
       sender: currentUserUid,
       receiver: currentChatFriendUid,
       uploading: true,
@@ -268,7 +288,7 @@ chatFileInput.addEventListener("change", async (e) => {
         fileData: data,
         fileType: f.type,
       });
-      db.ref("unread/" + currentChatFriendUid + "/" + currentUserUid + "/" + tempMsgRef.key).set(true);
+      db.ref("unread/"  currentChatFriendUid  "/"  currentUserUid  "/"  tempMsgRef.key).set(true);
     };
     reader.readAsDataURL(f);
   }
@@ -280,9 +300,9 @@ let cachedUsers = {};   // ⭐ ADD THIS LINE
 
 
   
-//  Error Handling 
+// --- Error Handling ---
 window.addEventListener('error', e=>{ showError(e.message || e); });
-function showError(msg){ errorArea.innerHTML = '<div class="errorbanner">'+escapeHtml(msg)+'</div>'; }
+function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'escapeHtml(msg)'</div>'; }
 function listenLastMessagesForUserList() {
     db.ref("chats").on("child_added", chatSnap => {
         const members = chatSnap.child("members").val() || {};
@@ -302,7 +322,7 @@ function listenLastMessagesForUserList() {
         });
     });
 }   
-//  Auth 
+// --- Auth ---
 auth.onAuthStateChanged(user=>{
   if(user && user.emailVerified){
 
@@ -318,7 +338,7 @@ auth.onAuthStateChanged(user=>{
   </a>
   <a href="#" id="logoutBtn">Logout</a>`;
     document.getElementById("logoutBtn").onclick = ()=>{
-      db.ref('users/'+currentUserUid+'/public/online').set(false);
+      db.ref('users/'currentUserUid'/public/online').set(false);
       localStorage.removeItem("lastChatFriendUid");
       localStorage.removeItem("lastChatFriendName");
       auth.signOut().then(()=>window.location.href="login.html");
@@ -339,16 +359,16 @@ listenNotificationCount();
   }
 });
   
-//  Online Status 
+// --- Online Status ---
 function setupOnlineStatus(){
   if(!currentUserUid) return;
-  const statusRef = db.ref('users/'+currentUserUid+'/public/online');
+  const statusRef = db.ref('users/'currentUserUid'/public/online');
   db.ref('.info/connected').on('value', snap=>{
     if(snap && snap.val()){ statusRef.set(true); statusRef.onDisconnect().set(false); }
   });
 }
   
-//  Users List 
+// --- Users List ---
 function renderUserList(users) {
   const friends = Object.keys(users)
     .filter(uid => uid !== currentUserUid)
@@ -367,7 +387,7 @@ function renderUserList(users) {
   // SORTING HIERARCHY:
   // 1. Message Recency (Newest timestamp first)
   // 2. Online Status (Online users above offline)
-  // 3. Alphabetical (AZ)
+  // 3. Alphabetical (A-Z)
   friends.sort((a, b) => {
   const unreadA = unreadCounters[a.uid] || 0;
   const unreadB = unreadCounters[b.uid] || 0;
@@ -377,22 +397,22 @@ function renderUserList(users) {
 
   // 1️⃣ Unread chats ALWAYS on top
   if ((unreadB > 0) !== (unreadA > 0)) {
-    return unreadB > 0 ? 1 : 1;
+    return unreadB > 0 ? 1 : -1;
   }
 
   // 2️⃣ Users WITH messages above users WITHOUT messages
   if ((timeB > 0) !== (timeA > 0)) {
-    return timeB > 0 ? 1 : 1;
+    return timeB > 0 ? 1 : -1;
   }
 
   // 3️⃣ Newest message first
   if (timeB !== timeA) {
-    return timeB  timeA;
+    return timeB - timeA;
   }
 
   // 4️⃣ Online users above offline users
   if (b.online !== a.online) {
-    return b.online  a.online;
+    return b.online - a.online;
   }
 
   // 5️⃣ Alphabetical
@@ -404,13 +424,13 @@ function renderUserList(users) {
   userList.innerHTML = "";
   friends.forEach(f => {
     const row = document.createElement("div");
-    row.className = "userrow" + (f.uid === currentChatFriendUid ? " active" : "");
-    row.id = `userrow${f.uid}`;
+    row.className = "user-row"  (f.uid === currentChatFriendUid ? " active" : "");
+    row.id = `userrow-${f.uid}`;
     row.dataset.uid = f.uid;
     row.dataset.name = f.name;
     row.innerHTML = `
       <div>
-        <span class="statusdot ${f.online ? "online" : "offline"}"></span>
+        <span class="status-dot ${f.online ? "online" : "offline"}"></span>
         ${escapeHtml(f.name)} (${escapeHtml(f.gender)})
       </div>
     `;
@@ -426,8 +446,6 @@ function initUsersListener() {
     cachedUsers = snap.val() || {};
 
     renderUserList(cachedUsers);
-
-    // 🔥 FORCE refresh of friends list AFTER users exist
     refreshFriendsListUI();
   });
 }
@@ -435,46 +453,69 @@ function initUsersListener() {
 function refreshFriendsListUI() {
   const list = document.getElementById("friendsList");
 
-  db.ref("friends/" + currentUserUid).once("value").then(snapshot => {
+  db.ref("friends/"  currentUserUid).once("value").then(snapshot => {
     list.innerHTML = "";
-db.ref("friends/" + currentUid).on("value", snap => {
-    
+
     if (!snapshot.exists()) {
       list.innerHTML = "<li>No friends yet</li>";
       return;
     }
 
     Object.keys(snapshot.val()).forEach(friendUid => {
-      const name =
-        cachedUsers?.[friendUid]?.public?.name || "Unknown User";
+      const name = cachedUsers?.[friendUid]?.public?.name || "Unknown User";
+      const safeName = String(name).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 
- const li = document.createElement("li");
-li.style.display = "flex";
-li.style.justifyContent = "spacebetween";
-li.style.alignItems = "center";
-li.style.padding = "8px 0";
+      const li = document.createElement("li");
+      li.style.display = "flex";
+      li.style.justifyContent = "space-between";
+      li.style.alignItems = "center";
+      li.style.padding = "8px 0";
 
-li.innerHTML = `
-  <span>${name}</span>
-  <div>
-    <button onclick="openChat('${friendUid}', '${name}')"
-      style="marginright:6px;padding:5px 10px;border:none;borderradius:6px;
-      background:#d1c4e9;cursor:pointer;">
-      Chat
-    </button>
+      li.innerHTML = `
+        <span>${escapeHtml(name)}</span>
+        <div>
+          <button onclick="openChat('${friendUid}', '${safeName}')"
+            style="margin-right:6px;padding:5px 10px;border:none;border-radius:6px;background:#d1c4e9;cursor:pointer;">
+            Chat
+          </button>
 
-    <button onclick="viewProfile('${friendUid}')"
-      style="padding:5px 10px;border:none;borderradius:6px;
-      background:#b39ddb;color:white;cursor:pointer;">
-      View Profile
-    </button>
-  </div>
-`;
+          <button onclick="viewProfile('${friendUid}')"
+            style="padding:5px 10px;border:none;border-radius:6px;background:#b39ddb;color:white;cursor:pointer;">
+            View Profile
+          </button>
+        </div>
+      `;
 
-friendsList.appendChild(li);
-//  Unread Badges 
+      list.appendChild(li);
+    });
+  });
+}
+
+function viewProfile(friendUid) {
+  const friendPublicData = cachedUsers?.[friendUid]?.public;
+  if (!friendPublicData) {
+    showError("Friend profile is not available yet. Please try again.");
+    return;
+  }
+
+  document.getElementById("friendProfileTitle").textContent = `${friendPublicData.name || "Friend"}'s Profile`;
+  document.getElementById("friendProfileAge").textContent = friendPublicData.age || "N/A";
+  document.getElementById("friendProfileLocation").textContent = friendPublicData.location || "N/A";
+  document.getElementById("friendProfileGender").textContent = friendPublicData.gender || "N/A";
+  document.getElementById("friendProfileBio").textContent = friendPublicData.bio || "N/A";
+  document.getElementById("friendProfileInterests").textContent = friendPublicData.interests || "N/A";
+  document.getElementById("friendProfileModal").style.display = "flex";
+}
+
+function closeFriendProfileModal(event) {
+  const modal = document.getElementById("friendProfileModal");
+  if (event && event.target.id !== "friendProfileModal") return;
+  modal.style.display = "none";
+}
+
+// --- Unread Badges ---
 function setupUnreadListener(){
-  db.ref('unread/'+currentUserUid).on('value', snap=>{
+  db.ref('unread/'currentUserUid).on('value', snap=>{
     unreadCounters={};
     const data = snap.val()||{};
     Object.keys(data).forEach(uid=>unreadCounters[uid]=Object.keys(data[uid]||{}).length);
@@ -482,7 +523,7 @@ function setupUnreadListener(){
   });
 }
 function updateFriendListBadges(){
-  document.querySelectorAll('.userrow').forEach(r=>{
+  document.querySelectorAll('.user-row').forEach(r=>{
     const uid=r.dataset.uid;
     let badge=r.querySelector('.badge');
     const count = Number(unreadCounters[uid]||0);
@@ -493,11 +534,11 @@ function updateFriendListBadges(){
   });
 }
 function flashUserRow(uid){
-  const row=document.querySelector(`.userrow[datauid="${uid}"]`);
+  const row=document.querySelector(`.user-row[data-uid="${uid}"]`);
   if(row){ row.classList.add('flash'); setTimeout(()=>row.classList.remove('flash'),800); }
 }
 
-//  Open Chat (Clean Optimized Version) 
+// --- Open Chat (Clean Optimized Version) ---
 function openChat(uid, name) {
 
   // set active friend FIRST
@@ -509,8 +550,8 @@ function openChat(uid, name) {
           
   
   // Highlight user row
-  document.querySelectorAll('.userrow').forEach(r => r.classList.remove('active'));
-  const activeRow = document.querySelector(`.userrow[datauid="${uid}"]`);
+  document.querySelectorAll('.user-row').forEach(r => r.classList.remove('active'));
+  const activeRow = document.querySelector(`.user-row[data-uid="${uid}"]`);
   if (activeRow) activeRow.classList.add('active');
 
   // Setup chat state
@@ -551,7 +592,7 @@ chatRef.once("value", snap => {
   const msgs = snap.val() || {};
 
   const sorted = Object.entries(msgs).sort(
-    (a, b) => a[1].timestamp  b[1].timestamp
+    (a, b) => a[1].timestamp - b[1].timestamp
   );
 
   sorted.forEach(([key, msg]) =>
@@ -571,7 +612,7 @@ chatRef.once("value", snap => {
     const msg = { ...snap.val(), _key: snap.key };
 
     // Skip messages already loaded in the initial batch
-    if (document.getElementById("msg" + snap.key)) return;
+    if (document.getElementById("msg-"  snap.key)) return;
 
     addOrUpdateMessageToChat(msg);
 
@@ -620,56 +661,56 @@ flashUserRow(otherUid);
 }
 
 
-//  Messages 
+// --- Messages ---
 function addOrUpdateMessageToChat(msg){
   if(!msg||!msg._key) return;
-  const id='msg'+msg._key;
+  const id='msg-'msg._key;
   let el=document.getElementById(id);
   const isSelf=(msg.sender===currentUserUid);
-  if(!el){ el=document.createElement('div'); el.id=id; el.className='message '+(isSelf?'self':'friend'); chatMessages.appendChild(el); }
+  if(!el){ el=document.createElement('div'); el.id=id; el.className='message '(isSelf?'self':'friend'); chatMessages.appendChild(el); }
 
   if(msg.fileData){
     const isImage=msg.fileType?.startsWith('image/') || /\.(jpg|jpeg|png|gif)$/i.test(msg.fileName||'');
-    if(isImage){ el.innerHTML=`<img class="chatimage" src="${msg.fileData}"/><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`; }
+    if(isImage){ el.innerHTML=`<img class="chat-image" src="${msg.fileData}"/><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`; }
     else{ el.innerHTML=`<a href="${msg.fileData}" download="${msg.fileName||'file'}">⬇️</a><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`; }
-  } else if(msg.uploading){ el.innerHTML=`<span class="uploadingbadge">Sending ${escapeHtml(msg.fileName||'...')}</span><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`; }
-  else if(msg.text){ el.innerHTML = escapeHtml(msg.text)+'<div class="timestamp '+(isSelf?'':'friend')+'">'+new Date(msg.timestamp).toLocaleString()+'</div>'; }
-  else{ el.innerHTML='<div class="smallmuted">Unknown message</div>'; }
+  } else if(msg.uploading){ el.innerHTML=`<span class="uploading-badge">Sending ${escapeHtml(msg.fileName||'...')}</span><span class="timestamp ${isSelf?'':'friend'}">${new Date(msg.timestamp).toLocaleString()}</span>`; }
+  else if(msg.text){ el.innerHTML = escapeHtml(msg.text)'<div class="timestamp '(isSelf?'':'friend')'">'new Date(msg.timestamp).toLocaleString()'</div>'; }
+  else{ el.innerHTML='<div class="small-muted">Unknown message</div>'; }
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-//  Typing 
+// --- Typing ---
 chatInput.addEventListener('input', ()=>{
   if(!currentChatFriendUid) return;
-  db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).set(true);
+  db.ref('typing/'currentChatFriendUid'/'currentUserUid).set(true);
   clearTimeout(typingTimeout);
-  typingTimeout=setTimeout(()=>db.ref('typing/'+currentChatFriendUid+'/'+currentUserUid).remove(),1000);
+  typingTimeout=setTimeout(()=>db.ref('typing/'currentChatFriendUid'/'currentUserUid).remove(),1000);
 });
-function listenTyping(uid){ db.ref('typing/'+currentUserUid+'/'+uid).on('value', snap=>{ typingIndicator.textContent = snap.exists()? chatWith.textContent+' is typing...' : ''; }); }
+function listenTyping(uid){ db.ref('typing/'currentUserUid'/'uid).on('value', snap=>{ typingIndicator.textContent = snap.exists()? chatWith.textContent' is typing...' : ''; }); }
 
-//  Send Message 
+// --- Send Message ---
 function sendMessage(){
   const text=chatInput.value.trim();
   if(!text||!currentChatFriendUid) return;
   const chatId=getChatId(currentUserUid,currentChatFriendUid);
   const msg={sender:currentUserUid,receiver:currentChatFriendUid,text:text,timestamp:Date.now()};
   chatInput.value='';
-  const msgRef=db.ref('chats/'+chatId+'/messages').push(msg);
-  db.ref('unread/'+currentChatFriendUid+'/'+currentUserUid+'/'+msgRef.key).set(true);
+  const msgRef=db.ref('chats/'chatId'/messages').push(msg);
+  db.ref('unread/'currentChatFriendUid'/'currentUserUid'/'msgRef.key).set(true);
 }
 sendBtn.onclick=sendMessage;
 chatInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
 
-//  File Upload 
+// --- File Upload ---
 fileBtn.onclick=()=>chatFileInput.click();
 
 
-//  Close Chat 
+// --- Close Chat ---
 function closeChat(){ chatModal.style.display='none'; currentChatFriendUid=null; if(currentChatListener) currentChatListener.off(); }
-function getChatId(a,b){ return a<b? a+'_'+b : b+'_'+a; }
+function getChatId(a,b){ return a<b? a'_'b : b'_'a; }
 function escapeHtml(str){ return str.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-//  Resizable Chat Anywhere 
+// --- Resizable Chat Anywhere ---
 let isResizing=false,lastX,lastY,lastWidth,lastHeight;
 chatModal.addEventListener('mousedown', e=>{
   if(e.target!==chatInput && e.target.tagName!=='BUTTON'){
@@ -681,24 +722,24 @@ chatModal.addEventListener('mousedown', e=>{
 });
 document.addEventListener('mousemove', e=>{
   if(!isResizing) return;
-  const dx=e.clientXlastX, dy=e.clientYlastY;
-  const newWidth=Math.min(Math.max(lastWidth+dx,300),window.innerWidth40);
-  const newHeight=Math.min(Math.max(lastHeight+dy,200),window.innerHeight60);
-  chatModal.style.width=newWidth+'px'; chatModal.style.height=newHeight+'px';
+  const dx=e.clientX-lastX, dy=e.clientY-lastY;
+  const newWidth=Math.min(Math.max(lastWidthdx,300),window.innerWidth-40);
+  const newHeight=Math.min(Math.max(lastHeightdy,200),window.innerHeight-60);
+  chatModal.style.width=newWidth'px'; chatModal.style.height=newHeight'px';
 });
 document.addEventListener('mouseup', ()=>{ if(isResizing){ isResizing=false; document.body.style.userSelect='auto'; } });
 </script>
 <script>
-  //  Friend Status 
+  // --- Friend Status ---
 async function checkFriendStatus(friendUid) {
   const snap = await db.ref(`friends/${currentUserUid}/${friendUid}`).once("value");
   const btn = document.getElementById("addFriendBtn");
 
   if (snap.exists()) btn.style.display = "none";
-  else btn.style.display = "inlineblock";
+  else btn.style.display = "inline-block";
 }
 
-//  Send Request 
+// --- Send Request ---
 async function sendFriendRequest() {
   try {
     if (!currentChatFriendUid) {
@@ -727,9 +768,9 @@ async function acceptRequest(senderUid) {
   try {
     const updates = {};
 
-    updates["friends/" + currentUserUid + "/" + senderUid] = true;
-    updates["friends/" + senderUid + "/" + currentUserUid] = true;
-    updates["friendRequests/" + currentUserUid + "/" + senderUid] = null;
+    updates["friends/"  currentUserUid  "/"  senderUid] = true;
+    updates["friends/"  senderUid  "/"  currentUserUid] = true;
+    updates["friendRequests/"  currentUserUid  "/"  senderUid] = null;
 
     await db.ref().update(updates);
 
@@ -741,39 +782,20 @@ async function acceptRequest(senderUid) {
 
 async function rejectRequest(senderUid) {
   try {
-    await db.ref("friendRequests/" + currentUserUid + "/" + senderUid).remove();
+    await db.ref("friendRequests/"  currentUserUid  "/"  senderUid).remove();
   } catch (err) {
     console.error(err);
   }
 }
   async function rejectRequest(senderUid) {
-  await db.ref("friendRequests/" + currentUserUid + "/" + senderUid).remove();
+  await db.ref("friendRequests/"  currentUserUid  "/"  senderUid).remove();
 }
 </script>
 
-  <script>//  Listen Friends List 
+<script>// --- Listen Friends List ---
 function listenFriendsList() {
-  const list = document.getElementById("friendsList");
-
-  db.ref("friends/" + currentUserUid).on("value", (snapshot) => {
- refreshFriendsListUI(); // always rebuild using cached users
-    list.innerHTML = "";
-
-    if (!snapshot.exists()) {
-      list.innerHTML = "<li>No friends yet</li>";
-      return;
-    }
-
-    Object.keys(snapshot.val()).forEach((friendUid) => {
-      const name =
-        cachedUsers?.[friendUid]?.public?.name || "Unknown User";
-
-      const li = document.createElement("li");
-      li.textContent = name;
-      li.onclick = () => openChat(friendUid, name);
-
-      list.appendChild(li);
-    });
+  db.ref("friends/"  currentUserUid).on("value", (snapshot) => {
+    refreshFriendsListUI();
   });
 }
   </script>
@@ -782,11 +804,11 @@ function listenFriendsList() {
     function listenNotificationCount() {
   const badge = document.getElementById("notifBadge");
 
-  db.ref("friendRequests/" + currentUserUid).on("value", snap => {
+  db.ref("friendRequests/"  currentUserUid).on("value", snap => {
     const count = snap.exists() ? Object.keys(snap.val()).length : 0;
 
     if (count > 0) {
-      badge.style.display = "inlineblock";
+      badge.style.display = "inline-block";
       badge.textContent = count;
     } else {
       badge.style.display = "none";
@@ -796,4 +818,3 @@ function listenFriendsList() {
   </script>
 </body>
 </html>
-
