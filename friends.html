@@ -759,28 +759,6 @@ async function rejectRequest(senderUid) {
 }
 </script>
 
-  <script>// --- Listen Friends List ---
-function listenFriendsList() {
-  db.ref("friends/" + currentUserUid).on("value", () => {
-    refreshFriendsListUI();
-  });
-}
-
-
-    Object.keys(snapshot.val()).forEach((friendUid) => {
-      const name =
-        cachedUsers?.[friendUid]?.public?.name || "Unknown User";
-
-      const li = document.createElement("li");
-      li.textContent = name;
-      li.onclick = () => openChat(friendUid, name);
-
-      list.appendChild(li);
-    });
-  });
-}
-  </script>
-
   <script>
     function listenNotificationCount() {
   const badge = document.getElementById("notifBadge");
@@ -799,6 +777,7 @@ function listenFriendsList() {
   </script>
 </body>
 </html>
+
 
 
 
