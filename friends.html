@@ -304,7 +304,6 @@ function listenLastMessagesForUserList() {
 }   
 // --- Auth ---
 auth.onAuthStateChanged(user=>{
-db.ref("friends/" + currentUid).on("value", snap => {
 
   if(user && user.emailVerified){
     currentUserUid = user.uid;
@@ -781,4 +780,5 @@ function listenFriendsList() {
   </script>
 </body>
 </html>
+
 
