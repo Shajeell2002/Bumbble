@@ -463,9 +463,10 @@ function listenFriendsList() {
       nameSpan.onclick = () => openChat(friendUid, name);
 
       const viewBtn = document.createElement("button");
-      viewBtn.textContent = "View";
-      viewBtn.onclick = (e) => {
-        e.stopPropagation();
+viewBtn.textContent = "View";
+viewBtn.className = "view";   // ⭐ THIS WAS MISSING
+viewBtn.onclick = (e) => {
+              e.stopPropagation();
         window.location.href = "profile.html?uid=" + friendUid;
       };
 
@@ -805,6 +806,7 @@ async function acceptRequest(senderUid) {
 
 </body>
 </html>
+
 
 
 
