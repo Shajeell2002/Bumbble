@@ -430,7 +430,7 @@ function initUsersListener() {
     
     function refreshFriendsListUI() {
   const list = document.getElementById("friendsList");
-
+console.log("refreshFriendsListUI running");
   db.ref("friends/" + currentUserUid).once("value").then(snapshot => {
     list.innerHTML = "";
     
@@ -731,6 +731,7 @@ async function rejectRequest(senderUid) {
 }
 </script>
 
+  console.log("listenFriendsList running");
   <script>// --- Listen Friends List ---
 function listenFriendsList() {
   const list = document.getElementById("friendsList");
@@ -807,6 +808,7 @@ function viewProfile(uid) {
   
 </body>
 </html>
+
 
 
 
