@@ -447,30 +447,15 @@ function refreshFriendsListUI() {
       const name =
         cachedUsers?.[friendUid]?.public?.name || "Unknown User";
 
- const li = document.createElement("li");
-li.style.display = "flex";
-li.style.justifyContent = "space-between";
-li.style.alignItems = "center";
-li.style.padding = "8px 0";
+      const li = document.createElement("li");
+      li.textContent = name;
+      li.onclick = () => openChat(friendUid, name);
 
-li.innerHTML = `
-  <span>${name}</span>
-  <div>
-    <button onclick="openChat('${friendUid}', '${name}')"
-      style="margin-right:6px;padding:5px 10px;border:none;border-radius:6px;
-      background:#d1c4e9;cursor:pointer;">
-      Chat
-    </button>
+      list.appendChild(li);
+    });
+  });
+}  
 
-    <button onclick="viewProfile('${friendUid}')"
-      style="padding:5px 10px;border:none;border-radius:6px;
-      background:#b39ddb;color:white;cursor:pointer;">
-      View Profile
-    </button>
-  </div>
-`;
-
-friendsList.appendChild(li);
 // --- Unread Badges ---
 function setupUnreadListener(){
   db.ref('unread/'+currentUserUid).on('value', snap=>{
@@ -795,6 +780,7 @@ function listenFriendsList() {
   </script>
 </body>
 </html>
+
 
 
 
