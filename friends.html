@@ -189,6 +189,12 @@ async function loadNsfwModel() {
   }
 }
 
+    async function ensureNsfwLoaded() {
+  if (!nsfwModel) {
+    nsfwModel = await nsfwjs.load();
+  }
+}
+    
 
 /* ---------- NSFW Check Before Upload ---------- */
 async function isImageNSFW(file) {
@@ -806,4 +812,5 @@ async function acceptRequest(senderUid) {
 
 </body>
 </html>
+
 
