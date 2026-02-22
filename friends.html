@@ -422,27 +422,16 @@ function renderUserList(users) {
 }
 
 function initUsersListener() {
-  if (!currentUserUid) return;
-
-  db.ref("friends/" + currentUserUid).on("value", async (snap) => {
-    const friends = snap.val() || {};
-    cachedUsers = {};
-
-    const friendUids = Object.keys(friends);
-
-    for (let uid of friendUids) {
-      const userSnap = await db
-        .ref("users/" + uid + "/public")
-        .once("value");
-
-      cachedUsers[uid] = {
-        public: userSnap.val() || {}
-      };
-    }
+  db.ref('users').on('value', snap => {
+    cachedUsers = snap.val() || {};
 
     renderUserList(cachedUsers);
+
+    // 🔥 FORCE refresh of friends list AFTER users exist
+    
   });
-}
+}      
+
 function listenFriendsList() {
   if (!currentUserUid) return;
 
@@ -817,6 +806,5 @@ async function acceptRequest(senderUid) {
 
 </body>
 </html>
-
 
 
