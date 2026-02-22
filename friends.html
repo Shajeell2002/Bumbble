@@ -290,8 +290,14 @@ let cachedUsers = {};   // ⭐ ADD THIS LINE
 window.addEventListener('error', e=>{ showError(e.message || e); });
 function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(msg)+'</div>'; }
 function listenLastMessagesForUserList() {
-    db.ref("chats").on("child_added", chatSnap => {
-        const members = chatSnap.child("members").val() || {};
+   
+db.ref("chats")
+  .orderByChild("members/" + currentUserUid)
+  .equalTo(true)
+      
+      
+      
+      const members = chatSnap.child("members").val() || {};
         if (!members[currentUserUid]) return;
 
         chatSnap.ref.child("messages").orderByChild("timestamp").limitToLast(1).on("value", snap => {
@@ -812,5 +818,6 @@ async function acceptRequest(senderUid) {
 
 </body>
 </html>
+
 
 
