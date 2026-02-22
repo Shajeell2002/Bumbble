@@ -188,13 +188,7 @@ async function loadNsfwModel() {
     showError("⚠️ Image safety filter failed to load. Some uploads may be restricted.");
   }
 }
-
-    async function ensureNsfwLoaded() {
-  if (!nsfwModel) {
-    nsfwModel = await nsfwjs.load();
-  }
-}
-    
+loadNsfwModel();
 
 /* ---------- NSFW Check Before Upload ---------- */
 async function isImageNSFW(file) {
@@ -290,14 +284,8 @@ let cachedUsers = {};   // ⭐ ADD THIS LINE
 window.addEventListener('error', e=>{ showError(e.message || e); });
 function showError(msg){ errorArea.innerHTML = '<div class="error-banner">'+escapeHtml(msg)+'</div>'; }
 function listenLastMessagesForUserList() {
-   
-db.ref("chats")
-  .orderByChild("members/" + currentUserUid)
-  .equalTo(true)
-      
-      
-      
-      const members = chatSnap.child("members").val() || {};
+    db.ref("chats").on("child_added", chatSnap => {
+        const members = chatSnap.child("members").val() || {};
         if (!members[currentUserUid]) return;
 
         chatSnap.ref.child("messages").orderByChild("timestamp").limitToLast(1).on("value", snap => {
@@ -434,15 +422,18 @@ function renderUserList(users) {
 }
 
 function initUsersListener() {
-  db.ref('users').on('value', snap => {
-    cachedUsers = snap.val() || {};
+  db.ref("friends/" + currentUserUid).on("value", async (snap) => {
+    const friends = snap.val() || {};
+    cachedUsers = {};
+
+    for (let uid of Object.keys(friends)) {
+      const userSnap = await db.ref("users/" + uid + "/public").once("value");
+      cachedUsers[uid] = { public: userSnap.val() };
+    }
 
     renderUserList(cachedUsers);
-
-    // 🔥 FORCE refresh of friends list AFTER users exist
-    
   });
-}      
+}
 
 function listenFriendsList() {
   if (!currentUserUid) return;
@@ -818,6 +809,3 @@ async function acceptRequest(senderUid) {
 
 </body>
 </html>
-
-
-
