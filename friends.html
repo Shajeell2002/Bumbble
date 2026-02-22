@@ -243,21 +243,14 @@ async function isImageNSFW(file) {
 
 /* ---------- Override File Upload with NSFW Check ---------- */
 chatFileInput.addEventListener("change", async (e) => {
-const files = Array.from(e.target.files);
-const chatId = getChatId(currentUserUid, currentChatFriendUid);
+  const files = Array.from(e.target.files);
+  for (const f of files) {
+    const isUnsafe = await isImageNSFW(f);
+    if (isUnsafe) {
+      showError("🚫 NSFW image detected. Upload blocked for safety.");
+      continue;
+    }
 
-if(!currentChatFriendUid) return;
-
-for (const f of files) {
-// 1. Run the NSFW Safety Check
-const isUnsafe = await isImageNSFW(f);
-if (isUnsafe) {
-showError("🚫 NSFW image detected. Upload blocked for safety.");
-continue;
-}
-
-}
-});
     const chatId = getChatId(currentUserUid, currentChatFriendUid);
     const tempMsgRef = db.ref("chats/" + chatId + "/messages").push({
       sender: currentUserUid,
@@ -813,6 +806,4 @@ async function acceptRequest(senderUid) {
 
 </body>
 </html>
-
-
 
