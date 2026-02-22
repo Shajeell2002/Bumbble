@@ -188,15 +188,15 @@ async function loadNsfwModel() {
     showError("⚠️ Image safety filter failed to load. Some uploads may be restricted.");
   }
 }
-loadNsfwModel();
 
 /* ---------- NSFW Check Before Upload ---------- */
-async function isImageNSFW(file) {
-  return new Promise(async (resolve) => {
-    if (!nsfwModel) {
-      console.warn("⚠️ NSFW model not ready, skipping check.");
-      return resolve(false);
-    }
+async function ensureNsfwLoaded() {
+  if (!nsfwModel) {
+    nsfwModel = await nsfwjs.load();
+  }
+}
+    await ensureNsfwLoaded();
+const isUnsafe = await isImageNSFW(f);
 
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -806,4 +806,5 @@ async function acceptRequest(senderUid) {
 
 </body>
 </html>
+
 
