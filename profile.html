@@ -6,6 +6,30 @@
 <title>Bumbble - Profile</title>
 
 <style>
+body {
+    font-family: Arial, sans-serif;
+    background: #b39ddb; /* Lavender background */
+    color: #333;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Header */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: #b39ddb; /* Lavender header */
+    color: white;
+    box-shadow:0 3px 6px rgba(0,0,0,0.1);
+}
+header h1 { font-size: 24px; color:white; }
+nav a { margin: 0 10px; text-decoration: none; color: white; font-weight: bold; }
+nav a:hover { text-decoration: underline; }
+
 /* Profile Layout */
 .profile-wrapper {
     flex: 1;
@@ -320,6 +344,5 @@ async function updateProfile() {
 </script>
 </body>
 </html>
-
 
 
