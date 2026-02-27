@@ -4,82 +4,94 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bumbble - Profile</title>
+
 <style>
-body {
-    font-family: Arial, sans-serif;
-    background: #b39ddb; /* Lavender background */
-    color: #333;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-}
-
-/* Header */
-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px;
-    background: #b39ddb; /* Lavender header */
-    color: white;
-    box-shadow:0 3px 6px rgba(0,0,0,0.1);
-}
-header h1 { font-size: 24px; color:white; }
-nav a { margin: 0 10px; text-decoration: none; color: white; font-weight: bold; }
-nav a:hover { text-decoration: underline; }
-
-/* Profile Container */
-.profile-container {
+/* Profile Layout */
+.profile-wrapper {
     flex: 1;
-    max-width: 400px;
+    max-width: 800px;
     margin: 30px auto;
+}
+
+.cover-photo {
+    height: 220px;
+    background: linear-gradient(135deg, #b39ddb, #4a2e8e);
+    border-radius: 15px 15px 0 0;
+}
+
+.profile-card {
+    background: white;
     padding: 20px;
-    border-radius: 15px;
-    border: 1px solid #ddd;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    background: #fff; /* white card on lavender background */
-}
-.profile-container h2 {
+    border-radius: 0 0 15px 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    position: relative;
     text-align: center;
-    margin-bottom: 20px;
-    color: #4a2e8e; /* lavender heading */
 }
-.profile-container input[type=text],
-.profile-container input[type=number],
-.profile-container input[type=email],
-.profile-container select {
+
+.profile-pic {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    border: 5px solid white;
+    object-fit: cover;
+    position: absolute;
+    top: -70px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+}
+
+.profile-card h2 {
+    margin-top: 80px;
+    font-size: 24px;
+    color: #333;
+}
+
+.edit-section {
+    margin-top: 20px;
+    text-align: left;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.edit-section input,
+.edit-section select,
+.edit-section textarea {
     width: 100%;
     padding: 8px;
-    margin: 8px 0;
+    margin: 6px 0;
     border: 1px solid #ccc;
-    border-radius: 5px;
+    border-radius: 6px;
 }
-.profile-container input[type=file] { margin: 8px 0; }
-.profile-container button {
+
+.edit-section textarea {
+    resize: none;
+}
+
+.save-btn {
     width: 100%;
     padding: 10px;
     margin-top: 10px;
-    background: #4a2e8e; /* dark lavender button */
+    background: #4a2e8e;
     border: none;
-    border-radius: 5px;
+    border-radius: 6px;
     font-weight: bold;
     cursor: pointer;
     color: white;
 }
-.profile-container textarea{
-  width:100%;
-  padding:8px;
-  margin:8px 0;
-  border:1px solid #ccc;
-  border-radius:5px;
-  resize:none;
-}
-    .profile-container button:hover { background: #3b2370; }
-.error-msg { color: red; font-size: 14px; margin-top: 5px; }
-#profilePreview { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin: 10px 0; }
-</style>
 
+.save-btn:hover {
+    background: #3b2370;
+}
+
+.error-msg {
+    color: red;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+</Style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -91,25 +103,45 @@ nav a:hover { text-decoration: underline; }
   <nav id="navLinks"></nav>
 </header>
 
-<div class="profile-container">
-  <h2>Your Profile</h2>
-  <img id="profilePreview" src="images/profile1.png" alt="Profile Picture">
-  <input type="file" id="profilePic" accept="image/*">
-  <input type="text" id="name" placeholder="Full Name">
-  <input type="number" id="age" placeholder="Age">
-  <input type="text" id="location" placeholder="Location">
-  <select id="gender">
-    <option value="">Select Gender</option>
-    <option value="Male">Male</option>
-    <option value="Female">Female</option>
-    <option value="Other">Other</option>
-  </select>
-  <input type="email" id="email" placeholder="Email" disabled>
-<textarea id="bio" placeholder="Write something about yourself..." rows="3"></textarea>
+<div class="profile-wrapper">
 
-<input type="text" id="interests" placeholder="Interests (music, travel, sports)">
-    <button onclick="updateProfile()">Update Profile</button>
-  <p class="error-msg" id="errorMsg"></p>
+  <div class="cover-photo"></div>
+
+  <div class="profile-card">
+
+    <img id="profilePreview" class="profile-pic" src="images/profile1.png">
+
+    <h2 id="displayName">Your Name</h2>
+
+    <div class="edit-section">
+
+      <input type="file" id="profilePic" accept="image/*">
+
+      <input type="text" id="name" placeholder="Full Name">
+      <input type="number" id="age" placeholder="Age">
+      <input type="text" id="location" placeholder="Location">
+
+      <select id="gender">
+        <option value="">Select Gender</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+        <option value="Other">Other</option>
+      </select>
+
+      <input type="email" id="email" placeholder="Email" disabled>
+
+      <textarea id="bio" placeholder="Write something about yourself..." rows="3"></textarea>
+
+      <input type="text" id="interests" placeholder="Interests (music, travel, sports)">
+
+      <button class="save-btn" onclick="updateProfile()">Save Changes</button>
+
+      <p class="error-msg" id="errorMsg"></p>
+
+    </div>
+
+  </div>
+
 </div>
 
 <script>
@@ -202,17 +234,19 @@ function setupRealtimeProfile(uid){
  
 publicRef.on('value', snap=>{
   const data = snap.val() || {};
+
   document.getElementById("name").value = data.name || "";
   document.getElementById("age").value = data.age || "";
   document.getElementById("location").value = data.location || "";
   document.getElementById("gender").value = data.gender || "";
   document.getElementById("bio").value = data.bio || "";
   document.getElementById("interests").value = data.interests || "";
+
+  document.getElementById("displayName").textContent = data.name || "Your Name";
+
   profilePreview.src = data.pic || "images/profile1.png";
   profileBase64 = data.pic || "";
 });
-
-
 
 
     
@@ -286,12 +320,6 @@ async function updateProfile() {
 </script>
 </body>
 </html>
-
-
-
-
-
-
 
 
 
