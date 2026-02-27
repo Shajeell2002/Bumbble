@@ -207,7 +207,7 @@ auth.onAuthStateChanged(user => {
     setupRealtimeProfile(user.uid);
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
-    document.querySelector(".profile-container").innerHTML = "<p>Please login to view your profile.</p>";
+    document.querySelector(".profile-wrapper").innerHTML = "<p>Please login to view your profile.</p>";
   }
 });
 
@@ -344,5 +344,6 @@ async function updateProfile() {
 </script>
 </body>
 </html>
+
 
 
