@@ -1,384 +1,283 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+  <meta charset="UTF-8">
+  <meta name="google-site-verification" content="crYd9cMrpZDNw5c4oEu96dwukpf-rH0l29baeWpewhY" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bumbble.in | Safe Online Friendship App in India</title>
+  <meta name="description" content="Join Bumbble.in – the safest online dating and friendship app in India. Meet new friends, find love, and connect safely with verified profiles.">
+  <meta name="keywords" content="Bumbble.in, online dating India, friendship app India, safe dating app, meet new friends, verified profiles, privacy protection">
+  <meta name="robots" content="index, follow">
 
-<meta name="google-site-verification" content="crYd9cMrpZDNw5c4oEu96dwukpf-rH0l29baeWpewhY" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bumbble.in | Safe Online Friendship App in India</title>
-<meta name="description" content="Join Bumbble.in – the safest online dating and friendship app in India. Meet new friends, find love, and connect safely with verified profiles.">
-<meta name="keywords" content="Bumbble.in, online dating India, friendship app India, safe dating app, meet new friends, verified profiles, privacy protection">
-<meta name="robots" content="index, follow">
+  <!-- FIX: Google Fonts link must be outside <style> block -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-<!-- Firebase & Confetti -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <!-- FIX: Firebase & Confetti loaded ONCE here only (removed duplicate imports from body) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 
-<style>
-/* Reset & global */
-* { margin:0; padding:0; box-sizing:border-box; }
-body { font-family: 'Poppins', sans-serif; background:linear-gradient(135deg, #7b2ff7, #f107a3); color:#333; display:flex; flex-direction:column; min-height:100vh; }
+  <style>
+    /* Reset & global */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #7b2ff7, #f107a3); color: #333; display: flex; flex-direction: column; min-height: 100vh; }
 
-/* Header & Navigation */
-header { display:flex; justify-content:space-between; align-items:center; padding:20px; background:rgba(255,255,255,0.15); backdrop-filter: blur(18px); color:white; box-shadow:0 4px 12px rgba(0,0,0,0.2); }
-header h1 { font-size:28px; color:white; }
-nav a { margin:0 10px; text-decoration:none; color:white; font-weight:bold; }
-nav a:hover { text-decoration: underline; }
+    /* Header & Navigation */
+    header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: rgba(255,255,255,0.15); backdrop-filter: blur(18px); color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    header h1 { font-size: 28px; color: white; }
+    nav a { margin: 0 10px; text-decoration: none; color: white; font-weight: bold; }
+    nav a:hover { text-decoration: underline; }
 
-/* Hero Section */
-.hero { display:flex; align-items:center; justify-content:center; gap:40px; flex-wrap:wrap; padding:60px 20px; background:rgba(255,255,255,0.15);; border-radius:12px; }
-.hero img { max-width:350px; height:auto; }
-.hero-text { max-width:350px; text-align:center; }
-.hero-text h1 { font-size:36px; margin-bottom:10px; color:#4a2e8e; }
-.hero-text p { font-size:18px; margin-bottom:20px; }
-.hero-text button { background:#b39ddb; border:none; padding:15px 30px; font-size:18px; font-weight:bold; cursor:pointer; border-radius:30px; color:white; }
+    /* Hero Section */
+    .hero { display: flex; align-items: center; justify-content: center; gap: 40px; flex-wrap: wrap; padding: 60px 20px; background: rgba(255,255,255,0.15); border-radius: 12px; }
+    .hero img { max-width: 350px; height: auto; }
+    .hero-text { max-width: 350px; text-align: center; }
+    .hero-text h1 { font-size: 36px; margin-bottom: 10px; color: #4a2e8e; }
+    .hero-text p { font-size: 18px; margin-bottom: 20px; }
+    .hero-text button { background: #b39ddb; border: none; padding: 15px 30px; font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 30px; color: white; }
 
-/* Heart + Match */
-.heart { width:80px; height:80px; background-color:#b30000; position:relative; transform:rotate(-45deg); animation:heartbeat 1.5s infinite; margin:auto; }
-.heart::before,.heart::after{ content:""; width:80px;height:80px;background-color:#b30000; border-radius:50%; position:absolute; }
-.heart::before{ top:-40px; left:0; }
-.heart::after{ left:40px; top:0; }
-@keyframes heartbeat {0%,100%{transform:scale(1) rotate(-45deg);}25%{transform:scale(1.2) rotate(-45deg);}50%{transform:scale(1) rotate(-45deg);}75%{transform:scale(1.2) rotate(-45deg);}}
-
-/* Match Button */
-#matchBtnInteractive { padding:12px 25px; border:none; border-radius:25px; background:#4a2e8e; color:white; font-weight:bold; cursor:pointer; }
-#matchBtnInteractive:hover { transform:scale(1.1); box-shadow:0 8px 16px rgba(0,0,0,0.2); }
-
-/* Live Activity */
-#liveStatus { text-align:center; background:#d8cce5; padding:15px 20px; border-radius:10px; margin-top:20px; color:#4a2e8e; }
-#liveStatus h2 { font-size:22px; margin-bottom:10px; }
-#liveStatus p { font-size:16px; margin:4px 0; }
-
-/* Features Section */
-.features { display:flex; flex-wrap:wrap; gap:20px; justify-content:center; padding:25px 20px; background:rgba(255,255,255,0.25); backdrop-filter: blur(14px); 
-border-radius:18px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); color: #4a2e8e; }
-.feature-card { background:rgba(255,255,255,0.25); padding:20px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1); flex:1 1 200px; max-width:250px; text-align:center; transition:transform 0.3s; }
-.feature-card:hover { transform:translateY(-5px); box-shadow:0 6px 18px rgba(0,0,0,0.08); }
-.feature-card div { margin-top:10px; padding:10px; background:rgba(255,255,255,0.25); border-radius:8px; }
-
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-
-
-footer {
-  text-align: center;
-  padding: 25px;
-  color: white;
-  opacity: 0.9;
-}
-/* Responsive */
-@media(max-width:768px) {
-  .hero { flex-direction:column; }
-  .hero img { max-width:90%; }
-}
-</style>
-
-<!-- Simple Chatbot UI -->
-<style>
-#chatBtn {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: #b30000;
-  color: white;
-  border: none;
-  padding: 10px 14px;
-  border-radius: 50%;
-  font-size: 18px;
-  cursor: pointer;
-}
-
-#chatBox {
-  display: none;
-  position: fixed;
-  bottom: 80px;
-  right: 20px;
-  width: 260px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-  overflow: hidden;
-  font-family: Arial;
-}
-
-#chatHeader {
-  background: #b30000;
-  color: white;
-  padding: 10px;
-  font-weight: bold;
-}
-
-#chatMessages {
-  height: 200px;
-  overflow-y: auto;
-  padding: 10px;
-  font-size: 14px;
-}
-
-#chatInput {
-  display: flex;
-  border-top: 1px solid #ddd;
-}
-
-#chatInput input {
-  flex: 1;
-  border: none;
-  padding: 10px;
-  outline: none;
-}
-
-#chatInput button {
-  background: #b30000;
-  color: white;
-  border: none;
-  padding: 10px;
-  cursor: pointer;
-}
-</style>
-
-<button id="chatBtn">💬</button>
-
-<div id="chatBox">
-  <div id="chatHeader">Bumbble Support</div>
-  <div id="chatMessages"></div>
-
-  <div id="chatInput">
-    <input type="text" id="userMsg" placeholder="Type message..." />
-    <button onclick="sendMsg()">Send</button>
-  </div>
-</div>
-
-<script>
-const input = document.getElementById("userMsg");
-
-/* ENTER key support */
-input.addEventListener("keydown", function(e) {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    sendMsg();
-  }
-});
-</script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-
-  const messages = document.getElementById("chatMessages");
-  const input = document.getElementById("userMsg");
-  const chatBtn = document.getElementById("chatBtn");
-  const chatBox = document.getElementById("chatBox");
-
-  // Toggle chat box
-  chatBtn.onclick = () => {
-    chatBox.style.display =
-      chatBox.style.display === "block" ? "none" : "block";
-  };
-
-  // Send message function
-  function sendMsg() {
-    const text = input.value.trim().toLowerCase();
-    if (!text) return;
-
-    messages.innerHTML += "<div><b>You:</b> " + text + "</div>";
-
-    let reply = "";
-
-    if (text === "help") {
-      reply = `
-        Choose an option:<br><br>
-        🔐 <a href="login.html" target="_blank">Login</a><br>
-        📝 <a href="signup.html" target="_blank">Sign Up</a><br>
-	🔑 <a href="Login.html" target="_blank">Forgot Password</a>
-        
-      `;
-    } else {
-      reply = "🤖 Please type <b>HELP</b> to see all support options.";
+    /* Heart animation */
+    .heart { width: 80px; height: 80px; background-color: #b30000; position: relative; transform: rotate(-45deg); animation: heartbeat 1.5s infinite; margin: auto; }
+    .heart::before, .heart::after { content: ""; width: 80px; height: 80px; background-color: #b30000; border-radius: 50%; position: absolute; }
+    .heart::before { top: -40px; left: 0; }
+    .heart::after { left: 40px; top: 0; }
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1) rotate(-45deg); }
+      25% { transform: scale(1.2) rotate(-45deg); }
+      50% { transform: scale(1) rotate(-45deg); }
+      75% { transform: scale(1.2) rotate(-45deg); }
     }
 
-    setTimeout(() => {
-      messages.innerHTML += "<div><b>Bot:</b> " + reply + "</div>";
-      messages.scrollTop = messages.scrollHeight;
-    }, 400);
+    /* Match Button */
+    #matchBtnInteractive { padding: 12px 25px; border: none; border-radius: 25px; background: #4a2e8e; color: white; font-weight: bold; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+    #matchBtnInteractive:hover { transform: scale(1.1); box-shadow: 0 8px 16px rgba(0,0,0,0.2); }
 
-    input.value = "";
-  }
+    /* Live Activity */
+    #liveStatus { text-align: center; background: #d8cce5; padding: 15px 20px; border-radius: 10px; margin: 20px auto; max-width: 600px; color: #4a2e8e; }
+    #liveStatus h2 { font-size: 22px; margin-bottom: 10px; }
+    #liveStatus p { font-size: 16px; margin: 4px 0; }
 
-  // Button click
-  window.sendMsg = sendMsg;
+    /* Gallery Hero */
+    .gallery-hero { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; padding: 25px 20px; }
+    .gallery-hero img { width: 250px; height: 250px; object-fit: cover; border-radius: 12px; }
 
-  // ENTER key
-  input.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      sendMsg();
+    /* Features Section */
+    .features { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; padding: 25px 20px; background: rgba(255,255,255,0.25); backdrop-filter: blur(14px); border-radius: 18px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); color: #4a2e8e; }
+    .features h2 { width: 100%; text-align: center; font-size: 26px; margin-bottom: 10px; }
+    .feature-card { background: rgba(255,255,255,0.25); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); flex: 1 1 200px; max-width: 250px; text-align: center; transition: transform 0.3s; }
+    .feature-card:hover { transform: translateY(-5px); box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+    .feature-card div { margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.25); border-radius: 8px; }
+
+    /* Footer */
+    footer { text-align: center; padding: 25px; color: white; opacity: 0.9; }
+
+    /* Chatbot */
+    #chatBtn { position: fixed; bottom: 20px; right: 20px; background: #b30000; color: white; border: none; padding: 10px 14px; border-radius: 50%; font-size: 18px; cursor: pointer; z-index: 1000; }
+    #chatBox { display: none; position: fixed; bottom: 80px; right: 20px; width: 260px; background: white; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); overflow: hidden; font-family: Arial, sans-serif; z-index: 1000; }
+    #chatHeader { background: #b30000; color: white; padding: 10px; font-weight: bold; }
+    #chatMessages { height: 200px; overflow-y: auto; padding: 10px; font-size: 14px; }
+    #chatInput { display: flex; border-top: 1px solid #ddd; }
+    #chatInput input { flex: 1; border: none; padding: 10px; outline: none; }
+    #chatInput button { background: #b30000; color: white; border: none; padding: 10px; cursor: pointer; }
+
+    /* WhatsApp float */
+    .whatsapp-float { position: fixed; bottom: 20px; right: 80px; background: #25D366; color: white; padding: 3px 8px; border-radius: 50px; font-weight: bold; text-decoration: none; box-shadow: 0 6px 18px rgba(0,0,0,0.25); z-index: 999; transition: transform 0.3s ease; }
+    .whatsapp-float:hover { transform: scale(1.1); }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero { flex-direction: column; }
+      .hero img { max-width: 90%; }
     }
-  });
-
-});
-</script>
-
-<!-- WhatsApp Floating Button -->
-<a href="https://wa.me/91XXXXXXXXXX" 
-   class="whatsapp-float" 
-   target="_blank">
-   💬 Chat on WhatsApp
-</a>
-
-<style>
-.whatsapp-float{
-  position: fixed;
-  bottom: 20px;
-  right: 80px;
-  background: #25D366;
-  color: white;
-  padding: 3px 8px;
-  border-radius: 50px;
-  font-weight: bold;
-  text-decoration: none;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
-  z-index: 999;
-  transition: transform 0.3s ease;
-}
-.whatsapp-float:hover{
-  transform: scale(1.1);
-}
-</style>
-
+  </style>
 </head>
-
-
-
 
 <body>
 
-<header>
-  <h1>Bumbble</h1>
-  <nav id="navLinks"></nav>
-</header>
+  <header>
+    <h1>Bumbble</h1>
+    <nav id="navLinks"></nav>
+  </header>
 
-<!-- Hero Section -->
-<section class="hero">
-  <img src="images/Hero1.png" alt="Meet & Treat – Bumbble online friendship and dating app">
+  <!-- FIX: Merged duplicate hero sections into one coherent section -->
+  <section class="hero">
+    <img src="images/Hero1.png" alt="Meet and connect – Bumbble online friendship and dating app">
 
+    <div style="display:flex; flex-direction:column; align-items:center; gap:20px;">
+      <div class="heart"></div>
+      <button id="matchBtnInteractive">Match!</button>
+    </div>
 
-<!-- Hero Section -->
-<section class="hero">
-  <img src="images/Couple2.png" alt="Bumbble online friendship and dating app">
+    <div class="hero-text">
+      <h1>Meet. Match. Connect.</h1>
+      <p>Start your journey to meaningful connections today with verified profiles and safety features.</p>
+      <button onclick="window.location.href='signup.html'">Join Bumbble Now</button>
+    </div>
+  </section>
 
-  <div style="display:flex; flex-direction:column; align-items:center; gap:20px;">
-    <div class="heart"></div>
-    <button id="matchBtnInteractive">Match!</button>
+  <!-- Live Activity -->
+  <div id="liveStatus">
+    <h2>Live Activity</h2>
+    <p id="onlineUsers">Online Users: 0</p>
+    <p id="recentJoin">Recent Join: None</p>
   </div>
 
-  <div class="hero-text">
-    <h1>Meet. Match. Connect.</h1>
-    <p>Start your journey to meaningful connections today with verified profiles and safety features.</p>
-    <button onclick="window.location.href='signup.html'">Join Bumbble Now</button>
+  <!-- FIX: Gallery section separated from hero, with proper alt attributes -->
+  <section class="gallery-hero">
+    <img src="images/Couple2.png" alt="Happy couple on Bumbble">
+    <img src="images/Couple3.png" alt="Friends connecting on Bumbble">
+    <img src="images/Couple4.png" alt="Couple matched on Bumbble">
+    <img src="images/Couple5.png" alt="Bumbble friendship connection">
+    <img src="images/Couple6.png" alt="Bumbble dating app users">
+    <img src="images/Couple7.png" alt="Bumbble safe online friendship">
+    <img src="images/Couple8.png" alt="Bumbble verified profiles">
+    <img src="images/Couple9.png" alt="Bumbble real connections">
+  </section>
+
+  <!-- Features Section — FIX: properly structured with h2 inside, section closed -->
+  <section class="features">
+    <h2>Why Users Love Bumbble</h2>
+
+    <div class="feature-card">
+      <h2>Verified Profiles</h2>
+      <span style="background:#4CAF50;color:white;padding:4px 10px;border-radius:20px;font-size:12px;">VERIFIED</span>
+      <div>Every user is verified to ensure authenticity and safety on the platform.</div>
+    </div>
+
+    <div class="feature-card">
+      <h2>Private Image Shield</h2>
+      <div>Detects and blurs sensitive content automatically.</div>
+    </div>
+
+    <div class="feature-card">
+      <h2>Instant Smart Matching</h2>
+      <div>Find compatible friends and partners within seconds.</div>
+    </div>
+
+    <div class="feature-card">
+      <h2>Real‑Time Chat</h2>
+      <div>Fast, secure and distraction‑free conversations.</div>
+    </div>
+  </section>
+
+  <footer>
+    &copy; 2026 Bumbble.in — Made with ❤️ for safe connections.
+  </footer>
+
+  <!-- Chatbot UI -->
+  <button id="chatBtn">💬</button>
+  <div id="chatBox">
+    <div id="chatHeader">Bumbble Support</div>
+    <div id="chatMessages"></div>
+    <div id="chatInput">
+      <input type="text" id="userMsg" placeholder="Type message..." />
+      <button onclick="sendMsg()">Send</button>
+    </div>
   </div>
-</section>
 
-<!-- Live Activity -->
-<div id="liveStatus">
-  <h2>Live Activity</h2>
-  <p id="onlineUsers">Online Users: 0</p>
-  <p id="recentJoin">Recent Join: None</p>
-</div>
+  <!-- FIX: Replace placeholder WhatsApp number before going live -->
+  <a href="https://wa.me/91XXXXXXXXXX" class="whatsapp-float" target="_blank" rel="noopener noreferrer">
+    💬 Chat on WhatsApp
+  </a>
 
- <!-- Hero Section -->
-<section class="hero">
-  <img src="images/Couple3.png" Bumbble online friendship and dating app">
-  <img src="images/Couple4.png" Bumbble online friendship and dating app">
-  <img src="images/Couple5.png" Bumbble online friendship and dating app">
-  <img src="images/Couple6.png" Bumbble online friendship and dating app">
-<img src="images/Couple7.png" Bumbble online friendship and dating app">
-<img src="images/Couple8.png" Bumbble online friendship and dating app">
-<img src="images/Couple9.png" Bumbble online friendship and dating app">
+  <!-- FIX: All JS in one DOMContentLoaded block, no duplicates -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
 
+      // ── Firebase Init ──────────────────────────────────────────
+      const firebaseConfig = {
+        apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+        authDomain: "bumbble-c061f.firebaseapp.com",
+        databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
+        projectId: "bumbble-c061f",
+        storageBucket: "bumbble-c061f.appspot.com",
+        messagingSenderId: "213165886981",
+        appId: "1:213165886981:web:c18652003444869b1bd66c"
+      };
 
-</section>
+      firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth();
+      const nav = document.getElementById("navLinks");
 
-<section id="features" class="features">
-  <h2>Why Users Love Bumbble</h2>
-  
-  
-<!-- Features Section -->
-<section class="features">
-  <div class="feature-card">
-    <h2>Verified Profiles</h2>
-<span style="background:#4CAF50;color:white;padding:4px 10px;border-radius:20px;font-size:12px;">VERIFIED</span>
-    <div>Every user is verified to ensure authenticity and safety on the platform.</div>
-  </div>
-
-  <div class="feature-card">
-    <h2>Private Image Shield</h2>
-    <div>detects and blurs sensitive content automatically.</div>
-  </div>
-
-  <div class="feature-card">
-    <h2>Instant Smart Matching</h2>
-    <div>Find compatible friends and partners within seconds.</div>
-  </div>
-
-  <div class="feature-card">
-    <h2>Real‑Time Chat</h2>
-    <div>Fast, secure and distraction‑free conversations.</div>
-  </div>
-</section>
-
-<footer>
-© 2026 Bumbble.in — Made with ❤️ for safe connections.
-</footer>
-
-
-
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script>
-  // Firebase config
-  const firebaseConfig = {
-    apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
-    authDomain: "bumbble-c061f.firebaseapp.com",
-    databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
-    projectId: "bumbble-c061f",
-    storageBucket: "bumbble-c061f.appspot.com",
-    messagingSenderId: "213165886981",
-    appId: "1:213165886981:web:c18652003444869b1bd66c"
-  };
-  
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const nav = document.getElementById("navLinks");
-
-  // Update nav based on login state
-  auth.onAuthStateChanged(user => {
-    if(user) {
-      nav.innerHTML = `
-        <a href="index.html">Home</a>
-        <a href="friends.html">Friends</a>
-        <a href="stories.html">Stories</a>
-        <a href="safety.html">Safety</a>
-        <a href="profile.html">Profile</a>
-        <a href="#" id="logoutBtn">Logout</a>
-      `;
-      document.getElementById("logoutBtn").addEventListener("click", () => {
-        auth.signOut().then(() => window.location.href = "login.html");
+      auth.onAuthStateChanged(user => {
+        if (user) {
+          nav.innerHTML = `
+            <a href="index.html">Home</a>
+            <a href="friends.html">Friends</a>
+            <a href="stories.html">Stories</a>
+            <a href="safety.html">Safety</a>
+            <a href="profile.html">Profile</a>
+            <a href="#" id="logoutBtn">Logout</a>
+          `;
+          document.getElementById("logoutBtn").addEventListener("click", () => {
+            auth.signOut().then(() => window.location.href = "login.html");
+          });
+          const joinBtn = document.querySelector(".hero-text button");
+          if (joinBtn) joinBtn.style.display = "none";
+        } else {
+          nav.innerHTML = `
+            <a href="index.html">Home</a>
+            <a href="stories.html">Stories</a>
+            <a href="login.html">Login</a>
+            <a href="signup.html">Sign Up</a>
+          `;
+        }
       });
-      // Hide hero join button if present
-      const joinBtn = document.querySelector(".hero-text button");
-      if(joinBtn) joinBtn.style.display = "none";
-    } else {
-      nav.innerHTML = `
-        <a href="index.html">Home</a>
-        <a href="stories.html">Stories</a>
-        <a href="login.html">Login</a>
-        <a href="signup.html">Sign Up</a>
-      `;
-    }
-  });
-</script>
 
+      // ── Chatbot ────────────────────────────────────────────────
+      const chatMessages = document.getElementById("chatMessages");
+      const userMsg = document.getElementById("userMsg");
+      const chatBtn = document.getElementById("chatBtn");
+      const chatBox = document.getElementById("chatBox");
+
+      chatBtn.addEventListener("click", () => {
+        chatBox.style.display = chatBox.style.display === "block" ? "none" : "block";
+      });
+
+      // FIX: sendMsg defined once, exposed globally for onclick attribute
+      window.sendMsg = function () {
+        const text = userMsg.value.trim().toLowerCase();
+        if (!text) return;
+
+        chatMessages.innerHTML += `<div><b>You:</b> ${text}</div>`;
+
+        let reply;
+        if (text === "help") {
+          reply = `Choose an option:<br><br>
+            🔐 <a href="login.html">Login</a><br>
+            📝 <a href="signup.html">Sign Up</a><br>
+            🔑 <a href="login.html">Forgot Password</a>`;
+        } else {
+          reply = "🤖 Please type <b>HELP</b> to see all support options.";
+        }
+
+        setTimeout(() => {
+          chatMessages.innerHTML += `<div><b>Bot:</b> ${reply}</div>`;
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        }, 400);
+
+        userMsg.value = "";
+      };
+
+      // FIX: Enter key listener defined once
+      userMsg.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          window.sendMsg();
+        }
+      });
+
+      // ── Match Button (confetti) ────────────────────────────────
+      const matchBtn = document.getElementById("matchBtnInteractive");
+      if (matchBtn) {
+        matchBtn.addEventListener("click", () => {
+          if (typeof confetti === "function") confetti({ particleCount: 120, spread: 70 });
+        });
+      }
+
+    });
+  </script>
 
 </body>
 </html>
-
