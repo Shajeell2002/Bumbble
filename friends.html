@@ -318,13 +318,24 @@
     }
 
     // ── Users List ─────────────────────────────────────────────────────────────
-    function initUsersListener() {
-      db.ref("users").on("value", snap => {
-        cachedUsers = snap.val() || {};
-        renderUserList(cachedUsers);
-      });
-    }
+function initUsersListener() {
+  // Only listen to public data of all users
+  db.ref("users").on("value", snap => {
+    cachedUsers = {};
+    snap.forEach(child => {
+      const pub = child.child("public").val();
+      if (pub) {
+        cachedUsers[child.key] = { public: pub };
+      }
+    });
+    renderUserList(cachedUsers);
+  });
+}
 
+    
+
+
+    
     function renderUserList(users) {
       const friends = Object.keys(users)
         .filter(uid => uid !== currentUserUid)
@@ -681,3 +692,4 @@
 
 </body>
 </html>
+
