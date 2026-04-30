@@ -85,10 +85,17 @@
   align-items: center;
 }
 
+.chat-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
 #chatHeader button {
   background: #b39ddb;
   border: none;
-  
+  padding: 5px 8px;
+  border-radius: 6px;
   cursor: pointer;
   color: white;
   font-size: 12px;
@@ -96,7 +103,8 @@
 
 #chatHeader button:hover {
   background: #9775c2;
-}    
+}
+    
     
     /* ── Friends List ── */
     #friendsList { list-style: none; padding-left: 0; margin: 0; }
@@ -144,7 +152,6 @@
 <button onclick="endCall()">❌</button>
         <button onclick="closeChat()">X</button>
  <div id="chatHeader">   
-   <button id="addFriendBtn" onclick="window.sendFriendRequest()">Add</button>
   </div>
 </div>
       <div id="chatMessages"></div>
