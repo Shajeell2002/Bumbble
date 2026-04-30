@@ -204,9 +204,6 @@
   </div>
 
   <!-- FIX: All JS consolidated into one script block for clarity and correct execution order -->
-  
-<script src="https://cdn.jsdelivr.net/npm/@zegocloud/zego-uikit-prebuilt/zego-uikit-prebuilt.js"></script>
-
   <script>
     // ── Firebase Init ──────────────────────────────────────────────────────────
     const firebaseConfig = {
@@ -223,32 +220,6 @@
     const auth = firebase.auth();
     const db = firebase.database();
 
-function joinCall(callID) {
-  const userID = currentUserUid;
-  const userName = "User_" + userID;
-
-  const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
-    appID,
-    serverSecret,
-    callID,
-    userID,
-    userName
-  );
-
-  const zp = ZegoUIKitPrebuilt.create(kitToken);
-
-  zp.joinRoom({
-    container: document.querySelector("#chatModal"),
-    scenario: {
-      mode: ZegoUIKitPrebuilt.OneONoneCall,
-    },
-    showPreJoinView: false,
-    turnOnCameraWhenJoining: false,
-    turnOnMicrophoneWhenJoining: true,
-  });
-}
-    
-    
     // ── DOM References ─────────────────────────────────────────────────────────
     const nav           = document.getElementById("navLinks");
     const userList      = document.getElementById("userList");
@@ -428,39 +399,7 @@ function initUsersListener() {
   });
 }
 
-const appID = 1465354768; // number
-const serverSecret = "5a379bb5617baa3d43734b4a818502d7"; // string
-
-function startCall() {
-  if (!currentChatFriendUid) {
-    alert("Select a user first");
-    return;
-  }
-
-  const callID = getChatId(currentUserUid, currentChatFriendUid);
-
-  // Notify receiver
-  db.ref(`calls/${currentChatFriendUid}`).set({
-    from: currentUserUid,
-    callID: callID,
-    timestamp: Date.now()
-  });
-
-  // Start call for caller
-  joinCall(callID);
-}
-  const zp = ZegoUIKitPrebuilt.create(kitToken);
-
-  zp.joinRoom({
-    container: document.querySelector("#chatModal"),
-    scenario: {
-      mode: ZegoUIKitPrebuilt.OneONoneCall,
-    },
-    showPreJoinView: false,
-    turnOnCameraWhenJoining: false,
-    turnOnMicrophoneWhenJoining: true,
-  });
-}
+    
 
 
     
