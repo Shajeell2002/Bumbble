@@ -91,20 +91,55 @@
   align-items: center;
 }
 
-#chatHeader button {
-  background: #b39ddb;
-  border: none;
-  padding: 5px 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  color: white;
-  font-size: 12px;
+.chat-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
-#chatHeader button:hover {
-  background: #9775c2;
+/* CALL BUTTON */
+.call-btn {
+  background: linear-gradient(135deg, #25D366, #1ebe5d);
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  transition: all 0.25s ease;
 }
-    
+
+.call-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+}
+
+/* END BUTTON */
+.end-btn {
+  background: linear-gradient(135deg, #ff4d4d, #d93636);
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  transition: all 0.25s ease;
+}
+
+.end-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+}
+
+/* CLICK EFFECT */
+.call-btn:active,
+.end-btn:active {
+  transform: scale(0.9);
+}    
     
     /* ── Friends List ── */
     #friendsList { list-style: none; padding-left: 0; margin: 0; }
@@ -154,6 +189,15 @@
  <div id="chatHeader">   
   </div>
 </div>
+<div class="chat-actions">
+  <button class="call-btn" onclick="startCall()">📞</button>
+  <button class="end-btn" onclick="endCall()">❌</button>
+  <button id="addFriendBtn" onclick="window.sendFriendRequest()">Add</button>
+  <button onclick="closeChat()">✖</button>
+</div>
+      
+      
+      
       <div id="chatMessages"></div>
       <div id="typingIndicator"></div>
       <div id="chatInputContainer">
