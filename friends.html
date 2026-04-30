@@ -12,6 +12,7 @@
   <!-- TensorFlow + NSFWJS -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.0/dist/nsfwjs.min.js"></script>
+<script src="https://unpkg.com/zego-uikit-prebuilt/zego-uikit-prebuilt.js"></script>
 
   <style>
     /* ── Reset & Base ── */
@@ -399,87 +400,38 @@ function initUsersListener() {
   });
 }
 
+const appID = YOUR_APP_ID; // number
+const serverSecret = "YOUR_SERVER_SECRET"; // string
 
-    async function startCall() {
-  if (!currentChatFriendUid) return alert("Select a user");
+function startCall() {
+  if (!currentChatFriendUid) {
+    alert("Select a user first");
+    return;
+  }
 
-  const callId = getChatId(currentUserUid, currentChatFriendUid);
+  const userID = currentUserUid;
+  const userName = "User_" + userID;
 
-  peerConnection = new RTCPeerConnection(servers);
+  const callID = getChatId(currentUserUid, currentChatFriendUid);
 
-  // Get mic access
-  localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  localStream.getTracks().forEach(track => {
-    peerConnection.addTrack(track, localStream);
-  });
+  const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
+    appID,
+    serverSecret,
+    callID,
+    userID,
+    userName
+  );
 
-  // Create offer
-  const offer = await peerConnection.createOffer();
-  await peerConnection.setLocalDescription(offer);
+  const zp = ZegoUIKitPrebuilt.create(kitToken);
 
-  // Save offer in Firebase
-  await db.ref(`calls/${callId}`).set({
-    offer,
-    caller: currentUserUid,
-    receiver: currentChatFriendUid
-  });
-
-  // Listen for answer
-  db.ref(`calls/${callId}/answer`).on("value", async snap => {
-    const answer = snap.val();
-    if (answer && !peerConnection.currentRemoteDescription) {
-      await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-    }
-  });
-
-  // ICE candidates
-  peerConnection.onicecandidate = event => {
-    if (event.candidate) {
-      db.ref(`calls/${callId}/callerCandidates`).push(event.candidate);
-    }
-  };
-
-  db.ref(`calls/${callId}/receiverCandidates`).on("child_added", snap => {
-    peerConnection.addIceCandidate(new RTCIceCandidate(snap.val()));
-  });
-
-  alert("Calling...");
-}
-
-    function listenForCalls() {
-  db.ref("calls").on("child_added", async snap => {
-    const call = snap.val();
-    const callId = snap.key;
-
-    if (call.receiver === currentUserUid) {
-      const accept = confirm("Incoming call. Accept?");
-      if (!accept) return;
-
-      peerConnection = new RTCPeerConnection(servers);
-
-      localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      localStream.getTracks().forEach(track => {
-        peerConnection.addTrack(track, localStream);
-      });
-
-      await peerConnection.setRemoteDescription(new RTCSessionDescription(call.offer));
-
-      const answer = await peerConnection.createAnswer();
-      await peerConnection.setLocalDescription(answer);
-
-      await db.ref(`calls/${callId}/answer`).set(answer);
-
-      // ICE
-      peerConnection.onicecandidate = event => {
-        if (event.candidate) {
-          db.ref(`calls/${callId}/receiverCandidates`).push(event.candidate);
-        }
-      };
-
-      db.ref(`calls/${callId}/callerCandidates`).on("child_added", snap => {
-        peerConnection.addIceCandidate(new RTCIceCandidate(snap.val()));
-      });
-    }
+  zp.joinRoom({
+    container: document.querySelector("#chatModal"),
+    scenario: {
+      mode: ZegoUIKitPrebuilt.OneONoneCall,
+    },
+    showPreJoinView: false,
+    turnOnCameraWhenJoining: false,
+    turnOnMicrophoneWhenJoining: true,
   });
 }
 
