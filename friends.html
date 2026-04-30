@@ -445,7 +445,43 @@ function initUsersListener() {
 
   alert("Calling...");
 }
-    
+
+    function listenForCalls() {
+  db.ref("calls").on("child_added", async snap => {
+    const call = snap.val();
+    const callId = snap.key;
+
+    if (call.receiver === currentUserUid) {
+      const accept = confirm("Incoming call. Accept?");
+      if (!accept) return;
+
+      peerConnection = new RTCPeerConnection(servers);
+
+      localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      localStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, localStream);
+      });
+
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(call.offer));
+
+      const answer = await peerConnection.createAnswer();
+      await peerConnection.setLocalDescription(answer);
+
+      await db.ref(`calls/${callId}/answer`).set(answer);
+
+      // ICE
+      peerConnection.onicecandidate = event => {
+        if (event.candidate) {
+          db.ref(`calls/${callId}/receiverCandidates`).push(event.candidate);
+        }
+      };
+
+      db.ref(`calls/${callId}/callerCandidates`).on("child_added", snap => {
+        peerConnection.addIceCandidate(new RTCIceCandidate(snap.val()));
+      });
+    }
+  });
+}
 
 
     
