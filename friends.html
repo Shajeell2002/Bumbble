@@ -247,27 +247,7 @@ function joinCall(callID) {
     turnOnMicrophoneWhenJoining: true,
   });
 }
-
-
     
-function startCall() {
-  if (!currentChatFriendUid) {
-    alert("Select a user first");
-    return;
-  }
-
-  const callID = getChatId(currentUserUid, currentChatFriendUid);
-
-  // 🔥 Notify receiver
-  db.ref(`calls/${currentChatFriendUid}`).set({
-    from: currentUserUid,
-    callID: callID,
-    timestamp: Date.now()
-  });
-
-  joinCall(callID);
-}
-
     
     // ── DOM References ─────────────────────────────────────────────────────────
     const nav           = document.getElementById("navLinks");
@@ -457,19 +437,18 @@ function startCall() {
     return;
   }
 
-  const userID = currentUserUid;
-  const userName = "User_" + userID;
-
   const callID = getChatId(currentUserUid, currentChatFriendUid);
 
-  const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
-    appID,
-    serverSecret,
-    callID,
-    userID,
-    userName
-  );
+  // Notify receiver
+  db.ref(`calls/${currentChatFriendUid}`).set({
+    from: currentUserUid,
+    callID: callID,
+    timestamp: Date.now()
+  });
 
+  // Start call for caller
+  joinCall(callID);
+}
   const zp = ZegoUIKitPrebuilt.create(kitToken);
 
   zp.joinRoom({
