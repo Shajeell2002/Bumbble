@@ -141,14 +141,9 @@
         <!-- FIX: onclick uses window.sendFriendRequest to safely call the global function -->
         <button id="addFriendBtn" onclick="window.sendFriendRequest()">Add Friend</button>
     <button onclick="startCall()">📞</button>
-
+<button onclick="endCall()">❌</button>
         <button onclick="closeChat()">X</button>
-      </div>
-<div id="chatHeader">
-  <div class="chat-actions">
-    <button onclick="startCall()">📞</button>
-    <button onclick="endCall()">❌</button>
-  
+    
   </div>
 </div>
       <div id="chatMessages"></div>
