@@ -399,6 +399,52 @@ function initUsersListener() {
   });
 }
 
+
+    async function startCall() {
+  if (!currentChatFriendUid) return alert("Select a user");
+
+  const callId = getChatId(currentUserUid, currentChatFriendUid);
+
+  peerConnection = new RTCPeerConnection(servers);
+
+  // Get mic access
+  localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  localStream.getTracks().forEach(track => {
+    peerConnection.addTrack(track, localStream);
+  });
+
+  // Create offer
+  const offer = await peerConnection.createOffer();
+  await peerConnection.setLocalDescription(offer);
+
+  // Save offer in Firebase
+  await db.ref(`calls/${callId}`).set({
+    offer,
+    caller: currentUserUid,
+    receiver: currentChatFriendUid
+  });
+
+  // Listen for answer
+  db.ref(`calls/${callId}/answer`).on("value", async snap => {
+    const answer = snap.val();
+    if (answer && !peerConnection.currentRemoteDescription) {
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+    }
+  });
+
+  // ICE candidates
+  peerConnection.onicecandidate = event => {
+    if (event.candidate) {
+      db.ref(`calls/${callId}/callerCandidates`).push(event.candidate);
+    }
+  };
+
+  db.ref(`calls/${callId}/receiverCandidates`).on("child_added", snap => {
+    peerConnection.addIceCandidate(new RTCIceCandidate(snap.val()));
+  });
+
+  alert("Calling...");
+}
     
 
 
