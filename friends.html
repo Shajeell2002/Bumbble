@@ -179,17 +179,13 @@
     <ul id="friendsList"></ul>
 
     <div id="chatModal">
-      <div id="chatHeader">
-        <span id="chatWith">Friend</span>
-        <!-- FIX: onclick uses window.sendFriendRequest to safely call the global function -->
-        <button id="addFriendBtn" onclick="window.sendFriendRequest()">Add Friend</button>
-    <button onclick="startCall()">📞</button>
-<button onclick="endCall()">❌</button>
-        <button onclick="closeChat()">X</button>
- <div id="chatHeader">   
-  </div>
-</div>    
-      
+<div class="chat-actions">
+  <button class="call-btn" onclick="startCall()">📞</button>
+  <button class="end-btn" onclick="endCall()">❌</button>
+  <button id="addFriendBtn" onclick="window.sendFriendRequest()">Add</button>
+  <button onclick="closeChat()">✖</button>
+</div> 
+          
       
       <div id="chatMessages"></div>
       <div id="typingIndicator"></div>
