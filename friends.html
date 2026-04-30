@@ -223,6 +223,25 @@
     const auth = firebase.auth();
     const db = firebase.database();
 
+function startCall() {
+  if (!currentChatFriendUid) {
+    alert("Select a user first");
+    return;
+  }
+
+  const callID = getChatId(currentUserUid, currentChatFriendUid);
+
+  // 🔥 Notify receiver
+  db.ref(`calls/${currentChatFriendUid}`).set({
+    from: currentUserUid,
+    callID: callID,
+    timestamp: Date.now()
+  });
+
+  joinCall(callID);
+}
+
+    
     // ── DOM References ─────────────────────────────────────────────────────────
     const nav           = document.getElementById("navLinks");
     const userList      = document.getElementById("userList");
