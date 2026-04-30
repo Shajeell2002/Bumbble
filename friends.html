@@ -79,16 +79,6 @@
     #addFriendBtn:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,0.25); }
     #addFriendBtn:active { transform: scale(0.96); }
 
-<div id="chatHeader">
-  <span id="chatWith">Friend</span>
-
-  <div style="display:flex; gap:6px; align-items:center;">
-    <button onclick="startCall()">📞</button>
-    <button onclick="endCall()">❌</button>
-    <button id="addFriendBtn" onclick="window.sendFriendRequest()">Add</button>
-    <button onclick="closeChat()">X</button>
-  </div>
-</div>
     
     
     /* ── Friends List ── */
@@ -135,6 +125,16 @@
         <button id="addFriendBtn" onclick="window.sendFriendRequest()">Add Friend</button>
         <button onclick="closeChat()">X</button>
       </div>
+<div id="chatHeader">
+  <span id="chatWith">Friend</span>
+
+  <div class="chat-actions">
+    <button onclick="startCall()">📞</button>
+    <button onclick="endCall()">❌</button>
+    <button id="addFriendBtn" onclick="window.sendFriendRequest()">Add</button>
+    <button onclick="closeChat()">X</button>
+  </div>
+</div>
       <div id="chatMessages"></div>
       <div id="typingIndicator"></div>
       <div id="chatInputContainer">
