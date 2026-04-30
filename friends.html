@@ -223,6 +223,33 @@
     const auth = firebase.auth();
     const db = firebase.database();
 
+function joinCall(callID) {
+  const userID = currentUserUid;
+  const userName = "User_" + userID;
+
+  const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
+    appID,
+    serverSecret,
+    callID,
+    userID,
+    userName
+  );
+
+  const zp = ZegoUIKitPrebuilt.create(kitToken);
+
+  zp.joinRoom({
+    container: document.querySelector("#chatModal"),
+    scenario: {
+      mode: ZegoUIKitPrebuilt.OneONoneCall,
+    },
+    showPreJoinView: false,
+    turnOnCameraWhenJoining: false,
+    turnOnMicrophoneWhenJoining: true,
+  });
+}
+
+
+    
 function startCall() {
   if (!currentChatFriendUid) {
     alert("Select a user first");
