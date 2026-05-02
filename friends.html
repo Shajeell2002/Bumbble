@@ -778,17 +778,20 @@ const serverSecret = "5a379bb5617baa3d43734b4a818502d7"; // string</div
   const callID = getChatId(currentUserUid, currentChatFriendUid);
 
   // Notify receiver
-  db.ref(`calls/${currentChatFriendUid}`).set({
-    from: currentUserUid,
-    callID: callID,
-    timestamp: Date.now()
-  });
-
+db.ref(`calls/${currentChatFriendUid}`).push({
+  from: currentUserUid,
+  callID: callID,
+  timestamp: Date.now()
+});
+    
   // Start call for caller
   joinCall(callID);
 }
 
 function joinCall(callID) {
+  document.getElementById("chatModal").style.display = "none";
+  document.getElementById("callContainer").style.display = "block";
+
   const userID = currentUserUid;
   const userName = "User_" + userID;
 
@@ -803,36 +806,26 @@ function joinCall(callID) {
   const zp = ZegoUIKitPrebuilt.create(kitToken);
 
   zp.joinRoom({
-    container: document.querySelector("#chatModal"),
+    container: document.querySelector("#callContainer"),
     scenario: {
       mode: ZegoUIKitPrebuilt.OneONoneCall,
     },
     showPreJoinView: false,
-    turnOnCameraWhenJoining: false,
-    turnOnMicrophoneWhenJoining: true,
   });
 
-  window.currentCallInstance = zp; // store instance
+  window.currentCallInstance = zp;
 }
-
-  db.ref(`calls/${currentUserUid}`).on("value", snap => {
-  const callData = snap.val();
-  if (!callData) return;
-
-  const accept = confirm("Incoming call... Accept?");
-  if (accept) {
-    joinCall(callData.callID);
-  }
-
-  // Clear call notification
-  db.ref(`calls/${currentUserUid}`).remove();
-});
 
   function endCall() {
   if (window.currentCallInstance) {
     window.currentCallInstance.destroy();
     window.currentCallInstance = null;
   }
+
+  // restore UI
+  document.getElementById("callContainer").innerHTML = "";
+  document.getElementById("callContainer").style.display = "none";
+  document.getElementById("chatModal").style.display = "flex";
 }
 </script> 
   
