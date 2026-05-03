@@ -890,7 +890,31 @@ function resetCallUI() {
 
   document.getElementById("chatModal").style.display = "flex";
 }    
-    
+    let lastCallCheckTime = Date.now();
+
+function listenIncomingCalls() {
+  db.ref(`calls/${currentUserUid}`).on("child_added", snap => {
+    const callData = snap.val();
+    if (!callData) return;
+
+    // 🚫 Ignore old calls
+    if (callData.timestamp < lastCallCheckTime) {
+      snap.ref.remove(); // optional cleanup
+      return;
+    }
+
+    const callerId = callData.from;
+    const callID = callData.callID;
+
+    const accept = confirm("📞 Incoming call. Accept?");
+
+    if (accept) {
+      joinCall(callID);
+    }
+
+    snap.ref.remove();
+  });
+}
     
  </script> 
   
