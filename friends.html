@@ -795,7 +795,7 @@ let incomingCallHandled = false;
     }
 
     // ✅ IMPORTANT: remove ALL call entries, not just one
-    db.ref(`calls/${currentUserUid}`).remove();
+   snap.ref.remove();
 
     // reset after few seconds
     setTimeout(() => {
