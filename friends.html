@@ -775,7 +775,8 @@ db.ref(`calls/${currentChatFriendUid}`).push({
   // Start call for caller
   joinCall(callID);
 }
-function listenIncomingCalls() {
+let incomingCallHandled = false;
+    function listenIncomingCalls() {
   db.ref(`calls/${currentUserUid}`).on("child_added", snap => {
     if (incomingCallHandled) return; // ✅ prevent repeat
 
