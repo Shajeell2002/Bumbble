@@ -832,6 +832,27 @@ function joinCall(callID) {
   window.currentCallInstance = zp;
 }
 
+    function listenCallEnd() {
+  db.ref(`callEnd/${currentUserUid}`).on("child_added", snap => {
+    const callID = snap.key;
+
+    if (window.currentCallInstance) {
+      window.currentCallInstance.destroy();
+      window.currentCallInstance = null;
+    }
+
+    // Clean UI
+    document.getElementById("callContainer").innerHTML = "";
+    document.getElementById("callContainer").style.display = "none";
+    document.getElementById("chatModal").style.display = "flex";
+
+    // Remove event after handling
+    snap.ref.remove();
+  });
+}
+
+
+    
 function endCall() {
   if (window.currentCallInstance) {
     window.currentCallInstance.destroy();
