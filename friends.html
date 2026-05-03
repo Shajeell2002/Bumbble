@@ -881,24 +881,25 @@ function endCall() {
   
   
 function resetCallUI() {
-  const container = document.getElementById("callContainer");
+  const oldContainer = document.getElementById("callContainer");
 
-  // 🔥 FULL reset
-  container.innerHTML = "";
-  container.style.display = "none";
+  if (oldContainer) {
+    oldContainer.innerHTML = "";
+    oldContainer.style.display = "none";
 
-  // recreate fresh div (important)
-  const newContainer = document.createElement("div");
-  newContainer.id = "callContainer";
-  newContainer.style.width = "100%";
-  newContainer.style.height = "100vh";
-  newContainer.style.display = "none";
+    // Recreate fresh container (Zego bug fix)
+    const newContainer = document.createElement("div");
+    newContainer.id = "callContainer";
+    newContainer.style.width = "100%";
+    newContainer.style.height = "100vh";
+    newContainer.style.display = "none";
 
-  container.parentNode.replaceChild(newContainer, container);
+    oldContainer.parentNode.replaceChild(newContainer, oldContainer);
+  }
 
+  // Always show chat again
   document.getElementById("chatModal").style.display = "flex";
-}    
-  
+}  
     
  </script> 
   
