@@ -821,16 +821,19 @@ function joinCall(callID) {
 
   const zp = ZegoUIKitPrebuilt.create(kitToken);
 
-  zp.joinRoom({
-    container: document.querySelector("#callContainer"),
-    scenario: {
-      mode: ZegoUIKitPrebuilt.OneONoneCall,
-    },
-    showPreJoinView: false,
-  });
+zp.joinRoom({
+  container: document.querySelector("#callContainer"),
+  scenario: {
+    mode: ZegoUIKitPrebuilt.OneONoneCall,
+  },
+  showPreJoinView: false,
 
-  window.currentCallInstance = zp;
-}
+  onLeaveRoom: () => {
+    // 🔥 THIS FIXES REJOIN ISSUE
+    handleCallCleanup();
+  }
+});
+  
 
     function listenCallEnd() {
   db.ref(`callEnd/${currentUserUid}`).on("child_added", snap => {
@@ -898,7 +901,24 @@ function resetCallUI() {
 
   document.getElementById("chatModal").style.display = "flex";
 }    
- </script> 
+
+  function handleCallCleanup() {
+  if (window.currentCallInstance) {
+    try {
+      window.currentCallInstance.destroy();
+    } catch (e) {}
+
+    window.currentCallInstance = null;
+  }
+
+  const container = document.getElementById("callContainer");
+  container.innerHTML = "";
+  container.style.display = "none";
+
+  document.getElementById("chatModal").style.display = "flex";
+}
+  
+  </script> 
   
 </body>
 </html>
