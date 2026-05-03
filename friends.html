@@ -777,8 +777,7 @@ db.ref(`calls/${currentChatFriendUid}`).push({
 }
 function listenIncomingCalls() {
   db.ref(`calls/${currentUserUid}`).on("child_added", snap => {
-    let incomingCallHandled = false;
-    if (incomingCallHandled) return; // रोक repeated popups
+        if (incomingCallHandled) return; // रोक repeated popups
 
     const callData = snap.val();
     if (!callData) return;
@@ -794,8 +793,10 @@ function listenIncomingCalls() {
       joinCall(callID);
     }
 
+    
     // remove call entry immediately
     snap.ref.remove();
+let incomingCallHandled = false;
 
     // reset after few seconds (for next calls)
     setTimeout(() => {
