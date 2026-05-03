@@ -855,15 +855,28 @@ function joinCall(callID) {
 function endCall() {
   if (window.currentCallInstance) {
     try {
-      window.currentCallInstance.leaveRoom(); // ✅ IMPORTANT
+      window.currentCallInstance.leaveRoom(); // ✅ must
     } catch (e) {}
 
-    window.currentCallInstance.destroy();
+    try {
+      window.currentCallInstance.destroy(); // ✅ must
+    } catch (e) {}
+
     window.currentCallInstance = null;
   }
-const callID = getChatId(currentUserUid, currentChatFriendUid) + "_" + Date.now();
+
+  // notify other user
+  const callID = getChatId(currentUserUid, currentChatFriendUid);
   db.ref(`callEnd/${currentChatFriendUid}/${callID}`).set(true);
 
+  // FULL UI RESET
+  const container = document.getElementById("callContainer");
+  container.innerHTML = "";
+  container.style.display = "none";
+
+  // show chat again
+  document.getElementById("chatModal").style.display = "flex";
+}
   resetCallUI();
   
   // Restore UI
@@ -890,31 +903,7 @@ function resetCallUI() {
 
   document.getElementById("chatModal").style.display = "flex";
 }    
-    let lastCallCheckTime = Date.now();
-
-function listenIncomingCalls() {
-  db.ref(`calls/${currentUserUid}`).on("child_added", snap => {
-    const callData = snap.val();
-    if (!callData) return;
-
-    // 🚫 Ignore old calls
-    if (callData.timestamp < lastCallCheckTime) {
-      snap.ref.remove(); // optional cleanup
-      return;
-    }
-
-    const callerId = callData.from;
-    const callID = callData.callID;
-
-    const accept = confirm("📞 Incoming call. Accept?");
-
-    if (accept) {
-      joinCall(callID);
-    }
-
-    snap.ref.remove();
-  });
-}
+  
     
  </script> 
   
