@@ -777,12 +777,12 @@ db.ref(`calls/${currentChatFriendUid}`).push({
 }
 function listenIncomingCalls() {
   db.ref(`calls/${currentUserUid}`).on("child_added", snap => {
-        if (incomingCallHandled) return; // रोक repeated popups
+    if (incomingCallHandled) return; // ✅ prevent repeat
 
     const callData = snap.val();
     if (!callData) return;
 
-    incomingCallHandled = true; // mark as handled
+    incomingCallHandled = true;
 
     const callerId = callData.from;
     const callID = callData.callID;
@@ -793,15 +793,13 @@ function listenIncomingCalls() {
       joinCall(callID);
     }
 
-    
-    // remove call entry immediately
-    snap.ref.remove();
-let incomingCallHandled = false;
+    // ✅ IMPORTANT: remove ALL call entries, not just one
+    db.ref(`calls/${currentUserUid}`).remove();
 
-    // reset after few seconds (for next calls)
+    // reset after few seconds
     setTimeout(() => {
       incomingCallHandled = false;
-    }, 3000);
+    }, 5000);
   });
 }
     
