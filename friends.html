@@ -865,7 +865,6 @@ const callID = getChatId(currentUserUid, currentChatFriendUid) + "_" + Date.now(
   db.ref(`callEnd/${currentChatFriendUid}/${callID}`).set(true);
 
   resetCallUI();
-}
   
   // Restore UI
   document.getElementById("callContainer").innerHTML = "";
