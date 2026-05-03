@@ -832,18 +832,23 @@ function joinCall(callID) {
   window.currentCallInstance = zp;
 }
 
-  function endCall() {
+function endCall() {
   if (window.currentCallInstance) {
     window.currentCallInstance.destroy();
     window.currentCallInstance = null;
   }
 
-  // restore UI
+  // 🔥 Notify other user that call ended
+  const callID = getChatId(currentUserUid, currentChatFriendUid);
+  db.ref(`callEnd/${currentChatFriendUid}/${callID}`).set(true);
+
+  // Restore UI
   document.getElementById("callContainer").innerHTML = "";
   document.getElementById("callContainer").style.display = "none";
   document.getElementById("chatModal").style.display = "flex";
 }
-</script> 
+    
+ </script> 
   
 </body>
 </html>
