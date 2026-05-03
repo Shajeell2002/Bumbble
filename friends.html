@@ -855,11 +855,11 @@ function joinCall(callID) {
 function endCall() {
   if (window.currentCallInstance) {
     try {
-      window.currentCallInstance.leaveRoom(); // ✅ must
+      window.currentCallInstance.leaveRoom();
     } catch (e) {}
 
     try {
-      window.currentCallInstance.destroy(); // ✅ must
+      window.currentCallInstance.destroy();
     } catch (e) {}
 
     window.currentCallInstance = null;
@@ -876,9 +876,10 @@ function endCall() {
 
   // show chat again
   document.getElementById("chatModal").style.display = "flex";
-}
-  
-  
+} // ✅ THIS WAS MISSING
+
+
+// ✅ Move this OUTSIDE
 function resetCallUI() {
   const oldContainer = document.getElementById("callContainer");
 
@@ -886,7 +887,6 @@ function resetCallUI() {
     oldContainer.innerHTML = "";
     oldContainer.style.display = "none";
 
-    // Recreate fresh container (Zego bug fix)
     const newContainer = document.createElement("div");
     newContainer.id = "callContainer";
     newContainer.style.width = "100%";
@@ -896,10 +896,8 @@ function resetCallUI() {
     oldContainer.parentNode.replaceChild(newContainer, oldContainer);
   }
 
-  // Always show chat again
   document.getElementById("chatModal").style.display = "flex";
-}  
-    
+}    
  </script> 
   
 </body>
