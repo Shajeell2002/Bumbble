@@ -764,8 +764,7 @@ const serverSecret = "5a379bb5617baa3d43734b4a818502d7";
     return;
   }
 
-  const callID = getChatId(currentUserUid, currentChatFriendUid);
-
+  const callID = getChatId(currentUserUid, currentChatFriendUid) + "_" + Date.now();
   // Notify receiver
 db.ref(`calls/${currentChatFriendUid}`).push({
   from: currentUserUid,
@@ -844,6 +843,7 @@ function joinCall(callID) {
 
     // Clean UI
     document.getElementById("callContainer").innerHTML = "";
+    resetCallUI();
     document.getElementById("callContainer").style.display = "none";
     document.getElementById("chatModal").style.display = "flex";
 
@@ -861,20 +861,37 @@ function endCall() {
     window.currentCallInstance.destroy();
     window.currentCallInstance = null;
   }
-
-    
-  // 🔥 Notify other user that call ended
-  const callID = getChatId(currentUserUid, currentChatFriendUid);
+const callID = getChatId(currentUserUid, currentChatFriendUid) + "_" + Date.now();
   db.ref(`callEnd/${currentChatFriendUid}/${callID}`).set(true);
+
   resetCallUI();
 }
-
   
   // Restore UI
   document.getElementById("callContainer").innerHTML = "";
   document.getElementById("callContainer").style.display = "none";
   document.getElementById("chatModal").style.display = "flex";
 }
+
+function resetCallUI() {
+  const container = document.getElementById("callContainer");
+
+  // 🔥 FULL reset
+  container.innerHTML = "";
+  container.style.display = "none";
+
+  // recreate fresh div (important)
+  const newContainer = document.createElement("div");
+  newContainer.id = "callContainer";
+  newContainer.style.width = "100%";
+  newContainer.style.height = "100vh";
+  newContainer.style.display = "none";
+
+  container.parentNode.replaceChild(newContainer, container);
+
+  document.getElementById("chatModal").style.display = "flex";
+}    
+    
     
  </script> 
   
