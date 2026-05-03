@@ -762,8 +762,9 @@ function initUsersListener() {
   
  <script src="https://unpkg.com/@zegocloud/zego-uikit-prebuilt/zego-uikit-prebuilt.js"></script> 
 
-  <div container: document.querySelector("#callContainer")</div>
-<script>  
+<div id="callContainer" style="display:none; width:100%; height:100vh;"></div>
+
+  <script>  
     const appID = 1465354768; // number
 const serverSecret = "5a379bb5617baa3d43734b4a818502d7"; // string</div
 
@@ -787,6 +788,7 @@ db.ref(`calls/${currentChatFriendUid}`).push({
   joinCall(callID);
 }
 
+    
 function joinCall(callID) {
   document.getElementById("chatModal").style.display = "none";
   document.getElementById("callContainer").style.display = "block";
