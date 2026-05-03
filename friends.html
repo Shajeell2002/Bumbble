@@ -788,6 +788,26 @@ db.ref(`calls/${currentChatFriendUid}`).push({
   joinCall(callID);
 }
 
+    function listenIncomingCalls() {
+  db.ref(`calls/${currentUserUid}`).on("child_added", snap => {
+    const callData = snap.val();
+
+    if (!callData) return;
+
+    const callerId = callData.from;
+    const callID = callData.callID;
+
+    // Show incoming call popup
+    const accept = confirm("📞 Incoming call. Accept?");
+
+    if (accept) {
+      joinCall(callID);
+    }
+
+    // Remove call notification after handling
+    snap.ref.remove();
+  });
+}
     
 function joinCall(callID) {
   document.getElementById("chatModal").style.display = "none";
