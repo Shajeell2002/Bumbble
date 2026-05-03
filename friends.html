@@ -85,18 +85,6 @@
   align-items: center;
 }
 
-.chat-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.chat-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
 /* CALL BUTTON */
 .call-btn {
   background: linear-gradient(135deg, #25D366, #1ebe5d);
@@ -767,7 +755,7 @@ function initUsersListener() {
 
   <script>  
     const appID = 1465354768; // number
-const serverSecret = "5a379bb5617baa3d43734b4a818502d7"; // string</div
+const serverSecret = "5a379bb5617baa3d43734b4a818502d7";
 
  
   function startCall() {
@@ -790,6 +778,7 @@ db.ref(`calls/${currentChatFriendUid}`).push({
 }
 function listenIncomingCalls() {
   db.ref(`calls/${currentUserUid}`).on("child_added", snap => {
+    let incomingCallHandled = false;
     if (incomingCallHandled) return; // रोक repeated popups
 
     const callData = snap.val();
