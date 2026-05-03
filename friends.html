@@ -821,21 +821,22 @@ function joinCall(callID) {
 
   const zp = ZegoUIKitPrebuilt.create(kitToken);
 
-zp.joinRoom({
-  container: document.querySelector("#callContainer"),
-  scenario: {
-    mode: ZegoUIKitPrebuilt.OneONoneCall,
-  },
-  showPreJoinView: false,
+  window.currentCallInstance = zp; // ✅ IMPORTANT (you missed this)
 
-  onLeaveRoom: () => {
-    // 🔥 THIS FIXES REJOIN ISSUE
-    handleCallCleanup();
-  }
-});
-  
+  zp.joinRoom({
+    container: document.querySelector("#callContainer"),
+    scenario: {
+      mode: ZegoUIKitPrebuilt.OneONoneCall,
+    },
+    showPreJoinView: false,
+    onLeaveRoom: () => {
+      handleCallCleanup();
+    }
+  });
+} // ✅ ✅ THIS WAS MISSING
 
-    function listenCallEnd() {
+// ✅ NOW this is outside properly
+function listenCallEnd() {
   db.ref(`callEnd/${currentUserUid}`).on("child_added", snap => {
     const callID = snap.key;
 
@@ -844,17 +845,15 @@ zp.joinRoom({
       window.currentCallInstance = null;
     }
 
-    // Clean UI
     document.getElementById("callContainer").innerHTML = "";
     resetCallUI();
     document.getElementById("callContainer").style.display = "none";
     document.getElementById("chatModal").style.display = "flex";
 
-    // Remove event after handling
     snap.ref.remove();
   });
 }
-
+    
 function endCall() {
   if (window.currentCallInstance) {
     try {
