@@ -779,68 +779,71 @@ const serverSecret = "5a379bb5617baa3d43734b4a818502d7";
 }
 
 
-    
 let incomingCallHandled = false;
 
 function listenIncomingCalls() {
 
-  db.ref(`calls/${currentUserUid}`).on("value"), async (snap) => {
+  db.ref(`calls/${currentUserUid}`).on("value", async (snap) => {
 
     if (incomingCallHandled) return;
 
-    const callData = snap.val();
+    const calls = snap.val();
 
-    if (!callData) return;
+    if (!calls) return;
+      const callData = calls[key];
 
-        // Ignore expired calls
-    if (Date.now() - callData.timestamp > 30000) {
-      await snap.ref.remove();
-      return;
+      if (!callData) continue;
+
+    // loop through calls
+    for (const key in calls) {
+      // Ignore expired calls
+      if (Date.now() - callData.timestamp > 30000) {
+        await db.ref(`calls/${currentUserUid}/${key}`).remove();
+        continue;
+      }
+
+      // Prevent duplicate popup
+      if (callData.handled === true) continue;
+
+      // Mark immediately as handled
+      await db.ref(`calls/${currentUserUid}/${key}`).update({
+        handled: true
+      });
+      incomingCallHandled = true;
+
+      const callerId = callData.from;
+      const callID = callData.callID;
+
+      currentChatFriendUid = callerId;
+
+      const callerName =
+        cachedUsers?.[callerId]?.public?.name || "Unknown User";
+      const accept = confirm(`📞 Incoming call from ${callerName}. Accept?`);
+
+      if (accept) {
+
+        await db.ref(`calls/${currentUserUid}/${key}`).remove();
+
+        joinCall(callID);
+
+      } else {
+        await db.ref(`calls/${currentUserUid}/${key}`).remove();
+
+      }
+
+      // Reset protection after few seconds
+      setTimeout(() => {
+        incomingCallHandled = false;
+      }, 5000);
     }
-
-    // Prevent duplicate popup
-    if (callData.handled === true) return;
-
-    // Mark immediately as handled
-    await snap.ref.update({
-      handled: true
-    });
-
-    incomingCallHandled = true;
-
-    const callerId = callData.from;
-    const callID = callData.callID;
-// IMPORTANT
-currentChatFriendUid = callerId;
-const callerName =
-  cachedUsers?.[callerId]?.public?.name || "Unknown User";
-
-const accept = confirm(`📞 Incoming call from ${callerName}. Accept?`);
-if (accept) {
-
-  await snap.ref.remove();
-
-  joinCall(callID);
-
-}
-    
-     else {
-
-      // Remove rejected call
-      await snap.ref.remove();
-
-    }
-
-    // Reset protection after few seconds
-    setTimeout(() => {
-      incomingCallHandled = false;
-    }, 5000);
 
   });
 
 }
-    
+     
 function joinCall(callID) {
+ let activeCallID = null;
+  activeCallID = callID;
   document.getElementById("chatModal").style.display = "none";
   document.getElementById("callContainer").style.display = "block";
 
