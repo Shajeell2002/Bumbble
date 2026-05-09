@@ -777,16 +777,19 @@ db.ref(`calls/${currentChatFriendUid}`).push({
 }
 let incomingCallHandled = false;
 
-    
-    function listenIncomingCalls() {
-  db.ref(`calls/${currentUserUid}`).on("child_added", snap => {
-    if (incomingCallHandled) return; // ✅ prevent repeat
+function listenIncomingCalls() {
+
+  db.ref(`calls/${currentUserUid}`).on("child_added", async (snap) => {
+
+    if (incomingCallHandled) return;
 
     const callData = snap.val();
+
     if (!callData) return;
-    // Ignore expired calls
+
+        // Ignore expired calls
     if (Date.now() - callData.timestamp > 30000) {
-      snap.ref.remove();
+      await snap.ref.remove();
       return;
     }
 
@@ -806,21 +809,23 @@ let incomingCallHandled = false;
     const accept = confirm("📞 Incoming call. Accept?");
 
     if (accept) {
+
       joinCall(callID);
-    
+
     } else {
 
-      // remove rejected call
+      // Remove rejected call
       await snap.ref.remove();
 
-    // ✅ IMPORTANT: remove ALL call entries, not just one
-   snap.ref.remove();
     }
-    // reset after few seconds
+
+    // Reset protection after few seconds
     setTimeout(() => {
       incomingCallHandled = false;
     }, 5000);
+
   });
+
 }
     
 function joinCall(callID) {
