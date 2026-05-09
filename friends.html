@@ -641,7 +641,7 @@ function initUsersListener() {
     });
 
     function listenTyping(uid) {
-      db.ref(`typing/${currentUserUid}/${uid}`).on("value"), snap => {
+      db.ref(`typing/${currentUserUid}/${uid}`).on("value", snap => {
         typingIndicator.textContent = snap.exists() ? `${chatWith.textContent} is typing...` : "";
       });
     }
@@ -839,7 +839,7 @@ function joinCall(callID) {
 
 // ✅ NOW this is outside properly
 function listenCallEnd() {
-  db.ref(`callEnd/${currentUserUid}`).on("value"), snap => {
+  db.ref(`callEnd/${currentUserUid}`).on("value", snap => {
     const callID = snap.key;
 
     if (window.currentCallInstance) {
