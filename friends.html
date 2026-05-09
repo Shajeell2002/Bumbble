@@ -757,12 +757,27 @@ function initUsersListener() {
     const appID = 1465354768; // number
 const serverSecret = "5a379bb5617baa3d43734b4a818502d7";
 
- 
-  function startCall() {
+ function startCall() {
+
   if (!currentChatFriendUid) {
     alert("Select a user first");
     return;
   }
+
+  const callID =
+    getChatId(currentUserUid, currentChatFriendUid) + "_" + Date.now();
+
+  db.ref(`calls/${currentChatFriendUid}`).push({
+    from: currentUserUid,
+    callID: callID,
+    timestamp: Date.now(),
+    handled: false
+  });
+
+  // Start call for caller
+  joinCall(callID);
+
+}
 
   const callID = getChatId(currentUserUid, currentChatFriendUid) + "_" + Date.now();
   // Notify receiver
