@@ -810,8 +810,12 @@ function listenIncomingCalls() {
 
     const callerId = callData.from;
     const callID = callData.callID;
+// IMPORTANT
+currentChatFriendUid = callerId;
+const callerName =
+  cachedUsers?.[callerId]?.public?.name || "Unknown User";
 
-    const accept = confirm("📞 Incoming call. Accept?");
+const accept = confirm(`📞 Incoming call from ${callerName}. Accept?`);
 if (accept) {
 
   await snap.ref.remove();
