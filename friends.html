@@ -837,7 +837,7 @@ function joinCall(callID) {
 
 // ✅ NOW this is outside properly
 function listenCallEnd() {
-  db.ref(`callEnd/${currentUserUid}`).on("child_added", snap => {
+  db.ref(`callEnd/${currentUserUid}`).on("value"), snap => {
     const callID = snap.key;
 
     if (window.currentCallInstance) {
