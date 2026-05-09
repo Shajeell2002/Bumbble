@@ -779,8 +779,7 @@ const serverSecret = "5a379bb5617baa3d43734b4a818502d7";
 
 }
 
-  const callID = getChatId(currentUserUid, currentChatFriendUid) + "_" + Date.now();
-  // Notify receiver
+   // Notify receiver
 db.ref(`calls/${currentChatFriendUid}`).push({
   from: currentUserUid,
   callID: callID,
