@@ -840,9 +840,10 @@ function listenIncomingCalls() {
   });
 
 }
-     
-function joinCall(callID) {
  let activeCallID = null;
+    
+function joinCall(callID) {
+ 
   activeCallID = callID;
   document.getElementById("chatModal").style.display = "none";
   document.getElementById("callContainer").style.display = "block";
