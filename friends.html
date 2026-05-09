@@ -757,7 +757,7 @@ function initUsersListener() {
     const appID = 1465354768; // number
 const serverSecret = "5a379bb5617baa3d43734b4a818502d7";
 
- function startCall() {
+    function startCall() {
 
   if (!currentChatFriendUid) {
     alert("Select a user first");
@@ -767,28 +767,19 @@ const serverSecret = "5a379bb5617baa3d43734b4a818502d7";
   const callID =
     getChatId(currentUserUid, currentChatFriendUid) + "_" + Date.now();
 
+  // Notify receiver
   db.ref(`calls/${currentChatFriendUid}`).push({
     from: currentUserUid,
     callID: callID,
     timestamp: Date.now(),
     handled: false
   });
-
-  // Start call for caller
-  joinCall(callID);
-
-
-
-   // Notify receiver
-db.ref(`calls/${currentChatFriendUid}`).push({
-  from: currentUserUid,
-  callID: callID,
-  timestamp: Date.now()
-});
-    
   // Start call for caller
   joinCall(callID);
 }
+
+
+    
 let incomingCallHandled = false;
 
 function listenIncomingCalls() {
@@ -821,12 +812,15 @@ function listenIncomingCalls() {
     const callID = callData.callID;
 
     const accept = confirm("📞 Incoming call. Accept?");
+if (accept) {
 
-    if (accept) {
+  await snap.ref.remove();
 
-      joinCall(callID);
+  joinCall(callID);
 
-    } else {
+}
+    
+     } else {
 
       // Remove rejected call
       await snap.ref.remove();
