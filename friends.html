@@ -784,6 +784,12 @@ let incomingCallHandled = false;
 
     const callData = snap.val();
     if (!callData) return;
+    // Ignore expired calls
+    if (Date.now() - callData.timestamp > 30000) {
+      snap.ref.remove();
+      return;
+    }
+
     // Prevent duplicate popup
     if (callData.handled === true) return;
 
@@ -801,7 +807,7 @@ let incomingCallHandled = false;
 
     if (accept) {
       joinCall(callID);
-    }
+    
     } else {
 
       // remove rejected call
@@ -809,7 +815,7 @@ let incomingCallHandled = false;
 
     // ✅ IMPORTANT: remove ALL call entries, not just one
    snap.ref.remove();
-
+    }
     // reset after few seconds
     setTimeout(() => {
       incomingCallHandled = false;
