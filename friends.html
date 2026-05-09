@@ -872,26 +872,10 @@ function joinCall(callID) {
 } // ✅ ✅ THIS WAS MISSING
 
 // ✅ NOW this is outside properly
-function listenCallEnd() {
-  db.ref(`callEnd/${currentUserUid}`).on("child_added", snap => {
-    const callID = snap.key;
-
-    if (window.currentCallInstance) {
-      window.currentCallInstance.destroy();
-      window.currentCallInstance = null;
-    }
-
-    document.getElementById("callContainer").innerHTML = "";
-    resetCallUI();
-    document.getElementById("callContainer").style.display = "none";
-    document.getElementById("chatModal").style.display = "flex";
-
-    snap.ref.remove();
-  });
-}
-    
 function endCall() {
+
   if (window.currentCallInstance) {
+
     try {
       window.currentCallInstance.leaveRoom();
     } catch (e) {}
@@ -903,19 +887,20 @@ function endCall() {
     window.currentCallInstance = null;
   }
 
-  // notify other user
-  const callID = getChatId(currentUserUid, currentChatFriendUid);
-  db.ref(`callEnd/${currentChatFriendUid}/${callID}`).set(true);
+  // notify other user properly
+  if (currentChatFriendUid && activeCallID) {
+    db.ref(`callEnd/${currentChatFriendUid}/${activeCallID}`).set(true);
+  }
 
-  // FULL UI RESET
+  activeCallID = null;
+
+  // reset UI
   const container = document.getElementById("callContainer");
   container.innerHTML = "";
   container.style.display = "none";
 
-  // show chat again
   document.getElementById("chatModal").style.display = "flex";
-} // ✅ THIS WAS MISSING
-
+}
 
 // ✅ Move this OUTSIDE
 function resetCallUI() {
@@ -938,6 +923,7 @@ function resetCallUI() {
 }    
 
   function handleCallCleanup() {
+    activeCallID = null;
   if (window.currentCallInstance) {
     try {
       window.currentCallInstance.destroy();
