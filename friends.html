@@ -790,12 +790,14 @@ function listenIncomingCalls() {
     const calls = snap.val();
 
     if (!calls) return;
+
+    // loop through calls
+    for (const key in calls) {
+
       const callData = calls[key];
 
       if (!callData) continue;
 
-    // loop through calls
-    for (const key in calls) {
       // Ignore expired calls
       if (Date.now() - callData.timestamp > 30000) {
         await db.ref(`calls/${currentUserUid}/${key}`).remove();
@@ -809,6 +811,7 @@ function listenIncomingCalls() {
       await db.ref(`calls/${currentUserUid}/${key}`).update({
         handled: true
       });
+
       incomingCallHandled = true;
 
       const callerId = callData.from;
@@ -818,6 +821,7 @@ function listenIncomingCalls() {
 
       const callerName =
         cachedUsers?.[callerId]?.public?.name || "Unknown User";
+
       const accept = confirm(`📞 Incoming call from ${callerName}. Accept?`);
 
       if (accept) {
@@ -827,6 +831,7 @@ function listenIncomingCalls() {
         joinCall(callID);
 
       } else {
+
         await db.ref(`calls/${currentUserUid}/${key}`).remove();
 
       }
