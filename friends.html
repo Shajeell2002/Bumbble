@@ -886,7 +886,6 @@ function endCall() {
 // ✅ Move this OUTSIDE
 function resetCallUI() {
   const oldContainer = document.getElementById("callContainer");
-
   if (oldContainer) {
     oldContainer.innerHTML = "";
     oldContainer.style.display = "none";
@@ -896,12 +895,11 @@ function resetCallUI() {
     newContainer.style.width = "100%";
     newContainer.style.height = "100vh";
     newContainer.style.display = "none";
-
     oldContainer.parentNode.replaceChild(newContainer, oldContainer);
   }
-
   document.getElementById("chatModal").style.display = "flex";
-}    
+}
+     
 
   function handleCallCleanup() {
   if (window.currentCallInstance) {
