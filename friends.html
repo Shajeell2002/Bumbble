@@ -824,16 +824,31 @@ function joinCall(callID) {
   const zp = ZegoUIKitPrebuilt.create(kitToken);
 
   window.currentCallInstance = zp; // ✅ IMPORTANT (you missed this)
+zp.joinRoom({
+  container: document.querySelector("#callContainer"),
 
-  zp.joinRoom({
-    container: document.querySelector("#callContainer"),
-    scenario: {
-      mode: ZegoUIKitPrebuilt.OneONoneCall,
-    },
-    showPreJoinView: false,
-      // ✅ Prevent auto start
-    turnOnCameraWhenJoining: false,
-    turnOnMicrophoneWhenJoining: false,
+  scenario: {
+    mode: ZegoUIKitPrebuilt.OneONoneCall,
+  },
+  // ✅ IMPORTANT
+  showPreJoinView: false,
+
+  // ✅ Disable auto camera
+  turnOnCameraWhenJoining: false,
+
+  // ✅ Disable auto microphone
+  turnOnMicrophoneWhenJoining: false,
+
+  // ✅ Optional: hide camera button initially
+  showMyCameraToggleButton: true,
+
+  // ✅ Optional: hide mic button initially
+  showMyMicrophoneToggleButton: true,
+
+  onLeaveRoom: () => {
+    handleCallCleanup();
+  }
+});
 
     // Optional controls
     showMyCameraToggleButton: true,
