@@ -804,8 +804,9 @@ let incomingCallHandled = false;
       setTimeout(() => { incomingCallHandled = false; }, 5000);
     });
 }
-    function joinCall(callID) {
-
+    
+    
+function joinCall(callID) {
   document.getElementById("chatModal").style.display = "none";
   document.getElementById("callContainer").style.display = "block";
 
@@ -819,70 +820,60 @@ let incomingCallHandled = false;
     userID,
     userName
   );
+
   const zp = ZegoUIKitPrebuilt.create(kitToken);
 
-  window.currentCallInstance = zp;
+  window.currentCallInstance = zp; // ✅ IMPORTANT (you missed this)
 
   zp.joinRoom({
     container: document.querySelector("#callContainer"),
-
     scenario: {
       mode: ZegoUIKitPrebuilt.OneONoneCall,
     },
-
-    // ✅ IMPORTANT
-    showPreJoinView: true,
-    // ✅ microphone OFF by default
-    turnOnMicrophoneWhenJoining: false,
-
-    // ✅ camera OFF by default
-    turnOnCameraWhenJoining: false,
-
-    // ✅ optional: mute speaker initially
-    // turnOnSpeakerWhenJoining: false,
-
+    showPreJoinView: false,
     onLeaveRoom: () => {
       handleCallCleanup();
     }
   });
-}
- 
+} // ✅ ✅ THIS WAS MISSING
+
 // ✅ NOW this is outside properly
 function listenCallEnd() {
-
   db.ref(`callEnd/${currentUserUid}`).on("value", snap => {
+    const callID = snap.key;
 
     if (window.currentCallInstance) {
-      try {
-        window.currentCallInstance.destroy();
-      } catch(e){}
+      window.currentCallInstance.destroy();
       window.currentCallInstance = null;
     }
 
     document.getElementById("callContainer").innerHTML = "";
-
     resetCallUI();
-
     document.getElementById("callContainer").style.display = "none";
     document.getElementById("chatModal").style.display = "flex";
 
     snap.ref.remove();
   });
-}   
+}
+    
 function endCall() {
-
   if (window.currentCallInstance) {
-    window.currentCallInstance.leaveRoom();
+    try {
+      window.currentCallInstance.leaveRoom();
+    } catch (e) {}
+
+    try {
+      window.currentCallInstance.destroy();
+    } catch (e) {}
+
+    window.currentCallInstance = null;
   }
 
   // notify other user
   const callID = getChatId(currentUserUid, currentChatFriendUid);
-
   db.ref(`callEnd/${currentChatFriendUid}/${callID}`).set(true);
 
-  handleCallCleanup();
-}
-   // FULL UI RESET
+  // FULL UI RESET
   const container = document.getElementById("callContainer");
   container.innerHTML = "";
   container.style.display = "none";
