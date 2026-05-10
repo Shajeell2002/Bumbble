@@ -822,26 +822,19 @@ function joinCall(callID) {
   );
 
   const zp = ZegoUIKitPrebuilt.create(kitToken);
-  window.currentCallInstance = zp;
+
+  window.currentCallInstance = zp; // ✅ IMPORTANT (you missed this)
 
   zp.joinRoom({
     container: document.querySelector("#callContainer"),
     scenario: {
       mode: ZegoUIKitPrebuilt.OneONoneCall,
-    },                                       // ← closes scenario: {}
+    },
     showPreJoinView: false,
-    turnOnCameraWhenJoining: false,
-    turnOnMicrophoneWhenJoining: false,
-    showMyCameraToggleButton: true,
-    showMyMicrophoneToggleButton: true,
-    onLeaveRoom: () => {
-      handleCallCleanup();
-    }
-  });
-}
-    // Optional controls
-    showMyCameraToggleButton: true,
-    showMyMicrophoneToggleButton: true,
+    turnOnCameraWhenJoining: false,       // ✅ Camera OFF for both caller & receiver
+    turnOnMicrophoneWhenJoining: false,   // ✅ Mic OFF for both caller & receiver
+    showMyCameraToggleButton: true,       // user can turn it on manually
+    showMyMicrophoneToggleButton: true,   // user can turn it on manually
     onLeaveRoom: () => {
       handleCallCleanup();
     }
