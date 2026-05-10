@@ -844,19 +844,15 @@ function joinCall(callID) {
 // ✅ NOW this is outside properly
 function listenCallEnd() {
   db.ref(`callEnd/${currentUserUid}`).on("value", snap => {
-    const callID = snap.key;
+    if (!snap.exists()) return; // ← ignore null/empty, no confirmation triggered
 
     if (window.currentCallInstance) {
-      window.currentCallInstance.destroy();
+      try { window.currentCallInstance.destroy(); } catch (e) {}
       window.currentCallInstance = null;
     }
 
-    document.getElementById("callContainer").innerHTML = "";
-    resetCallUI();
-    document.getElementById("callContainer").style.display = "none";
-    document.getElementById("chatModal").style.display = "flex";
-
     snap.ref.remove();
+    resetCallUI(); // ← resetCallUI already hides container & shows chat
   });
 }
     
