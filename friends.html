@@ -822,33 +822,23 @@ function joinCall(callID) {
   );
 
   const zp = ZegoUIKitPrebuilt.create(kitToken);
+  window.currentCallInstance = zp;
 
-  window.currentCallInstance = zp; // ✅ IMPORTANT (you missed this)
-zp.joinRoom({
-  container: document.querySelector("#callContainer"),
-
-  scenario: {
-    mode: ZegoUIKitPrebuilt.OneONoneCall,
-  },
-  // ✅ IMPORTANT
-  showPreJoinView: false,
-
-  // ✅ Disable auto camera
-  turnOnCameraWhenJoining: false,
-
-  // ✅ Disable auto microphone
-  turnOnMicrophoneWhenJoining: false,
-
-  // ✅ Optional: hide camera button initially
-  showMyCameraToggleButton: true,
-
-  // ✅ Optional: hide mic button initially
-  showMyMicrophoneToggleButton: true,
-
-  onLeaveRoom: () => {
-    handleCallCleanup();
-  }
-});
+  zp.joinRoom({
+    container: document.querySelector("#callContainer"),
+    scenario: {
+      mode: ZegoUIKitPrebuilt.OneONoneCall,
+    
+    showPreJoinView: false,
+    turnOnCameraWhenJoining: false,      // ✅ Camera OFF by default
+    turnOnMicrophoneWhenJoining: false,  // ✅ Mic OFF by default
+    showMyCameraToggleButton: true,
+    showMyMicrophoneToggleButton: true,
+    onLeaveRoom: () => {
+      handleCallCleanup();
+    }
+  });
+}
 
     // Optional controls
     showMyCameraToggleButton: true,
