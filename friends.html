@@ -871,18 +871,14 @@ function endCall() {
     window.currentCallInstance.leaveRoom();
   }
 
+  // notify other user
+  const callID = getChatId(currentUserUid, currentChatFriendUid);
+
+  db.ref(`callEnd/${currentChatFriendUid}/${callID}`).set(true);
+
   handleCallCleanup();
-
-  // notify other user
-  const callID = getChatId(currentUserUid, currentChatFriendUid);
-
-  db.ref(`callEnd/${currentChatFriendUid}/${callID}`).set(true);
-}    
-  // notify other user
-  const callID = getChatId(currentUserUid, currentChatFriendUid);
-  db.ref(`callEnd/${currentChatFriendUid}/${callID}`).set(true);
-
-  // FULL UI RESET
+}
+   // FULL UI RESET
   const container = document.getElementById("callContainer");
   container.innerHTML = "";
   container.style.display = "none";
