@@ -828,10 +828,10 @@ function joinCall(callID) {
     container: document.querySelector("#callContainer"),
     scenario: {
       mode: ZegoUIKitPrebuilt.OneONoneCall,
-    
+    },                                       // ← closes scenario: {}
     showPreJoinView: false,
-    turnOnCameraWhenJoining: false,      // ✅ Camera OFF by default
-    turnOnMicrophoneWhenJoining: false,  // ✅ Mic OFF by default
+    turnOnCameraWhenJoining: false,
+    turnOnMicrophoneWhenJoining: false,
     showMyCameraToggleButton: true,
     showMyMicrophoneToggleButton: true,
     onLeaveRoom: () => {
@@ -839,7 +839,6 @@ function joinCall(callID) {
     }
   });
 }
-
     // Optional controls
     showMyCameraToggleButton: true,
     showMyMicrophoneToggleButton: true,
