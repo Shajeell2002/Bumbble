@@ -864,13 +864,14 @@ function listenCallEnd() {
     resetCallUI(); // ← resetCallUI already hides container & shows chat
   });
 }
-    
-function endCall() {
-  if (window.currentCallInstance) {
-    try {
-      
-    } catch (e) {}
+    function endCall() {
 
+  // notify other user first
+  const callID = getChatId(currentUserUid, currentChatFriendUid);
+
+  db.ref(`callEnd/${currentChatFriendUid}/${callID}`).set(true);
+
+  if (window.currentCallInstance) {
     try {
       window.currentCallInstance.destroy();
     } catch (e) {}
@@ -878,10 +879,7 @@ function endCall() {
     window.currentCallInstance = null;
   }
 
-  // notify other user
-  const callID = getChatId(currentUserUid, currentChatFriendUid);
-  db.ref(`callEnd/${currentChatFriendUid}/${callID}`).set(true);
-
+  resetCallUI();
   // FULL UI RESET
   const container = document.getElementById("callContainer");
   container.innerHTML = "";
