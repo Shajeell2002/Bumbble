@@ -878,8 +878,6 @@ function endCall() {
 
   db.ref(`callEnd/${currentChatFriendUid}/${callID}`).set(true);
 }    
-
-
   // notify other user
   const callID = getChatId(currentUserUid, currentChatFriendUid);
   db.ref(`callEnd/${currentChatFriendUid}/${callID}`).set(true);
