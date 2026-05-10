@@ -804,9 +804,8 @@ let incomingCallHandled = false;
       setTimeout(() => { incomingCallHandled = false; }, 5000);
     });
 }
-    
-    
-function joinCall(callID) {
+    function joinCall(callID) {
+
   document.getElementById("chatModal").style.display = "none";
   document.getElementById("callContainer").style.display = "block";
 
@@ -820,23 +819,34 @@ function joinCall(callID) {
     userID,
     userName
   );
-
   const zp = ZegoUIKitPrebuilt.create(kitToken);
 
-  window.currentCallInstance = zp; // ✅ IMPORTANT (you missed this)
+  window.currentCallInstance = zp;
 
   zp.joinRoom({
     container: document.querySelector("#callContainer"),
+
     scenario: {
       mode: ZegoUIKitPrebuilt.OneONoneCall,
     },
-    showPreJoinView: false,
+
+    // ✅ IMPORTANT
+    showPreJoinView: true,
+    // ✅ microphone OFF by default
+    turnOnMicrophoneWhenJoining: false,
+
+    // ✅ camera OFF by default
+    turnOnCameraWhenJoining: false,
+
+    // ✅ optional: mute speaker initially
+    // turnOnSpeakerWhenJoining: false,
+
     onLeaveRoom: () => {
       handleCallCleanup();
     }
   });
-} // ✅ ✅ THIS WAS MISSING
-
+}
+ 
 // ✅ NOW this is outside properly
 function listenCallEnd() {
   db.ref(`callEnd/${currentUserUid}`).on("value", snap => {
