@@ -865,12 +865,19 @@ function listenCallEnd() {
     snap.ref.remove();
   });
 }
-    
 function endCall() {
+
   if (window.currentCallInstance) {
-    try {
-      window.currentCallInstance.leaveRoom();
-    } catch (e) {}
+    window.currentCallInstance.leaveRoom();
+  }
+
+  handleCallCleanup();
+
+  // notify other user
+  const callID = getChatId(currentUserUid, currentChatFriendUid);
+
+  db.ref(`callEnd/${currentChatFriendUid}/${callID}`).set(true);
+}    
 
     try {
       window.currentCallInstance.destroy();
