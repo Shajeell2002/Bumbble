@@ -831,6 +831,13 @@ function joinCall(callID) {
       mode: ZegoUIKitPrebuilt.OneONoneCall,
     },
     showPreJoinView: false,
+      // ✅ Prevent auto start
+    turnOnCameraWhenJoining: false,
+    turnOnMicrophoneWhenJoining: false,
+
+    // Optional controls
+    showMyCameraToggleButton: true,
+    showMyMicrophoneToggleButton: true,
     onLeaveRoom: () => {
       handleCallCleanup();
     }
