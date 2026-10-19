@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Bumbble - Sign Up</title>
+<title>babushona - Sign Up</title>
 
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -118,7 +118,7 @@ footer {
 <body>
 
 <header>
-  <h1>Bumbble</h1>
+  <h1>babushona</h1>
   <nav id="navLinks"></nav>
 </header>
 
@@ -151,15 +151,15 @@ footer {
   </div>
 </main>
 
-<footer>&copy; 2025 Bumbble. All rights reserved.</footer>
+<footer>&copy; 2025 babushona. All rights reserved.</footer>
 
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
-  authDomain: "bumbble-c061f.firebaseapp.com",
-  databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
-  projectId: "bumbble-c061f",
-  storageBucket: "bumbble-c061f.appspot.com",
+  authDomain: "babushona-c061f.firebaseapp.com",
+  databaseURL: "https://babushona-c061f-default-rtdb.firebaseio.com",
+  projectId: "babushona-c061f",
+  storageBucket: "babushona-c061f.appspot.com",
   messagingSenderId: "213165886981",
   appId: "1:213165886981:web:c18652003444869b1bd66c"
 };
@@ -234,7 +234,7 @@ document.getElementById('signupBtn').addEventListener('click', async function ()
     const uid = user.uid;
 
     // send verification email (redirects to login on click)
-    await user.sendEmailVerification({ url: 'https://bumbble.in/login.html' });
+    await user.sendEmailVerification({ url: 'https://babushona.com/login.html' });
 
     // save public profile
     await db.ref(`users/${uid}/public`).set({
