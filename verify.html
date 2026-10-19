@@ -25,16 +25,15 @@ footer{text-align:center;padding:20px;background:#f1f1f1;margin-top:auto;}
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
 <script>
   // ✅ Replace with your Firebase config
-  const firebaseConfig = {
-    apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+ const firebaseConfig = {
+  apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
   authDomain: "bumbble-c061f.firebaseapp.com",
-      databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
-      projectId: "bumbble-c061f",
-      storageBucket: "bumbble-c061f.appspot.com",
+  databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
+  projectId: "bumbble-c061f",
+  storageBucket: "bumbble-c061f.appspot.com",
   messagingSenderId: "213165886981",
-  appId: "1:213165886981:web:c18652003444869b1bd66c",
-  };
-
+  appId: "1:213165886981:web:c18652003444869b1bd66c"
+};
   const app = firebase.initializeApp(firebaseConfig);
   const auth = firebase.getAuth(app);
 
