@@ -22,7 +22,7 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow:0 3px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
 }
 header h1 { margin:0; font-size:24px; font-weight:bold; color:white; }
 nav a { margin:0 10px; text-decoration:none; color:white; font-weight:500; }
@@ -30,79 +30,79 @@ nav a:hover { text-decoration:underline; }
 
 /* Container */
 .container {
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    flex:1;
-    padding-top:50px; /* for header offset */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+    padding-top: 50px;
 }
 
 /* Login Form */
 .login-form {
-    background:#fff;
-    padding:30px;
-    border-radius:15px;
-    box-shadow:0 2px 6px rgba(0,0,0,0.1);
-    width:100%;
-    max-width:400px;
-    display:flex;
-    flex-direction:column;
-    gap:15px;
+    background: #fff;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 .login-form h2 {
-    text-align:center;
-    margin-bottom:10px;
-    color:#4a2e8e; /* Lavender text heading */
+    text-align: center;
+    margin-bottom: 10px;
+    color: #4a2e8e;
 }
 .login-form input {
-    padding:12px;
-    border-radius:8px;
-    border:1px solid #ccc;
-    font-size:16px;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 16px;
 }
 .login-form button {
-    padding:12px;
-    border:none;
-    border-radius:8px;
-    background:#4a2e8e; /* Dark lavender button */
-    font-size:18px;
-    font-weight:bold;
-    cursor:pointer;
-    color:white;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: #4a2e8e;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    color: white;
 }
 .login-form button:hover {
     transform: scale(1.05);
 }
 .forgot-password {
-    text-align:right;
-    font-size:14px;
-    margin-top:-5px;
+    text-align: right;
+    font-size: 14px;
+    margin-top: -5px;
 }
 .forgot-password a {
-    color:#4a2e8e;
-    text-decoration:none;
-    font-weight:bold;
+    color: #4a2e8e;
+    text-decoration: none;
+    font-weight: bold;
 }
-.forgot-password a:hover { text-decoration:underline; }
+.forgot-password a:hover { text-decoration: underline; }
 
 /* Footer */
 footer {
-    text-align:center;
-    padding:20px;
-    background:#b39ddb;
-    color:white;
-    margin-top:auto;
+    text-align: center;
+    padding: 20px;
+    background: #b39ddb;
+    color: white;
+    margin-top: auto;
 }
 </style>
 
-<!-- Firebase SDK -->
+<!-- Firebase SDK (Compat Version matching your code style) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
+    apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
   authDomain: "[www.babushona.com](https://www.babushona.com)",
       databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
       projectId: "bumbble-c061f",
@@ -118,28 +118,28 @@ const db = firebase.database();
 <body>
 
 <header>
-  <h1>BabuShona</h1>
-  <nav id="navLinks">
-    <a href="index.html">Home</a>
-    <a href="friends.html">Friends</a>
-    <a href="stories.html">Stories</a>
-    <a href="safety.html">Safety</a>
-    <a href="login.html">Login</a>
-    <a href="signup.html">Sign Up</a>
-  </nav>
+    <h1>BabuShona</h1>
+    <nav id="navLinks">
+        <a href="index.html">Home</a>
+        <a href="friends.html">Friends</a>
+        <a href="stories.html">Stories</a>
+        <a href="safety.html">Safety</a>
+        <a href="login.html">Login</a>
+        <a href="signup.html">Sign Up</a>
+    </nav>
 </header>
 
 <div class="container">
 <form class="login-form" id="loginForm">
-  <h2>Login</h2>
-  <input type="email" id="email" placeholder="Email" required>
-  <input type="password" id="password" placeholder="Password" required>
-  
-  <div class="forgot-password">
-    <a href="#" id="resetPassword">Forgot Password?</a>
-  </div>
-  
-  <button type="submit">Login</button>
+    <h2>Login</h2>
+    <input type="email" id="email" placeholder="Email" required>
+    <input type="password" id="password" placeholder="Password" required>
+    
+    <div class="forgot-password">
+        <a href="#" id="resetPassword">Forgot Password?</a>
+    </div>
+    
+    <button type="submit">Login</button>
 </form>
 </div>
 
@@ -163,7 +163,7 @@ auth.onAuthStateChanged((user) => {
         `;
         document.getElementById("logoutBtn").addEventListener("click", ()=>{
             auth.signOut();
-            sessionStorage.removeItem("current_user"); // auto logout on close
+            sessionStorage.removeItem("current_user");
             window.location.href = "login.html";
         });
     }
@@ -171,70 +171,55 @@ auth.onAuthStateChanged((user) => {
 
 // Login form handler
 document.getElementById("loginForm").addEventListener("submit", function(e){
-  e.preventDefault();
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
+    e.preventDefault();
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
 
-  auth.signInWithEmailAndPassword(email,password)
-  .then((userCredential)=>{
-    const user = userCredential.user;
+    auth.signInWithEmailAndPassword(email, password)
+    .then((userCredential)=>{
+        const user = userCredential.user;
 
-    if(!user.emailVerified){
-      alert("⚠️ Please verify your email before login.");
-      auth.signOut();
-      return;
-    }
+        if(!user.emailVerified){
+            alert("⚠️ Please verify your email before login.");
+            auth.signOut();
+            return;
+        }
 
-    // Update lastLogin timestamp
-    db.ref('users/' + user.uid).update({ lastLogin: Date.now() });
+        db.ref('users/' + user.uid).update({ lastLogin: Date.now() });
+        sessionStorage.setItem("current_user", user.uid);
 
-    sessionStorage.setItem("current_user", user.uid); // auto logout on browser close
-
-    alert("✅ Login successful!");
-    window.location.href = "friends.html";
-  })
-  .catch((error)=>{
-    alert("❌ " + error.message);
-  });
-});
-
-// Password Reset handler
-document.getElementById("resetPassword").addEventListener("click", function(e){
-  e.preventDefault();
-  const email = document.getElementById("email").value.trim();
-  if(!email){
-    alert("⚠️ Please enter your email above to reset password.");
-    return;
-  }
-  auth.sendPasswordResetEmail(email)
-    .then(()=>{
-      alert("📩 Password reset email sent. Check your inbox!");
+        alert("✅ Login successful!");
+        window.location.href = "friends.html";
     })
     .catch((error)=>{
-      alert("❌ " + error.message);
+        alert("❌ " + error.message);
     });
 });
 
-
-import { getAuth, sendPasswordResetEmail } from "firebase/auth";
-
-const auth = getAuth();
-
-// Define custom domain settings
-const actionCodeSettings = {
-  url: 'https://www.babushona.com/login', // Page to redirect back to
-  handleCodeInApp: true,
-};
-
-// Pass actionCodeSettings as the second argument
-sendPasswordResetEmail(auth, userEmail, actionCodeSettings)
-  .then(() => {
-    alert("Password reset email sent via www.babushona.com!");
-  })
-  .catch((error) => {
-    console.error(error);
-  });
+// Password Reset handler with custom GitHub reset.html link configuration
+document.getElementById("resetPassword").addEventListener("click", function(e){
+    e.preventDefault();
+    const email = document.getElementById("email").value.trim();
     
+    if(!email){
+        alert("⚠️ Please enter your email above to reset password.");
+        return;
+    }
+
+    // Custom domain action settings pointing to your GitHub reset page
+    const actionCodeSettings = {
+        url: 'https://www.babushona.com/reset.html',
+        handleCodeInApp: true,
+    };
+
+    auth.sendPasswordResetEmail(email, actionCodeSettings)
+        .then(()=>{
+            alert("📩 Password reset email sent via www.babushona.com! Check your inbox.");
+        })
+        .catch((error)=>{
+            alert("❌ " + error.message);
+        });
+});
 </script>
 
 </body>
