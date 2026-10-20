@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>babushona - Sign Up</title>
+<title>BabuShona - Sign Up</title>
 
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -118,7 +118,7 @@ footer {
 <body>
 
 <header>
-  <h1>babushona</h1>
+  <h1>BabuShona</h1>
   <nav id="navLinks"></nav>
 </header>
 
@@ -151,7 +151,7 @@ footer {
   </div>
 </main>
 
-<footer>&copy; 2025 babushona. All rights reserved.</footer>
+<footer>&copy; 2025 BabuShona. All rights reserved.</footer>
 
 <script>
 const firebaseConfig = {
@@ -234,7 +234,7 @@ document.getElementById('signupBtn').addEventListener('click', async function ()
     const uid = user.uid;
 
     // send verification email (redirects to login on click)
-    await user.sendEmailVerification({ url: 'https://babushona.com/login.html' });
+    await user.sendEmailVerification({ url: 'https://BabuShona.com/login.html' });
 
     // save public profile
     await db.ref(`users/${uid}/public`).set({
