@@ -214,6 +214,27 @@ document.getElementById("resetPassword").addEventListener("click", function(e){
       alert("❌ " + error.message);
     });
 });
+
+
+import { getAuth, sendPasswordResetEmail } from "firebase/auth";
+
+const auth = getAuth();
+
+// Define custom domain settings
+const actionCodeSettings = {
+  url: 'https://www.babushona.com/login', // Page to redirect back to
+  handleCodeInApp: true,
+};
+
+// Pass actionCodeSettings as the second argument
+sendPasswordResetEmail(auth, userEmail, actionCodeSettings)
+  .then(() => {
+    alert("Password reset email sent via www.babushona.com!");
+  })
+  .catch((error) => {
+    console.error(error);
+  });
+    
 </script>
 
 </body>
