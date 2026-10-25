@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
@@ -265,6 +265,48 @@ document.getElementById('signupBtn').addEventListener('click', async function ()
     btn.textContent = 'Sign Up';
   }
 });
+
+  
+async function createUniqueUsername(inputName, uid) {
+  const base = inputName
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, "")
+    .slice(0, 15);
+
+  if (!base) {
+    throw new Error("Please enter a valid username.");
+  }
+
+  const db = firebase.database();
+
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const candidate = attempt === 0
+      ? base
+      : base + Math.floor(1000 + Math.random() * 9000);
+
+    const ref = db.ref("usernames/" + candidate);
+
+    const result = await ref.transaction(currentValue => {
+      // Claim only if unused or already owned by this account.
+      if (currentValue === null || currentValue === uid) {
+        return uid;
+      }
+
+      // Abort if another account owns this username.
+      return;
+    });
+
+    if (result.committed) {
+      return candidate;
+    }
+  }
+
+  throw new Error(
+    "Could not generate an available username. Please try again."
+  );
+}
+
 </script>
 </body>
 </html>
