@@ -288,31 +288,34 @@ async function reserveUniqueUsername(name, uid) {
         throw new Error("Please choose a name without these characters: . # $ [ ] /");
     }
 
+    
     // Check existing profiles so older users are protected
     // even before the username index has been fully populated.
     const usersSnapshot = await db.ref("users").once("value");
 
     let duplicate = false;
-
+ 
     usersSnapshot.forEach(child => {
         if (child.key === uid) return;
 
-        const existingName = child.child("public/name").val();
+const existingName =
+        child.child("public/name").val() ||
+        child.child("public/displayName").val();
 
-        if (
-            typeof existingName === "string" &&
-            normalizeUsername(existingName) === normalized
-        ) {
-            duplicate = true;
-        }
-    });
-
-    if (duplicate) {
-        throw new Error(
-            "This name is already taken. Please choose another name."
-        );
+    if (
+        typeof existingName === "string" &&
+        normalizeUsername(existingName) === normalized
+    ) {
+        duplicate = true;
     }
+});
 
+if (duplicate) {
+    throw new Error(
+        "This name is already taken. Please choose another name."
+    );
+}
+        
     const ref = db.ref("usernames/" + usernameKey(cleanName));
 
     // Atomic reservation: only one UID can own this name.
