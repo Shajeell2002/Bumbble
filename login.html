@@ -557,15 +557,7 @@ document.getElementById("guestLoginButton")
             sessionStorage.setItem("guest_name", guestName);
             
             
-            await db.ref("users/" + user.uid).update({
-                isGuest: true,
-                lastLogin: Date.now()
-            });
-
-            sessionStorage.setItem("current_user", user.uid);
-            sessionStorage.setItem("guest_name", guestName);
-
-            showMessage(
+           showMessage(
                 "Welcome to BabuShona, " + guestName + "!",
                 "success"
             );
