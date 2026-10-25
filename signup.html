@@ -313,7 +313,7 @@ const uniqueName = await reserveUniqueUsername(name, uid);
 
     // save public profile
     await db.ref(`users/${uid}/public`).set({
-      name: name,
+      name: uniqueName,
       age: age || 'N/A',
       gender: gender || '',
       location: location || '',
