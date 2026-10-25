@@ -3,12 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>BabuShona - Login</title>
+<meta name="description" content="Log in or join BabuShona to meet people, make friends and connect.">
+
 <style>
+* {
+    box-sizing: border-box;
+}
+
 body {
     font-family: Arial, sans-serif;
     margin: 0;
-    background: #b39ddb; /* Lavender background */
+    background: #b39ddb;
     display: flex;
     flex-direction: column;
     min-height: 100vh;
@@ -16,86 +23,223 @@ body {
 
 /* Header */
 header {
-    background: #b39ddb; /* Lavender header */
+    background: #b39ddb;
     color: white;
     padding: 15px 30px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
     box-shadow: 0 3px 6px rgba(0,0,0,0.1);
 }
-header h1 { margin:0; font-size:24px; font-weight:bold; color:white; }
-nav a { margin:0 10px; text-decoration:none; color:white; font-weight:500; }
-nav a:hover { text-decoration:underline; }
 
-/* Container */
+header h1 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: bold;
+    color: white;
+}
+
+nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+nav a {
+    text-decoration: none;
+    color: white;
+    font-weight: 500;
+}
+
+nav a:hover {
+    text-decoration: underline;
+}
+
+/* Main area */
 .container {
     display: flex;
     justify-content: center;
     align-items: center;
     flex: 1;
-    padding-top: 50px;
+    padding: 35px 15px;
 }
 
-/* Login Form */
+/* Login card */
 .login-form {
-    background: #fff;
-    padding: 30px;
-    border-radius: 15px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    background: white;
+    padding: 32px;
+    border-radius: 18px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.13);
     width: 100%;
-    max-width: 400px;
+    max-width: 420px;
     display: flex;
     flex-direction: column;
     gap: 15px;
 }
+
 .login-form h2 {
     text-align: center;
-    margin-bottom: 10px;
+    margin: 0;
     color: #4a2e8e;
+    font-size: 27px;
 }
+
+.subtitle {
+    text-align: center;
+    color: #666;
+    line-height: 1.5;
+    margin: 0 0 5px;
+}
+
 .login-form input {
-    padding: 12px;
+    width: 100%;
+    padding: 13px;
     border-radius: 8px;
     border: 1px solid #ccc;
     font-size: 16px;
 }
+
+.login-form input:focus {
+    outline: 2px solid #b39ddb;
+    border-color: #4a2e8e;
+}
+
 .login-form button {
-    padding: 12px;
+    width: 100%;
+    padding: 13px;
     border: none;
     border-radius: 8px;
     background: #4a2e8e;
-    font-size: 18px;
+    color: white;
+    font-size: 17px;
     font-weight: bold;
     cursor: pointer;
-    color: white;
+    transition: background 0.2s;
 }
+
 .login-form button:hover {
-    transform: scale(1.05);
+    background: #38216e;
 }
+
+.login-form button:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+/* Password reset */
 .forgot-password {
     text-align: right;
     font-size: 14px;
     margin-top: -5px;
 }
+
 .forgot-password a {
     color: #4a2e8e;
     text-decoration: none;
     font-weight: bold;
 }
-.forgot-password a:hover { text-decoration: underline; }
+
+/* Divider */
+.divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #888;
+    font-size: 13px;
+}
+
+.divider::before,
+.divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #ddd;
+}
+
+/* Guest login */
+.guest-button {
+    background: #8e44ad !important;
+}
+
+.guest-button:hover {
+    background: #71368a !important;
+}
+
+.guest-note {
+    font-size: 12px;
+    text-align: center;
+    color: #777;
+    line-height: 1.5;
+}
+
+.register-note {
+    text-align: center;
+    font-size: 14px;
+    color: #555;
+}
+
+.register-note a {
+    color: #4a2e8e;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+/* Status message */
+#statusMessage {
+    display: none;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+#statusMessage.error {
+    display: block;
+    background: #ffebee;
+    color: #b71c1c;
+}
+
+#statusMessage.success {
+    display: block;
+    background: #e8f5e9;
+    color: #1b5e20;
+}
 
 /* Footer */
 footer {
     text-align: center;
-    padding: 20px;
+    padding: 18px;
     background: #b39ddb;
     color: white;
     margin-top: auto;
 }
+
+footer p {
+    margin: 0;
+}
+
+@media (max-width: 600px) {
+    header {
+        justify-content: center;
+        text-align: center;
+        padding: 15px;
+    }
+
+    nav {
+        justify-content: center;
+        gap: 12px;
+    }
+
+    .login-form {
+        padding: 25px 20px;
+    }
+}
 </style>
 
-<!-- Firebase SDK (Compat Version matching your code style) -->
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -103,22 +247,27 @@ footer {
 <script>
 const firebaseConfig = {
     apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
-  authDomain: "[www.babushona.com](https://www.babushona.com)",
-      databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
-      projectId: "bumbble-c061f",
-      storageBucket: "bumbble-c061f.appspot.com",
-  messagingSenderId: "213165886981",
-  appId: "1:213165886981:web:c18652003444869b1bd66c"
+    authDomain: "bumbble-c061f.firebaseapp.com",
+    databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
+    projectId: "bumbble-c061f",
+    storageBucket: "bumbble-c061f.appspot.com",
+    messagingSenderId: "213165886981",
+    appId: "1:213165886981:web:c18652003444869b1bd66c"
 };
+
 firebase.initializeApp(firebaseConfig);
+
 const auth = firebase.auth();
 const db = firebase.database();
 </script>
+
 </head>
+
 <body>
 
 <header>
-    <h1>BabuShona</h1>
+    <h1>BabuShona 💜</h1>
+
     <nav id="navLinks">
         <a href="index.html">Home</a>
         <a href="friends.html">Friends</a>
@@ -129,97 +278,378 @@ const db = firebase.database();
     </nav>
 </header>
 
-<div class="container">
+<main class="container">
+
 <form class="login-form" id="loginForm">
-    <h2>Login</h2>
-    <input type="email" id="email" placeholder="Email" required>
-    <input type="password" id="password" placeholder="Password" required>
-    
+
+    <h2>Welcome to BabuShona!</h2>
+
+    <p class="subtitle">
+        Meet new people, make friends and connect. 💜
+    </p>
+
+    <div id="statusMessage" role="status" aria-live="polite"></div>
+
+    <!-- OPTION 1: EMAIL LOGIN -->
+
+    <input
+        type="email"
+        id="email"
+        placeholder="Email address"
+        autocomplete="email"
+        aria-label="Email address"
+        required
+    >
+
+    <input
+        type="password"
+        id="password"
+        placeholder="Password"
+        autocomplete="current-password"
+        aria-label="Password"
+        required
+    >
+
     <div class="forgot-password">
         <a href="#" id="resetPassword">Forgot Password?</a>
     </div>
-    
-    <button type="submit">Login</button>
+
+    <button type="submit" id="loginButton">
+        Login with Email
+    </button>
+
+    <div class="divider">OR</div>
+
+    <!-- OPTION 2: GUEST LOGIN -->
+
+    <input
+        type="text"
+        id="guestName"
+        placeholder="Enter your name"
+        maxlength="30"
+        minlength="2"
+        autocomplete="nickname"
+        aria-label="Guest name"
+    >
+
+    <button
+        type="button"
+        class="guest-button"
+        id="guestLoginButton"
+    >
+        Continue as Guest
+    </button>
+
+    <p class="guest-note">
+        No email or password required.
+        Enter a name to continue as a guest.
+    </p>
+
+    <div class="register-note">
+        New to BabuShona?
+        <a href="signup.html">Create an account</a>
+    </div>
+
 </form>
-</div>
+
+</main>
 
 <footer>
-<p>&copy; 2025 BabuShona. All rights reserved.</p>
+    <p>&copy; 2026 BabuShona. All rights reserved.</p>
 </footer>
 
 <script>
-// Update header dynamically based on auth state
+
+/* --------------------------------------------------
+   STATUS MESSAGE
+-------------------------------------------------- */
+
+const statusMessage = document.getElementById("statusMessage");
+
+function showMessage(message, type = "error") {
+    statusMessage.textContent = message;
+    statusMessage.className = type;
+}
+
+function clearMessage() {
+    statusMessage.textContent = "";
+    statusMessage.className = "";
+}
+
+/* --------------------------------------------------
+   NAVIGATION FOR AUTHENTICATED USERS
+-------------------------------------------------- */
+
 const nav = document.getElementById("navLinks");
-auth.onAuthStateChanged((user) => {
-    if(user && user.emailVerified){
+
+auth.onAuthStateChanged(function(user) {
+
+    if (!user) {
+        return;
+    }
+
+    // Guests and verified registered members can continue.
+    if (user.isAnonymous || user.emailVerified) {
+
         nav.innerHTML = `
             <a href="index.html">Home</a>
             <a href="friends.html">Friends</a>
             <a href="stories.html">Stories</a>
-            <a href="events.html">Events</a>
             <a href="safety.html">Safety</a>
-            <a href="profile.html">Profile</a>
             <a href="#" id="logoutBtn">Logout</a>
         `;
-        document.getElementById("logoutBtn").addEventListener("click", ()=>{
-            auth.signOut();
-            sessionStorage.removeItem("current_user");
-            window.location.href = "login.html";
-        });
+
+        document.getElementById("logoutBtn")
+            .addEventListener("click", async function(e) {
+
+                e.preventDefault();
+
+                try {
+                    sessionStorage.removeItem("current_user");
+                    sessionStorage.removeItem("guest_name");
+
+                    await auth.signOut();
+
+                    window.location.href = "login.html";
+
+                } catch (error) {
+                    showMessage("Unable to log out. Please try again.");
+                }
+            });
     }
 });
 
-// Login form handler
-document.getElementById("loginForm").addEventListener("submit", function(e){
-    e.preventDefault();
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
+/* --------------------------------------------------
+   OPTION 1: EMAIL AND PASSWORD LOGIN
+-------------------------------------------------- */
 
-    auth.signInWithEmailAndPassword(email, password)
-    .then((userCredential)=>{
-        const user = userCredential.user;
+document.getElementById("loginForm")
+    .addEventListener("submit", async function(e) {
 
-        if(!user.emailVerified){
-            alert("⚠️ Please verify your email before login.");
-            auth.signOut();
+        e.preventDefault();
+        clearMessage();
+
+        const email = document.getElementById("email")
+            .value.trim();
+
+        const password = document.getElementById("password").value;
+
+        const loginButton = document.getElementById("loginButton");
+        const guestButton = document.getElementById("guestLoginButton");
+
+        loginButton.disabled = true;
+        guestButton.disabled = true;
+
+        loginButton.textContent = "Logging in...";
+
+        try {
+
+            const result = await auth.signInWithEmailAndPassword(
+                email,
+                password
+            );
+
+            const user = result.user;
+
+            if (!user.emailVerified) {
+
+                await auth.signOut();
+
+                showMessage(
+                    "Please verify your email address before logging in."
+                );
+
+                return;
+            }
+
+            await db.ref("users/" + user.uid).update({
+                lastLogin: Date.now()
+            });
+
+            sessionStorage.setItem("current_user", user.uid);
+            sessionStorage.removeItem("guest_name");
+
+            showMessage("Login successful! Welcome back.", "success");
+
+            window.location.href = "friends.html";
+
+        } catch (error) {
+
+            console.error("Email login error:", error);
+
+            showMessage(
+                "Login failed: " + error.message
+            );
+
+        } finally {
+
+            loginButton.disabled = false;
+            guestButton.disabled = false;
+
+            loginButton.textContent = "Login with Email";
+        }
+    });
+
+/* --------------------------------------------------
+   OPTION 2: GUEST LOGIN WITHOUT EMAIL
+-------------------------------------------------- */
+
+document.getElementById("guestLoginButton")
+    .addEventListener("click", async function() {
+
+        clearMessage();
+
+        const guestName = document.getElementById("guestName")
+            .value.trim();
+
+        const guestButton = document.getElementById("guestLoginButton");
+        const loginButton = document.getElementById("loginButton");
+
+        if (guestName.length < 2) {
+            showMessage("Please enter a name with at least 2 characters.");
+            document.getElementById("guestName").focus();
             return;
         }
 
-        db.ref('users/' + user.uid).update({ lastLogin: Date.now() });
-        sessionStorage.setItem("current_user", user.uid);
+        if (guestName.length > 30) {
+            showMessage("Your guest name cannot exceed 30 characters.");
+            return;
+        }
 
-        alert("✅ Login successful!");
-        window.location.href = "friends.html";
-    })
-    .catch((error)=>{
-        alert("❌ " + error.message);
+        // Avoid invisible control characters in display names.
+        if (/[\u0000-\u001F\u007F]/.test(guestName)) {
+            showMessage("Please enter a valid guest name.");
+            return;
+        }
+
+        guestButton.disabled = true;
+        loginButton.disabled = true;
+        guestButton.textContent = "Please wait...";
+
+        try {
+
+            /*
+             * If already signed in anonymously, reuse that account.
+             * Otherwise create a Firebase anonymous account.
+             */
+            let user = auth.currentUser;
+
+            if (!user || !user.isAnonymous) {
+
+                const result = await auth.signInAnonymously();
+                user = result.user;
+            }
+
+            /*
+             * Save a minimal guest identity in the existing database.
+             * This does not grant access to member profiles.
+             */
+            await db.ref("users/" + user.uid + "/public").update({
+                name: guestName,
+                displayName: guestName,
+                isGuest: true
+            });
+
+            await db.ref("users/" + user.uid).update({
+                isGuest: true,
+                lastLogin: Date.now()
+            });
+
+            sessionStorage.setItem("current_user", user.uid);
+            sessionStorage.setItem("guest_name", guestName);
+
+            showMessage(
+                "Welcome to BabuShona, " + guestName + "!",
+                "success"
+            );
+
+            /*
+             * Continue to the existing friends page.
+             * Guest permissions must also be enforced there
+             * and in Firebase Database security rules.
+             */
+            window.location.href = "friends.html";
+
+        } catch (error) {
+
+            console.error("Guest login error:", error);
+
+            if (error.code === "auth/operation-not-allowed") {
+
+                showMessage(
+                    "Guest login is not enabled. Enable Anonymous " +
+                    "Authentication in your Firebase Console."
+                );
+
+            } else if (
+                error.code === "PERMISSION_DENIED" ||
+                error.code === "database/permission-denied"
+            ) {
+
+                showMessage(
+                    "Firebase denied access to the guest profile. " +
+                    "Your database security rules need to be checked."
+                );
+
+            } else {
+
+                showMessage(
+                    "Guest login failed: " + error.message
+                );
+            }
+
+        } finally {
+
+            guestButton.disabled = false;
+            loginButton.disabled = false;
+
+            guestButton.textContent = "Continue as Guest";
+        }
     });
-});
 
-// Password Reset handler with custom GitHub reset.html link configuration
-document.getElementById("resetPassword").addEventListener("click", function(e){
-    e.preventDefault();
-    const email = document.getElementById("email").value.trim();
-    
-    if(!email){
-        alert("⚠️ Please enter your email above to reset password.");
-        return;
-    }
+/* --------------------------------------------------
+   FORGOT PASSWORD
+-------------------------------------------------- */
 
-    // Custom domain action settings pointing to your GitHub reset page
-    const actionCodeSettings = {
-        url: 'https://www.babushona.com/reset.html',
-        handleCodeInApp: true,
-    };
+document.getElementById("resetPassword")
+    .addEventListener("click", async function(e) {
 
-    auth.sendPasswordResetEmail(email, actionCodeSettings)
-        .then(()=>{
-            alert("📩 Password reset email sent via www.babushona.com! Check your inbox.");
-        })
-        .catch((error)=>{
-            alert("❌ " + error.message);
-        });
-});
+        e.preventDefault();
+        clearMessage();
+
+        const email = document.getElementById("email")
+            .value.trim();
+
+        if (!email) {
+            showMessage(
+                "Please enter your email address before requesting a password reset."
+            );
+
+            document.getElementById("email").focus();
+            return;
+        }
+
+        try {
+
+            await auth.sendPasswordResetEmail(email, {
+                url: "https://www.babushona.com/login.html"
+            });
+
+            showMessage(
+                "If the account is eligible, a password reset email has been sent. Please check your inbox.",
+                "success"
+            );
+
+        } catch (error) {
+
+            console.error("Password reset error:", error);
+
+            showMessage(
+                "Unable to send the password reset email: " + error.message
+            );
+        }
+    });
+
 </script>
 
 </body>
