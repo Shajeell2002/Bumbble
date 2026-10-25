@@ -633,13 +633,29 @@ document.getElementById("guestLoginButton")
              */
 
             
-            // Save the guest's public profile.
-          await db.ref("users/" + user.uid + "/public").update({
-    name: guestName,
-    displayName: guestName,
+       
+const cleanGuestName = await reserveUniqueUsername(
+    guestName,
+    user.uid
+);
+
+await db.ref("users/" + user.uid + "/public").update({
+    name: cleanGuestName,
+    displayName: cleanGuestName,
     isGuest: true,
     lastLogin: Date.now()
-});            
+});
+
+sessionStorage.setItem("current_user", user.uid);
+sessionStorage.setItem("guest_name", cleanGuestName);
+
+showMessage(
+    "Welcome to BabuShona, " + cleanGuestName + "!",
+    "success"
+);
+
+window.location.href = "friends.html";
+        
             sessionStorage.setItem("current_user", user.uid);
             sessionStorage.setItem("guest_name", guestName);
             
