@@ -545,13 +545,18 @@ document.getElementById("guestLoginButton")
              * This does not grant access to member profiles.
              */
 
-            // Save the guest's public profile
-await db.ref("users/" + user.uid + "/public").update({
-    name: guestName,
-    displayName: guestName,
-    isGuest: true
-});
+             // Save the guest's public profile
+            await db.ref("users/" + user.uid + "/public").update({
+                name: guestName,
+                displayName: guestName,
+                isGuest: true,
+                lastLogin: Date.now()
+            });
 
+            sessionStorage.setItem("current_user", user.uid);
+            sessionStorage.setItem("guest_name", guestName);
+            
+            
             await db.ref("users/" + user.uid).update({
                 isGuest: true,
                 lastLogin: Date.now()
