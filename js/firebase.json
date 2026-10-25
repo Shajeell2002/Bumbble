@@ -1,0 +1,12 @@
+
+{
+  "hosting": {
+    "site": "bumbble-c061f",
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}
