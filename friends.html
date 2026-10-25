@@ -195,7 +195,7 @@
     // ── Firebase Init ──────────────────────────────────────────────────────────
     const firebaseConfig = {
       apiKey: "AIzaSyBkDyP8KPuQc_knXLH9lhtQWDLb59xRJWs",
-      authDomain: "[www.babushona.com](https://www.babushona.com)",
+      authDomain: "bumbble-c061f.firebaseapp.com",
       databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
       projectId: "bumbble-c061f",
       storageBucket: "bumbble-c061f.appspot.com",
@@ -325,7 +325,7 @@
 
     // ── Auth ───────────────────────────────────────────────────────────────────
    auth.onAuthStateChanged(user => {
-  if (user && user.emailVerified) {
+  if (user && (user.isAnonymous || user.emailVerified)) {
     currentUserUid = user.uid;
     listenCallEnd();
             nav.innerHTML = `
