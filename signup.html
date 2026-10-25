@@ -166,85 +166,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
-  
-function normalizeUsername(name) {
-    return name.trim()
-        .normalize("NFKC")
-        .replace(/\s+/g, " ")
-        .toLowerCase();
-}
-
-function usernameKey(name) {
-    // Encode special characters so the name is safe as a database key.
-    return encodeURIComponent(normalizeUsername(name))
-        .replace(/\./g, "%2E");
-}
-
-async function reserveUniqueUsername(name, uid) {
-    const cleanName = name.trim()
-        .normalize("NFKC")
-        .replace(/\s+/g, " ");
-
-    const normalized = normalizeUsername(cleanName);
-
-    if (cleanName.length < 2 || cleanName.length > 30) {
-        throw new Error("Name must be between 2 and 30 characters.");
-    }
-
-    if (/[\u0000-\u001F\u007F.#$\[\]\/]/.test(cleanName)) {
-        throw new Error("Please choose a name without these characters: . # $ [ ] /");
-    }
-
-    // Check existing profiles so older users are protected
-    // even before the username index has been fully populated.
-    const usersSnapshot = await db.ref("users").once("value");
-
-    let duplicate = false;
-
- const usersSnapshot = await db.ref("users").once("value");
-
-let duplicate = false;
-
-usersSnapshot.forEach(child => {
-    if (child.key === uid) return;
-
-    const existingName =
-        child.child("public/name").val() ||
-        child.child("public/displayName").val();
-
-    if (
-        typeof existingName === "string" &&
-        normalizeUsername(existingName) === normalized
-    ) {
-        duplicate = true;
-    }
-});
-
-if (duplicate) {
-    throw new Error(
-        "This name is already taken. Please choose another name."
-    );
-}
-    const ref = db.ref("usernames/" + usernameKey(cleanName));
-
-    // Atomic reservation: only one UID can own this name.
-    const result = await ref.transaction(currentValue => {
-        if (currentValue !== null && currentValue !== uid) {
-            return; // Abort transaction
-        }
-
-        return uid;
-    });
-
-    if (!result.committed) {
-        throw new Error(
-            "This name is already taken. Please choose another name."
-        );
-    }
-
-    return cleanName;
-}
-
 
 /* Nav Update (same logic as your working code) */
 const nav = document.getElementById('navLinks');
@@ -311,14 +232,13 @@ document.getElementById('signupBtn').addEventListener('click', async function ()
     const cred = await auth.createUserWithEmailAndPassword(email, password);
     const user = cred.user;
     const uid = user.uid;
-const uniqueName = await reserveUniqueUsername(name, uid);
-    
+
     // send verification email (redirects to login on click)
     await user.sendEmailVerification({ url: 'https://BabuShona.com/login.html' });
 
     // save public profile
     await db.ref(`users/${uid}/public`).set({
-      name: uniqueName,
+      name: name,
       age: age || 'N/A',
       gender: gender || '',
       location: location || '',
