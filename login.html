@@ -382,9 +382,22 @@ function clearMessage() {
 
 const nav = document.getElementById("navLinks");
 
+
 auth.onAuthStateChanged(function(user) {
 
     if (!user) {
+        return;
+    }
+
+    // If this user already has an active BabuShona session,
+    // do not show the login page again.
+    const savedUser = sessionStorage.getItem("current_user");
+
+    if (
+        savedUser === user.uid &&
+        (user.isAnonymous || user.emailVerified)
+    ) {
+        window.location.replace("friends.html");
         return;
     }
 
