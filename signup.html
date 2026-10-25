@@ -306,7 +306,8 @@ document.getElementById('signupBtn').addEventListener('click', async function ()
     const cred = await auth.createUserWithEmailAndPassword(email, password);
     const user = cred.user;
     const uid = user.uid;
-
+const uniqueName = await reserveUniqueUsername(name, uid);
+    
     // send verification email (redirects to login on click)
     await user.sendEmailVerification({ url: 'https://BabuShona.com/login.html' });
 
