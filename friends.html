@@ -455,71 +455,42 @@ function initUsersListener() {
     }
 
     // ── Friends List ───────────────────────────────────────────────────────────
+    function listenFriendsList() {
+      db.ref(`friends/${currentUserUid}`).on("value", snapshot => {
+        const list = document.getElementById("friendsList");
+        list.innerHTML = "";
 
-function listenFriendsList() {
-  const list = document.getElementById("friendsList");
+        if (!snapshot.exists()) {
+          list.innerHTML = "<li>No friends yet</li>";
+          return;
+        }
 
-  db.ref(`friends/${currentUserUid}`).on(
-    "value",
-    async snapshot => {
-      list.innerHTML = "";
+        const uniqueFriends = [...new Set(Object.keys(snapshot.val()))];
 
-      if (!snapshot.exists()) {
-        list.innerHTML = "<li>No friends yet</li>";
-        return;
-      }
+        uniqueFriends.forEach(friendUid => {
+          // FIX: cachedUsers may not be populated yet; use optional chaining safely
+          const name = cachedUsers?.[friendUid]?.public?.name || "Unknown User";
 
-      const friendUids = Object.keys(snapshot.val()).filter(
-        uid => snapshot.child(uid).val() === true
-      );
-
-      if (friendUids.length === 0) {
-        list.innerHTML = "<li>No friends yet</li>";
-        return;
-      }
-
-      for (const friendUid of friendUids) {
-        const li = document.createElement("li");
-        const nameSpan = document.createElement("span");
-        const viewBtn = document.createElement("button");
-
-        nameSpan.textContent = "Loading profile...";
-        li.appendChild(nameSpan);
-
-        viewBtn.textContent = "View";
-        viewBtn.className = "view";
-        viewBtn.onclick = () => {
-          window.location.href =
-            `profile.html?uid=${encodeURIComponent(friendUid)}`;
-        };
-        li.appendChild(viewBtn);
-        list.appendChild(li);
-
-        try {
-          const profileSnap = await db
-            .ref(`users/${friendUid}/public`)
-            .once("value");
-
-          const profile = profileSnap.val() || {};
-          const name = profile.name || profile.displayName || "Unknown User";
-
+          const li       = document.createElement("li");
+          const nameSpan = document.createElement("span");
           nameSpan.textContent = name;
           nameSpan.style.cursor = "pointer";
           nameSpan.onclick = () => openChat(friendUid, name);
 
-          cachedUsers[friendUid] = { public: profile };
-        } catch (error) {
-          console.error("Friend profile load failed:", friendUid, error);
-          nameSpan.textContent = "Profile unavailable";
-        }
-      }
-    },
-    error => {
-      console.error("Friend list read failed:", error);
-      list.innerHTML = "<li>Unable to load friends. Check permissions.</li>";
+          const viewBtn       = document.createElement("button");
+          viewBtn.textContent = "View";
+          viewBtn.className   = "view";
+          viewBtn.onclick = (e) => {
+            e.stopPropagation();
+            window.location.href = `profile.html?uid=${friendUid}`;
+          };
+
+          li.appendChild(nameSpan);
+          li.appendChild(viewBtn);
+          list.appendChild(li);
+        });
+      });
     }
-  );
-}
 
     // ── Unread Badges ──────────────────────────────────────────────────────────
     function setupUnreadListener() {
