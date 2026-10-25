@@ -201,25 +201,30 @@ async function reserveUniqueUsername(name, uid) {
 
     let duplicate = false;
 
-    usersSnapshot.forEach(child => {
-        if (child.key === uid) return;
+ const usersSnapshot = await db.ref("users").once("value");
 
-        const existingName = child.child("public/name").val();
+let duplicate = false;
 
-        if (
-            typeof existingName === "string" &&
-            normalizeUsername(existingName) === normalized
-        ) {
-            duplicate = true;
-        }
-    });
+usersSnapshot.forEach(child => {
+    if (child.key === uid) return;
 
-    if (duplicate) {
-        throw new Error(
-            "This name is already taken. Please choose another name."
-        );
+    const existingName =
+        child.child("public/name").val() ||
+        child.child("public/displayName").val();
+
+    if (
+        typeof existingName === "string" &&
+        normalizeUsername(existingName) === normalized
+    ) {
+        duplicate = true;
     }
+});
 
+if (duplicate) {
+    throw new Error(
+        "This name is already taken. Please choose another name."
+    );
+}
     const ref = db.ref("usernames/" + usernameKey(cleanName));
 
     // Atomic reservation: only one UID can own this name.
