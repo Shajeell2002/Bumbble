@@ -462,7 +462,7 @@ document.getElementById("loginForm")
                 return;
             }
 
-            await db.ref("users/" + user.uid).update({
+            db.ref("users/" + user.uid + "/public").update
                 lastLogin: Date.now()
             });
 
