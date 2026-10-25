@@ -544,11 +544,13 @@ document.getElementById("guestLoginButton")
              * Save a minimal guest identity in the existing database.
              * This does not grant access to member profiles.
              */
-            await db.ref("users/" + user.uid + "/public").update({
-                name: guestName,
-                displayName: guestName,
-                isGuest: true
-            });
+
+            // Save the guest's public profile
+await db.ref("users/" + user.uid + "/public").update({
+    name: guestName,
+    displayName: guestName,
+    isGuest: true
+});
 
             await db.ref("users/" + user.uid).update({
                 isGuest: true,
