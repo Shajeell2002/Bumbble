@@ -462,9 +462,9 @@ document.getElementById("loginForm")
                 return;
             }
 
-            db.ref("users/" + user.uid + "/public").update
-                lastLogin: Date.now()
-            });
+           await db.ref("users/" + user.uid + "/public").update({
+    lastLogin: Date.now()
+});
 
             sessionStorage.setItem("current_user", user.uid);
             sessionStorage.removeItem("guest_name");
@@ -547,18 +547,12 @@ document.getElementById("guestLoginButton")
 
             
             // Save the guest's public profile.
-            // All writes stay inside /public, as allowed by your rules.
-            await db.ref("users/" + user.uid + "/public").update({
-                name: guestName,
-                displayName: guestName,
-                isGuest: true,
-                lastLogin: Date.now()
-            });
-await db.ref("users/" + user.uid).update({
+          await db.ref("users/" + user.uid + "/public").update({
+    name: guestName,
+    displayName: guestName,
     isGuest: true,
     lastLogin: Date.now()
-});
-            
+});            
             sessionStorage.setItem("current_user", user.uid);
             sessionStorage.setItem("guest_name", guestName);
             
