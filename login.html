@@ -157,7 +157,44 @@ nav a:hover {
     height: 1px;
     background: #ddd;
 }
+async function reserveUniqueUsername(requestedName, uid) {
+  const base = requestedName
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, "")
+    .slice(0, 15);
 
+  if (!base) {
+    throw new Error("Please enter a valid guest name.");
+  }
+
+  const db = firebase.database();
+
+  for (let attempt = 0; attempt < 30; attempt++) {
+    const suffix = Math.floor(1000 + Math.random() * 9000);
+
+    const candidate =
+      attempt === 0 ? base : base + suffix;
+
+    const ref = db.ref("usernames/" + candidate);
+
+    const result = await ref.transaction(current => {
+      if (current === null || current === uid) {
+        return uid;
+      }
+
+      return;
+    });
+
+    if (result.committed) {
+      return candidate;
+    }
+  }
+
+  throw new Error(
+    "Unable to find an available username. Please try again."
+  );
+}
 /* Guest login */
 .guest-button {
     background: #8e44ad !important;
@@ -319,6 +356,74 @@ const db = firebase.database();
     </button>
 
     <div class="divider">OR</div>
+
+/* Reserve a unique username for a guest */
+async function reserveUniqueUsername(requestedName, uid) {
+    const base = requestedName
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, "")
+        .slice(0, 15);
+
+    if (base.length < 2) {
+        throw new Error(
+            "Please enter a name with at least 2 valid letters or numbers."
+        );
+    }
+
+    // Check existing profiles so older users are included
+    // even if they have not yet been added to the usernames index.
+    const usersSnapshot = await db.ref("users").once("value");
+    const existingNames = new Set();
+
+    usersSnapshot.forEach(function(userSnapshot) {
+        if (userSnapshot.key === uid) return;
+
+        const profile = userSnapshot.child("public").val() || {};
+
+        [profile.username, profile.name, profile.displayName]
+            .forEach(function(name) {
+                if (typeof name === "string" && name.trim()) {
+                    const normalized = name
+                        .trim()
+                        .toLowerCase()
+                        .replace(/[^a-z0-9_]/g, "")
+                        .slice(0, 15);
+
+                    if (normalized) existingNames.add(normalized);
+                }
+            });
+    });
+
+    for (let attempt = 0; attempt < 50; attempt++) {
+        const suffix = Math.floor(1000 + Math.random() * 9000);
+
+        const candidate = attempt === 0
+            ? base
+            : base + suffix;
+
+        // Do not reuse a name already present in existing profiles.
+        if (existingNames.has(candidate)) continue;
+
+        const ref = db.ref("usernames/" + candidate);
+
+        const result = await ref.transaction(function(current) {
+            if (current === null || current === uid) {
+                return uid;
+            }
+
+            return; // Abort if another user owns this name.
+        });
+
+        if (result.committed) {
+            return candidate;
+        }
+    }
+
+    throw new Error(
+        "Could not find an available username. Please try a different name."
+    );
+}
 
     <!-- OPTION 2: GUEST LOGIN -->
 
@@ -507,8 +612,120 @@ document.getElementById("loginForm")
    OPTION 2: GUEST LOGIN WITHOUT EMAIL
 -------------------------------------------------- */
 
+
+/* OPTION 2: GUEST LOGIN WITHOUT EMAIL */
+
 document.getElementById("guestLoginButton")
     .addEventListener("click", async function() {
+
+        clearMessage();
+
+        const guestName = document.getElementById("guestName")
+            .value.trim();
+
+        const guestButton = document.getElementById("guestLoginButton");
+        const loginButton = document.getElementById("loginButton");
+
+        if (guestName.length < 2 || guestName.length > 30) {
+            showMessage("Please enter a name between 2 and 30 characters.");
+            document.getElementById("guestName").focus();
+            return;
+        }
+
+        if (/[\u0000-\u001F\u007F]/.test(guestName)) {
+            showMessage("Please enter a valid guest name.");
+            return;
+        }
+
+        guestButton.disabled = true;
+        loginButton.disabled = true;
+        guestButton.textContent = "Checking username...";
+
+        let reservedUsername = null;
+        let guestUid = null;
+
+        try {
+            let user = auth.currentUser;
+
+            if (!user || !user.isAnonymous) {
+                const result = await auth.signInAnonymously();
+                user = result.user;
+            }
+
+            guestUid = user.uid;
+
+            // Claim a unique username before saving the profile.
+            reservedUsername = await reserveUniqueUsername(
+                guestName,
+                user.uid
+            );
+
+            await db.ref("users/" + user.uid + "/public").update({
+                name: reservedUsername,
+                displayName: reservedUsername,
+                username: reservedUsername,
+                isGuest: true,
+                lastLogin: Date.now()
+            });
+
+            sessionStorage.setItem("current_user", user.uid);
+            sessionStorage.setItem("guest_name", reservedUsername);
+
+            if (
+                reservedUsername.toLowerCase() !==
+                guestName.toLowerCase()
+            ) {
+                showMessage(
+                    "That name was unavailable. Your guest username is " +
+                    reservedUsername + ".",
+                    "success"
+                );
+            } else {
+                showMessage(
+                    "Welcome to BabuShona, " + reservedUsername + "!",
+                    "success"
+                );
+            }
+
+            window.location.href = "friends.html";
+
+        } catch (error) {
+            console.error("Guest login error:", error);
+
+            // Release the reservation if profile saving failed.
+            if (reservedUsername && guestUid) {
+                try {
+                    const ref = db.ref(
+                        "usernames/" + reservedUsername
+                    );
+
+                    await ref.transaction(function(current) {
+                        return current === guestUid ? null : undefined;
+                    });
+                } catch (cleanupError) {
+                    console.error(
+                        "Username reservation cleanup failed:",
+                        cleanupError
+                    );
+                }
+            }
+
+            if (error.code === "auth/operation-not-allowed") {
+                showMessage(
+                    "Guest login is not enabled in Firebase Authentication."
+                );
+            } else {
+                showMessage(
+                    "Guest login failed: " + error.message
+                );
+            }
+
+        } finally {
+            guestButton.disabled = false;
+            loginButton.disabled = false;
+            guestButton.textContent = "Continue as Guest";
+        }
+    });
 
         clearMessage();
 
