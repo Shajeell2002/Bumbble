@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,9 +9,7 @@
 <meta name="description" content="Log in or join BabuShona to meet people, make friends and connect.">
 
 <style>
-* {
-    box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
     font-family: Arial, sans-serif;
@@ -21,7 +20,6 @@ body {
     min-height: 100vh;
 }
 
-/* Header */
 header {
     background: #b39ddb;
     color: white;
@@ -53,11 +51,8 @@ nav a {
     font-weight: 500;
 }
 
-nav a:hover {
-    text-decoration: underline;
-}
+nav a:hover { text-decoration: underline; }
 
-/* Main area */
 .container {
     display: flex;
     justify-content: center;
@@ -66,7 +61,6 @@ nav a:hover {
     padding: 35px 15px;
 }
 
-/* Login card */
 .login-form {
     background: white;
     padding: 32px;
@@ -119,16 +113,13 @@ nav a:hover {
     transition: background 0.2s;
 }
 
-.login-form button:hover {
-    background: #38216e;
-}
+.login-form button:hover { background: #38216e; }
 
 .login-form button:disabled {
     opacity: 0.65;
     cursor: not-allowed;
 }
 
-/* Password reset */
 .forgot-password {
     text-align: right;
     font-size: 14px;
@@ -141,7 +132,6 @@ nav a:hover {
     font-weight: bold;
 }
 
-/* Divider */
 .divider {
     display: flex;
     align-items: center;
@@ -157,45 +147,7 @@ nav a:hover {
     height: 1px;
     background: #ddd;
 }
-async function reserveUniqueUsername(requestedName, uid) {
-  const base = requestedName
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_]/g, "")
-    .slice(0, 15);
 
-  if (!base) {
-    throw new Error("Please enter a valid guest name.");
-  }
-
-  const db = firebase.database();
-
-  for (let attempt = 0; attempt < 30; attempt++) {
-    const suffix = Math.floor(1000 + Math.random() * 9000);
-
-    const candidate =
-      attempt === 0 ? base : base + suffix;
-
-    const ref = db.ref("usernames/" + candidate);
-
-    const result = await ref.transaction(current => {
-      if (current === null || current === uid) {
-        return uid;
-      }
-
-      return;
-    });
-
-    if (result.committed) {
-      return candidate;
-    }
-  }
-
-  throw new Error(
-    "Unable to find an available username. Please try again."
-  );
-}
-/* Guest login */
 .guest-button {
     background: #8e44ad !important;
 }
@@ -223,7 +175,6 @@ async function reserveUniqueUsername(requestedName, uid) {
     text-decoration: none;
 }
 
-/* Status message */
 #statusMessage {
     display: none;
     padding: 10px;
@@ -245,7 +196,6 @@ async function reserveUniqueUsername(requestedName, uid) {
     color: #1b5e20;
 }
 
-/* Footer */
 footer {
     text-align: center;
     padding: 18px;
@@ -254,9 +204,7 @@ footer {
     margin-top: auto;
 }
 
-footer p {
-    margin: 0;
-}
+footer p { margin: 0; }
 
 @media (max-width: 600px) {
     header {
@@ -270,9 +218,7 @@ footer p {
         gap: 12px;
     }
 
-    .login-form {
-        padding: 25px 20px;
-    }
+    .login-form { padding: 25px 20px; }
 }
 </style>
 
@@ -297,7 +243,6 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 </script>
-
 </head>
 
 <body>
@@ -316,7 +261,6 @@ const db = firebase.database();
 </header>
 
 <main class="container">
-
 <form class="login-form" id="loginForm">
 
     <h2>Welcome to BabuShona!</h2>
@@ -327,8 +271,7 @@ const db = firebase.database();
 
     <div id="statusMessage" role="status" aria-live="polite"></div>
 
-    <!-- OPTION 1: EMAIL LOGIN -->
-
+    <!-- EMAIL LOGIN -->
     <input
         type="email"
         id="email"
@@ -357,91 +300,18 @@ const db = firebase.database();
 
     <div class="divider">OR</div>
 
-/* Reserve a unique username for a guest */
-async function reserveUniqueUsername(requestedName, uid) {
-    const base = requestedName
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9_]/g, "")
-        .slice(0, 15);
-
-    if (base.length < 2) {
-        throw new Error(
-            "Please enter a name with at least 2 valid letters or numbers."
-        );
-    }
-
-    // Check existing profiles so older users are included
-    // even if they have not yet been added to the usernames index.
-    const usersSnapshot = await db.ref("users").once("value");
-    const existingNames = new Set();
-
-    usersSnapshot.forEach(function(userSnapshot) {
-        if (userSnapshot.key === uid) return;
-
-        const profile = userSnapshot.child("public").val() || {};
-
-        [profile.username, profile.name, profile.displayName]
-            .forEach(function(name) {
-                if (typeof name === "string" && name.trim()) {
-                    const normalized = name
-                        .trim()
-                        .toLowerCase()
-                        .replace(/[^a-z0-9_]/g, "")
-                        .slice(0, 15);
-
-                    if (normalized) existingNames.add(normalized);
-                }
-            });
-    });
-
-    for (let attempt = 0; attempt < 50; attempt++) {
-        const suffix = Math.floor(1000 + Math.random() * 9000);
-
-        const candidate = attempt === 0
-            ? base
-            : base + suffix;
-
-        // Do not reuse a name already present in existing profiles.
-        if (existingNames.has(candidate)) continue;
-
-        const ref = db.ref("usernames/" + candidate);
-
-        const result = await ref.transaction(function(current) {
-            if (current === null || current === uid) {
-                return uid;
-            }
-
-            return; // Abort if another user owns this name.
-        });
-
-        if (result.committed) {
-            return candidate;
-        }
-    }
-
-    throw new Error(
-        "Could not find an available username. Please try a different name."
-    );
-}
-
-    <!-- OPTION 2: GUEST LOGIN -->
-
+    <!-- GUEST LOGIN -->
     <input
         type="text"
         id="guestName"
-        placeholder="Enter your name"
+        placeholder="Enter your guest name"
         maxlength="30"
         minlength="2"
         autocomplete="nickname"
         aria-label="Guest name"
     >
 
-    <button
-        type="button"
-        class="guest-button"
-        id="guestLoginButton"
-    >
+    <button type="button" class="guest-button" id="guestLoginButton">
         Continue as Guest
     </button>
 
@@ -456,7 +326,6 @@ async function reserveUniqueUsername(requestedName, uid) {
     </div>
 
 </form>
-
 </main>
 
 <footer>
@@ -464,12 +333,12 @@ async function reserveUniqueUsername(requestedName, uid) {
 </footer>
 
 <script>
-
 /* --------------------------------------------------
-   STATUS MESSAGE
+   STATUS MESSAGES
 -------------------------------------------------- */
 
 const statusMessage = document.getElementById("statusMessage");
+const nav = document.getElementById("navLinks");
 
 function showMessage(message, type = "error") {
     statusMessage.textContent = message;
@@ -482,20 +351,76 @@ function clearMessage() {
 }
 
 /* --------------------------------------------------
-   NAVIGATION FOR AUTHENTICATED USERS
+   USERNAME NORMALIZATION
 -------------------------------------------------- */
 
-const nav = document.getElementById("navLinks");
+function normalizeUsername(name) {
+    return name
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, "")
+        .slice(0, 15);
+}
 
+/* --------------------------------------------------
+   ATOMIC USERNAME RESERVATION
 
-auth.onAuthStateChanged(function(user) {
+   The /usernames index must contain existing usernames
+   before this can guarantee uniqueness across old users.
+-------------------------------------------------- */
 
-    if (!user) {
-        return;
+async function reserveUniqueUsername(requestedName, uid) {
+    const base = normalizeUsername(requestedName);
+
+    if (base.length < 2) {
+        throw new Error(
+            "Use at least 2 letters or numbers in your guest name."
+        );
     }
 
-    // If this user already has an active BabuShona session,
-    // do not show the login page again.
+    for (let attempt = 0; attempt < 100; attempt++) {
+        let candidate;
+
+        if (attempt === 0) {
+            candidate = base;
+        } else {
+            const suffix = Math.floor(
+                1000 + Math.random() * 9000
+            );
+
+            // Keep the total username length within 19 characters.
+            candidate = base.slice(0, 15) + suffix;
+        }
+
+        const usernameRef = db.ref("usernames/" + candidate);
+
+        const result = await usernameRef.transaction(function(current) {
+            // Claim an unused username, or reuse this user's reservation.
+            if (current === null || current === uid) {
+                return uid;
+            }
+
+            // Abort if another account owns the username.
+            return;
+        });
+
+        if (result.committed) {
+            return candidate;
+        }
+    }
+
+    throw new Error(
+        "Could not find an available username. Please try another name."
+    );
+}
+
+/* --------------------------------------------------
+   AUTHENTICATION STATE AND NAVIGATION
+-------------------------------------------------- */
+
+auth.onAuthStateChanged(function(user) {
+    if (!user) return;
+
     const savedUser = sessionStorage.getItem("current_user");
 
     if (
@@ -506,9 +431,7 @@ auth.onAuthStateChanged(function(user) {
         return;
     }
 
-    // Guests and verified registered members can continue.
     if (user.isAnonymous || user.emailVerified) {
-
         nav.innerHTML = `
             <a href="index.html">Home</a>
             <a href="friends.html">Friends</a>
@@ -519,7 +442,6 @@ auth.onAuthStateChanged(function(user) {
 
         document.getElementById("logoutBtn")
             .addEventListener("click", async function(e) {
-
                 e.preventDefault();
 
                 try {
@@ -527,10 +449,9 @@ auth.onAuthStateChanged(function(user) {
                     sessionStorage.removeItem("guest_name");
 
                     await auth.signOut();
-
                     window.location.href = "login.html";
-
                 } catch (error) {
+                    console.error("Logout error:", error);
                     showMessage("Unable to log out. Please try again.");
                 }
             });
@@ -538,12 +459,11 @@ auth.onAuthStateChanged(function(user) {
 });
 
 /* --------------------------------------------------
-   OPTION 1: EMAIL AND PASSWORD LOGIN
+   EMAIL AND PASSWORD LOGIN
 -------------------------------------------------- */
 
 document.getElementById("loginForm")
     .addEventListener("submit", async function(e) {
-
         e.preventDefault();
         clearMessage();
 
@@ -551,17 +471,14 @@ document.getElementById("loginForm")
             .value.trim();
 
         const password = document.getElementById("password").value;
-
         const loginButton = document.getElementById("loginButton");
         const guestButton = document.getElementById("guestLoginButton");
 
         loginButton.disabled = true;
         guestButton.disabled = true;
-
         loginButton.textContent = "Logging in...";
 
         try {
-
             const result = await auth.signInWithEmailAndPassword(
                 email,
                 password
@@ -570,54 +487,41 @@ document.getElementById("loginForm")
             const user = result.user;
 
             if (!user.emailVerified) {
-
                 await auth.signOut();
 
                 showMessage(
                     "Please verify your email address before logging in."
                 );
-
                 return;
             }
 
-           await db.ref("users/" + user.uid + "/public").update({
-    lastLogin: Date.now()
-});
+            await db.ref("users/" + user.uid + "/public").update({
+                lastLogin: Date.now()
+            });
 
             sessionStorage.setItem("current_user", user.uid);
             sessionStorage.removeItem("guest_name");
 
             showMessage("Login successful! Welcome back.", "success");
-
             window.location.href = "friends.html";
 
         } catch (error) {
-
             console.error("Email login error:", error);
-
-            showMessage(
-                "Login failed: " + error.message
-            );
+            showMessage("Login failed: " + error.message);
 
         } finally {
-
             loginButton.disabled = false;
             guestButton.disabled = false;
-
             loginButton.textContent = "Login with Email";
         }
     });
 
 /* --------------------------------------------------
-   OPTION 2: GUEST LOGIN WITHOUT EMAIL
+   GUEST LOGIN WITH UNIQUE USERNAME
 -------------------------------------------------- */
-
-
-/* OPTION 2: GUEST LOGIN WITHOUT EMAIL */
 
 document.getElementById("guestLoginButton")
     .addEventListener("click", async function() {
-
         clearMessage();
 
         const guestName = document.getElementById("guestName")
@@ -627,7 +531,9 @@ document.getElementById("guestLoginButton")
         const loginButton = document.getElementById("loginButton");
 
         if (guestName.length < 2 || guestName.length > 30) {
-            showMessage("Please enter a name between 2 and 30 characters.");
+            showMessage(
+                "Please enter a guest name between 2 and 30 characters."
+            );
             document.getElementById("guestName").focus();
             return;
         }
@@ -637,12 +543,21 @@ document.getElementById("guestLoginButton")
             return;
         }
 
+        if (!normalizeUsername(guestName) ||
+            normalizeUsername(guestName).length < 2) {
+            showMessage(
+                "Please use at least 2 English letters, numbers or underscores."
+            );
+            return;
+        }
+
         guestButton.disabled = true;
         loginButton.disabled = true;
         guestButton.textContent = "Checking username...";
 
         let reservedUsername = null;
         let guestUid = null;
+        let profileSaved = false;
 
         try {
             let user = auth.currentUser;
@@ -654,13 +569,13 @@ document.getElementById("guestLoginButton")
 
             guestUid = user.uid;
 
-            // Claim a unique username before saving the profile.
+            // Reserve the name before writing the profile.
             reservedUsername = await reserveUniqueUsername(
                 guestName,
-                user.uid
+                guestUid
             );
 
-            await db.ref("users/" + user.uid + "/public").update({
+            await db.ref("users/" + guestUid + "/public").update({
                 name: reservedUsername,
                 displayName: reservedUsername,
                 username: reservedUsername,
@@ -668,15 +583,14 @@ document.getElementById("guestLoginButton")
                 lastLogin: Date.now()
             });
 
-            sessionStorage.setItem("current_user", user.uid);
+            profileSaved = true;
+
+            sessionStorage.setItem("current_user", guestUid);
             sessionStorage.setItem("guest_name", reservedUsername);
 
-            if (
-                reservedUsername.toLowerCase() !==
-                guestName.toLowerCase()
-            ) {
+            if (normalizeUsername(guestName) !== reservedUsername) {
                 showMessage(
-                    "That name was unavailable. Your guest username is " +
+                    "That username is taken. Your username is " +
                     reservedUsername + ".",
                     "success"
                 );
@@ -692,19 +606,18 @@ document.getElementById("guestLoginButton")
         } catch (error) {
             console.error("Guest login error:", error);
 
-            // Release the reservation if profile saving failed.
-            if (reservedUsername && guestUid) {
+            // Release a newly reserved username if profile saving failed.
+            if (reservedUsername && guestUid && !profileSaved) {
                 try {
-                    const ref = db.ref(
-                        "usernames/" + reservedUsername
-                    );
-
-                    await ref.transaction(function(current) {
-                        return current === guestUid ? null : undefined;
-                    });
+                    await db.ref("usernames/" + reservedUsername)
+                        .transaction(function(current) {
+                            return current === guestUid
+                                ? null
+                                : undefined;
+                        });
                 } catch (cleanupError) {
                     console.error(
-                        "Username reservation cleanup failed:",
+                        "Username cleanup error:",
                         cleanupError
                     );
                 }
@@ -712,126 +625,26 @@ document.getElementById("guestLoginButton")
 
             if (error.code === "auth/operation-not-allowed") {
                 showMessage(
-                    "Guest login is not enabled in Firebase Authentication."
-                );
-            } else {
-                showMessage(
-                    "Guest login failed: " + error.message
-                );
-            }
-
-        } finally {
-            guestButton.disabled = false;
-            loginButton.disabled = false;
-            guestButton.textContent = "Continue as Guest";
-        }
-    });
-
-        clearMessage();
-
-        const guestName = document.getElementById("guestName")
-            .value.trim();
-
-        const guestButton = document.getElementById("guestLoginButton");
-        const loginButton = document.getElementById("loginButton");
-
-        if (guestName.length < 2) {
-            showMessage("Please enter a name with at least 2 characters.");
-            document.getElementById("guestName").focus();
-            return;
-        }
-
-        if (guestName.length > 30) {
-            showMessage("Your guest name cannot exceed 30 characters.");
-            return;
-        }
-
-        // Avoid invisible control characters in display names.
-        if (/[\u0000-\u001F\u007F]/.test(guestName)) {
-            showMessage("Please enter a valid guest name.");
-            return;
-        }
-
-        guestButton.disabled = true;
-        loginButton.disabled = true;
-        guestButton.textContent = "Please wait...";
-
-        try {
-
-            /*
-             * If already signed in anonymously, reuse that account.
-             * Otherwise create a Firebase anonymous account.
-             */
-            let user = auth.currentUser;
-
-            if (!user || !user.isAnonymous) {
-
-                const result = await auth.signInAnonymously();
-                user = result.user;
-            }
-
-            /*
-             * Save a minimal guest identity in the existing database.
-             * This does not grant access to member profiles.
-             */
-
-            
-            // Save the guest's public profile.
-          await db.ref("users/" + user.uid + "/public").update({
-    name: guestName,
-    displayName: guestName,
-    isGuest: true,
-    lastLogin: Date.now()
-});            
-            sessionStorage.setItem("current_user", user.uid);
-            sessionStorage.setItem("guest_name", guestName);
-            
-            
-           showMessage(
-                "Welcome to BabuShona, " + guestName + "!",
-                "success"
-            );
-
-            /*
-             * Continue to the existing friends page.
-             * Guest permissions must also be enforced there
-             * and in Firebase Database security rules.
-             */
-            window.location.href = "friends.html";
-
-        } catch (error) {
-
-            console.error("Guest login error:", error);
-
-            if (error.code === "auth/operation-not-allowed") {
-
-                showMessage(
                     "Guest login is not enabled. Enable Anonymous " +
-                    "Authentication in your Firebase Console."
+                    "Authentication in Firebase Console."
                 );
-
             } else if (
                 error.code === "PERMISSION_DENIED" ||
                 error.code === "database/permission-denied"
             ) {
-
                 showMessage(
-                    "Firebase denied access to the guest profile. " +
-                    "Your database security rules need to be checked."
+                    "Firebase denied access. Please check your Realtime " +
+                    "Database rules, including the usernames rule."
                 );
-
             } else {
-
                 showMessage(
                     "Guest login failed: " + error.message
                 );
             }
 
         } finally {
-
             guestButton.disabled = false;
             loginButton.disabled = false;
-
             guestButton.textContent = "Continue as Guest";
         }
     });
@@ -842,7 +655,6 @@ document.getElementById("guestLoginButton")
 
 document.getElementById("resetPassword")
     .addEventListener("click", async function(e) {
-
         e.preventDefault();
         clearMessage();
 
@@ -853,13 +665,11 @@ document.getElementById("resetPassword")
             showMessage(
                 "Please enter your email address before requesting a password reset."
             );
-
             document.getElementById("email").focus();
             return;
         }
 
         try {
-
             await auth.sendPasswordResetEmail(email, {
                 url: "https://www.babushona.com/login.html"
             });
@@ -870,7 +680,6 @@ document.getElementById("resetPassword")
             );
 
         } catch (error) {
-
             console.error("Password reset error:", error);
 
             showMessage(
@@ -878,7 +687,6 @@ document.getElementById("resetPassword")
             );
         }
     });
-
 </script>
 
 </body>
