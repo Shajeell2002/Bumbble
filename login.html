@@ -545,7 +545,9 @@ document.getElementById("guestLoginButton")
              * This does not grant access to member profiles.
              */
 
-             // Save the guest's public profile
+            
+            // Save the guest's public profile.
+            // All writes stay inside /public, as allowed by your rules.
             await db.ref("users/" + user.uid + "/public").update({
                 name: guestName,
                 displayName: guestName,
@@ -553,6 +555,7 @@ document.getElementById("guestLoginButton")
                 lastLogin: Date.now()
             });
 
+            
             sessionStorage.setItem("current_user", user.uid);
             sessionStorage.setItem("guest_name", guestName);
             
