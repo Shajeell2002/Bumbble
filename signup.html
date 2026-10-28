@@ -199,74 +199,9 @@ auth.onAuthStateChanged(user => {
 });
 
 /* Signup handler (restored working logic) */
-document.getElementById('signupBtn').addEventListener('click', async function () {
-  const name = document.getElementById('name').value.trim();
-  const age = document.getElementById('age').value.trim();
-  const gender = document.getElementById('gender').value;
-  const location = document.getElementById('location').value.trim();
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value;
 
-  const errorMsg = document.getElementById('errorMsg');
-  const successMsg = document.getElementById('successMsg');
-  const btn = document.getElementById('signupBtn');
+/* Signup handler: reserve a unique username and save the registered profile */
 
-  errorMsg.textContent = '';
-  successMsg.textContent = '';
-
-  // Basic validation (same as your working code)
-  if (!name || !email || !password) {
-    errorMsg.textContent = 'Please fill in name, email and password.';
-    return;
-  }
-  if (password.length < 6) {
-    errorMsg.textContent = 'Password must be at least 6 characters.';
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = 'Creating account...';
-
-  try {
-    // create account
-    const cred = await auth.createUserWithEmailAndPassword(email, password);
-    const user = cred.user;
-    const uid = user.uid;
-
-    // send verification email (redirects to login on click)
-    await user.sendEmailVerification({ url: 'https://BabuShona.com/login.html' });
-
-    // save public profile
-    await db.ref(`users/${uid}/public`).set({
-      name: name,
-      age: age || 'N/A',
-      gender: gender || '',
-      location: location || '',
-      pic: 'images/profile1.png',
-      online: false,
-      testAccount: false
-    });
-
-    // save private profile
-    await db.ref(`users/${uid}/private`).set({
-      email: email,
-      createdAt: Date.now()
-    });
-
-    successMsg.textContent = 'Account created — verification email sent, Check your Inbox & Spam folder . Please verify before login.';
-    btn.textContent = 'Done';
-    // optional: redirect after short delay
-    setTimeout(() => { window.location.href = 'login.html'; }, 3500);
-
-  } catch (err) {
-    console.error('Signup error:', err);
-    errorMsg.textContent = err.message || 'Signup failed.';
-    btn.disabled = false;
-    btn.textContent = 'Sign Up';
-  }
-});
-
-  
 async function createUniqueUsername(inputName, uid) {
   const base = inputName
     .trim()
@@ -275,26 +210,26 @@ async function createUniqueUsername(inputName, uid) {
     .slice(0, 15);
 
   if (!base) {
-    throw new Error("Please enter a valid username.");
+    throw new Error(
+      "Please use a name containing English letters or numbers."
+    );
   }
 
-  const db = firebase.database();
-
-  for (let attempt = 0; attempt < 20; attempt++) {
+  for (let attempt = 0; attempt < 30; attempt++) {
     const candidate = attempt === 0
       ? base
-      : base + Math.floor(1000 + Math.random() * 9000);
+      : (base.slice(0, 10) +
+         Math.floor(10000 + Math.random() * 90000)).slice(0, 15);
 
-    const ref = db.ref("usernames/" + candidate);
+    const usernameRef = db.ref("usernames/" + candidate);
 
-    const result = await ref.transaction(currentValue => {
-      // Claim only if unused or already owned by this account.
+    const result = await usernameRef.transaction(currentValue => {
+      // Never overwrite a username owned by another account.
       if (currentValue === null || currentValue === uid) {
         return uid;
       }
 
-      // Abort if another account owns this username.
-      return;
+      return; // Abort transaction when already taken.
     });
 
     if (result.committed) {
@@ -303,9 +238,131 @@ async function createUniqueUsername(inputName, uid) {
   }
 
   throw new Error(
-    "Could not generate an available username. Please try again."
+    "Unable to find an available username. Please try another name."
   );
 }
+
+document.getElementById("signupBtn").addEventListener("click", async function () {
+  const name = document.getElementById("name").value.trim();
+  const age = document.getElementById("age").value.trim();
+  const gender = document.getElementById("gender").value;
+  const location = document.getElementById("location").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+
+  const errorMsg = document.getElementById("errorMsg");
+  const successMsg = document.getElementById("successMsg");
+  const btn = document.getElementById("signupBtn");
+
+  errorMsg.textContent = "";
+  successMsg.textContent = "";
+
+  if (!name || !email || !password) {
+    errorMsg.textContent = "Please fill in name, email and password.";
+    return;
+  }
+
+  if (name.length > 50) {
+    errorMsg.textContent = "Name must be 50 characters or fewer.";
+    return;
+  }
+
+  if (!age || Number(age) < 13 || Number(age) > 120) {
+    errorMsg.textContent = "Please enter a valid age of 13 or above.";
+    return;
+  }
+
+  if (password.length < 6) {
+    errorMsg.textContent = "Password must be at least 6 characters.";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Creating account...";
+
+  let createdUser = null;
+  let reservedUsername = null;
+
+  try {
+    const credential = await auth.createUserWithEmailAndPassword(
+      email,
+      password
+    );
+
+    const user = credential.user;
+    createdUser = user;
+
+    // Reserve the name BEFORE saving the profile.
+    reservedUsername = await createUniqueUsername(name, user.uid);
+
+    const publicProfile = {
+      name: name,
+      displayName: name,
+      username: reservedUsername,
+      age: Number(age),
+      gender: gender,
+      location: location,
+      pic: "images/profile1.png",
+      online: false,
+      isGuest: false,
+      testAccount: false,
+      createdAt: Date.now()
+    };
+
+    // Public profile directory: contains public fields only.
+    // Friends page can read this directory without exposing private data.
+    await db.ref("registeredPublic/" + user.uid).set(publicProfile);
+
+    // Registered account's canonical public profile.
+    await db.ref("registeredUsers/" + user.uid + "/public")
+      .set(publicProfile);
+
+    // Private data stays separate.
+    await db.ref("registeredUsers/" + user.uid + "/private").set({
+      email: email,
+      createdAt: Date.now()
+    });
+
+    await user.sendEmailVerification({
+      url: "https://www.babushona.com/login.html"
+    });
+
+    successMsg.textContent =
+      "Account created. Your username is @" + reservedUsername +
+      ". Please verify your email before logging in.";
+
+    btn.textContent = "Done";
+
+    setTimeout(() => {
+      window.location.href = "login.html";
+    }, 3500);
+
+  } catch (error) {
+    console.error("Signup error:", error);
+
+    // Roll back a reserved name if profile creation failed.
+    if (reservedUsername && createdUser) {
+      try {
+        await db.ref("usernames/" + reservedUsername).transaction(value =>
+          value === createdUser.uid ? null : value
+        );
+      } catch (cleanupError) {
+        console.error("Username cleanup failed:", cleanupError);
+      }
+    }
+
+    errorMsg.textContent =
+      error.code === "auth/email-already-in-use"
+        ? "This email already has an account. Please log in."
+        : error.code === "PERMISSION_DENIED" ||
+          error.code === "database/permission-denied"
+          ? "Firebase permission denied. Please check the database rules."
+          : (error.message || "Signup failed.");
+
+    btn.disabled = false;
+    btn.textContent = "Sign Up";
+  }
+});
 
 </script>
 </body>
