@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,25 +31,10 @@ header {
     box-shadow: 0 3px 6px rgba(0,0,0,0.1);
 }
 
-header h1 {
-    margin: 0;
-    font-size: 26px;
-    font-weight: bold;
-    color: white;
-}
+header h1 { margin: 0; font-size: 26px; font-weight: bold; color: white; }
 
-nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
-nav a {
-    text-decoration: none;
-    color: white;
-    font-weight: 500;
-}
-
+nav { display: flex; flex-wrap: wrap; gap: 15px; }
+nav a { text-decoration: none; color: white; font-weight: 500; }
 nav a:hover { text-decoration: underline; }
 
 .container {
@@ -73,19 +57,8 @@ nav a:hover { text-decoration: underline; }
     gap: 15px;
 }
 
-.login-form h2 {
-    text-align: center;
-    margin: 0;
-    color: #4a2e8e;
-    font-size: 27px;
-}
-
-.subtitle {
-    text-align: center;
-    color: #666;
-    line-height: 1.5;
-    margin: 0 0 5px;
-}
+.login-form h2 { text-align: center; margin: 0; color: #4a2e8e; font-size: 27px; }
+.subtitle { text-align: center; color: #666; line-height: 1.5; margin: 0 0 5px; }
 
 .login-form input {
     width: 100%;
@@ -95,10 +68,7 @@ nav a:hover { text-decoration: underline; }
     font-size: 16px;
 }
 
-.login-form input:focus {
-    outline: 2px solid #b39ddb;
-    border-color: #4a2e8e;
-}
+.login-form input:focus { outline: 2px solid #b39ddb; border-color: #4a2e8e; }
 
 .login-form button {
     width: 100%;
@@ -114,66 +84,21 @@ nav a:hover { text-decoration: underline; }
 }
 
 .login-form button:hover { background: #38216e; }
+.login-form button:disabled { opacity: 0.65; cursor: not-allowed; }
 
-.login-form button:disabled {
-    opacity: 0.65;
-    cursor: not-allowed;
-}
+.forgot-password { text-align: right; font-size: 14px; margin-top: -5px; }
+.forgot-password a { color: #4a2e8e; text-decoration: none; font-weight: bold; }
 
-.forgot-password {
-    text-align: right;
-    font-size: 14px;
-    margin-top: -5px;
-}
+.divider { display: flex; align-items: center; gap: 12px; color: #888; font-size: 13px; }
+.divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: #ddd; }
 
-.forgot-password a {
-    color: #4a2e8e;
-    text-decoration: none;
-    font-weight: bold;
-}
+.guest-button { background: #8e44ad !important; }
+.guest-button:hover { background: #71368a !important; }
 
-.divider {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: #888;
-    font-size: 13px;
-}
+.guest-note { font-size: 12px; text-align: center; color: #777; line-height: 1.5; }
 
-.divider::before,
-.divider::after {
-    content: "";
-    flex: 1;
-    height: 1px;
-    background: #ddd;
-}
-
-.guest-button {
-    background: #8e44ad !important;
-}
-
-.guest-button:hover {
-    background: #71368a !important;
-}
-
-.guest-note {
-    font-size: 12px;
-    text-align: center;
-    color: #777;
-    line-height: 1.5;
-}
-
-.register-note {
-    text-align: center;
-    font-size: 14px;
-    color: #555;
-}
-
-.register-note a {
-    color: #4a2e8e;
-    font-weight: bold;
-    text-decoration: none;
-}
+.register-note { text-align: center; font-size: 14px; color: #555; }
+.register-note a { color: #4a2e8e; font-weight: bold; text-decoration: none; }
 
 #statusMessage {
     display: none;
@@ -183,41 +108,15 @@ nav a:hover { text-decoration: underline; }
     line-height: 1.5;
     overflow-wrap: anywhere;
 }
+#statusMessage.error { display: block; background: #ffebee; color: #b71c1c; }
+#statusMessage.success { display: block; background: #e8f5e9; color: #1b5e20; }
 
-#statusMessage.error {
-    display: block;
-    background: #ffebee;
-    color: #b71c1c;
-}
-
-#statusMessage.success {
-    display: block;
-    background: #e8f5e9;
-    color: #1b5e20;
-}
-
-footer {
-    text-align: center;
-    padding: 18px;
-    background: #b39ddb;
-    color: white;
-    margin-top: auto;
-}
-
+footer { text-align: center; padding: 18px; background: #b39ddb; color: white; margin-top: auto; }
 footer p { margin: 0; }
 
 @media (max-width: 600px) {
-    header {
-        justify-content: center;
-        text-align: center;
-        padding: 15px;
-    }
-
-    nav {
-        justify-content: center;
-        gap: 12px;
-    }
-
+    header { justify-content: center; text-align: center; padding: 15px; }
+    nav { justify-content: center; gap: 12px; }
     .login-form { padding: 25px 20px; }
 }
 </style>
@@ -265,51 +164,28 @@ const db = firebase.database();
 
     <h2>Welcome to BabuShona!</h2>
 
-    <p class="subtitle">
-        Meet new people, make friends and connect. 💜
-    </p>
+    <p class="subtitle">Meet new people, make friends and connect. 💜</p>
 
     <div id="statusMessage" role="status" aria-live="polite"></div>
 
     <!-- EMAIL LOGIN -->
-    <input
-        type="email"
-        id="email"
-        placeholder="Email address"
-        autocomplete="email"
-        aria-label="Email address"
-        required
-    >
+    <input type="email" id="email" placeholder="Email address"
+           autocomplete="email" aria-label="Email address" required>
 
-    <input
-        type="password"
-        id="password"
-        placeholder="Password"
-        autocomplete="current-password"
-        aria-label="Password"
-        required
-    >
+    <input type="password" id="password" placeholder="Password"
+           autocomplete="current-password" aria-label="Password" required>
 
     <div class="forgot-password">
         <a href="#" id="resetPassword">Forgot Password?</a>
     </div>
 
-    <button type="submit" id="loginButton">
-        Login with Email
-    </button>
+    <button type="submit" id="loginButton">Login with Email</button>
 
     <div class="divider">OR</div>
 
     <!-- GUEST LOGIN -->
-    <input
-        type="text"
-        id="guestName"
-        placeholder="Enter your guest name"
-        maxlength="30"
-        minlength="2"
-        autocomplete="nickname"
-        aria-label="Guest name"
-    >
+    <input type="text" id="guestName" placeholder="Enter your guest name"
+           maxlength="30" minlength="3" autocomplete="nickname" aria-label="Guest name">
 
     <button type="button" class="guest-button" id="guestLoginButton">
         Continue as Guest
@@ -336,7 +212,6 @@ const db = firebase.database();
 /* --------------------------------------------------
    STATUS MESSAGES
 -------------------------------------------------- */
-
 const statusMessage = document.getElementById("statusMessage");
 const nav = document.getElementById("navLinks");
 
@@ -351,82 +226,95 @@ function clearMessage() {
 }
 
 /* --------------------------------------------------
-   USERNAME NORMALIZATION
+   USERNAME HELPERS
+   Rules require: lowercase a-z, 0-9, underscore, 3-20 chars.
+   Base is max 15 chars + 4-digit suffix = max 19.
 -------------------------------------------------- */
+const MIN_NAME_LENGTH = 3;
 
 function normalizeUsername(name) {
-    return name
+    return String(name)
         .trim()
         .toLowerCase()
         .replace(/[^a-z0-9_]/g, "")
         .slice(0, 15);
 }
 
+function isPermissionError(error) {
+    return !!error && (
+        error.code === "PERMISSION_DENIED" ||
+        error.code === "database/permission-denied" ||
+        /permission_denied/i.test(error.message || "")
+    );
+}
+
+/* Release a username, only if this uid owns it. */
+async function releaseUsername(username, uid) {
+    if (!username || !uid) return;
+    try {
+        await db.ref("usernames/" + username).transaction(function(current) {
+            return current === uid ? null : undefined;
+        });
+    } catch (err) {
+        console.error("Username release error:", err);
+    }
+}
+
 /* --------------------------------------------------
    ATOMIC USERNAME RESERVATION
-
-   The /usernames index must contain existing usernames
-   before this can guarantee uniqueness across old users.
+   Returns { username, name }:
+     username = unique lowercase key, e.g. "ravi4827"
+     name     = display name with the same digits, e.g. "Ravi4827"
 -------------------------------------------------- */
-
 async function reserveUniqueUsername(requestedName, uid) {
     const base = normalizeUsername(requestedName);
 
-    if (base.length < 2) {
+    if (base.length < MIN_NAME_LENGTH) {
         throw new Error(
-            "Use at least 2 letters or numbers in your guest name."
+            "Use at least " + MIN_NAME_LENGTH + " letters or numbers in your name."
         );
     }
 
+    const shown = requestedName.trim().slice(0, 15);
+    let ruleErrors = 0;
+
     for (let attempt = 0; attempt < 100; attempt++) {
-        let candidate;
+        const suffix = attempt === 0
+            ? ""
+            : String(Math.floor(1000 + Math.random() * 9000));
+        const candidate = base + suffix;
 
-        if (attempt === 0) {
-            candidate = base;
-        } else {
-            const suffix = Math.floor(
-                1000 + Math.random() * 9000
-            );
-
-            // Keep the total username length within 19 characters.
-            candidate = base.slice(0, 15) + suffix;
+        let result;
+        try {
+            result = await db.ref("usernames/" + candidate)
+                .transaction(function(current) {
+                    // Claim an unused name, or reuse this user's own reservation.
+                    if (current === null || current === uid) return uid;
+                    return; // abort: owned by someone else
+                });
+        } catch (err) {
+            // Repeated rule rejections mean the rules are wrong, not the name.
+            if (isPermissionError(err) && ++ruleErrors >= 3) throw err;
+            continue;
         }
 
-        const usernameRef = db.ref("usernames/" + candidate);
-
-        const result = await usernameRef.transaction(function(current) {
-            // Claim an unused username, or reuse this user's reservation.
-            if (current === null || current === uid) {
-                return uid;
-            }
-
-            // Abort if another account owns the username.
-            return;
-        });
-
         if (result.committed) {
-            return candidate;
+            return { username: candidate, name: shown + suffix };
         }
     }
 
-    throw new Error(
-        "Could not find an available username. Please try another name."
-    );
+    throw new Error("Could not find an available username. Please try another name.");
 }
 
 /* --------------------------------------------------
    AUTHENTICATION STATE AND NAVIGATION
 -------------------------------------------------- */
-
 auth.onAuthStateChanged(function(user) {
     if (!user) return;
 
     const savedUser = sessionStorage.getItem("current_user");
 
-    if (
-        savedUser === user.uid &&
-        (user.isAnonymous || user.emailVerified)
-    ) {
+    if (savedUser === user.uid && (user.isAnonymous || user.emailVerified)) {
         window.location.replace("friends.html");
         return;
     }
@@ -445,8 +333,17 @@ auth.onAuthStateChanged(function(user) {
                 e.preventDefault();
 
                 try {
+                    // Guests give their name back when they log out.
+                    if (user.isAnonymous) {
+                        await releaseUsername(
+                            sessionStorage.getItem("guest_username"),
+                            user.uid
+                        );
+                    }
+
                     sessionStorage.removeItem("current_user");
                     sessionStorage.removeItem("guest_name");
+                    sessionStorage.removeItem("guest_username");
 
                     await auth.signOut();
                     window.location.href = "login.html";
@@ -461,15 +358,12 @@ auth.onAuthStateChanged(function(user) {
 /* --------------------------------------------------
    EMAIL AND PASSWORD LOGIN
 -------------------------------------------------- */
-
 document.getElementById("loginForm")
     .addEventListener("submit", async function(e) {
         e.preventDefault();
         clearMessage();
 
-        const email = document.getElementById("email")
-            .value.trim();
-
+        const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value;
         const loginButton = document.getElementById("loginButton");
         const guestButton = document.getElementById("guestLoginButton");
@@ -479,28 +373,27 @@ document.getElementById("loginForm")
         loginButton.textContent = "Logging in...";
 
         try {
-            const result = await auth.signInWithEmailAndPassword(
-                email,
-                password
-            );
-
+            const result = await auth.signInWithEmailAndPassword(email, password);
             const user = result.user;
 
             if (!user.emailVerified) {
                 await auth.signOut();
-
-                showMessage(
-                    "Please verify your email address before logging in."
-                );
+                showMessage("Please verify your email address before logging in.");
                 return;
             }
 
-            await db.ref("users/" + user.uid + "/public").update({
-                lastLogin: Date.now()
-            });
+            // Write to a child path so the profile's username rule is not
+            // re-checked, and never let this block a successful login.
+            try {
+                await db.ref("users/" + user.uid + "/public/lastLogin")
+                    .set(Date.now());
+            } catch (err) {
+                console.warn("lastLogin not saved:", err);
+            }
 
             sessionStorage.setItem("current_user", user.uid);
             sessionStorage.removeItem("guest_name");
+            sessionStorage.removeItem("guest_username");
 
             showMessage("Login successful! Welcome back.", "success");
             window.location.href = "friends.html";
@@ -519,22 +412,21 @@ document.getElementById("loginForm")
 /* --------------------------------------------------
    GUEST LOGIN WITH UNIQUE USERNAME
 -------------------------------------------------- */
-
 document.getElementById("guestLoginButton")
     .addEventListener("click", async function() {
         clearMessage();
 
-        const guestName = document.getElementById("guestName")
-            .value.trim();
-
+        const guestNameInput = document.getElementById("guestName");
+        const guestName = guestNameInput.value.trim();
         const guestButton = document.getElementById("guestLoginButton");
         const loginButton = document.getElementById("loginButton");
 
-        if (guestName.length < 2 || guestName.length > 30) {
+        if (guestName.length < MIN_NAME_LENGTH || guestName.length > 30) {
             showMessage(
-                "Please enter a guest name between 2 and 30 characters."
+                "Please enter a guest name between " + MIN_NAME_LENGTH +
+                " and 30 characters."
             );
-            document.getElementById("guestName").focus();
+            guestNameInput.focus();
             return;
         }
 
@@ -543,10 +435,10 @@ document.getElementById("guestLoginButton")
             return;
         }
 
-        if (!normalizeUsername(guestName) ||
-            normalizeUsername(guestName).length < 2) {
+        if (normalizeUsername(guestName).length < MIN_NAME_LENGTH) {
             showMessage(
-                "Please use at least 2 English letters, numbers or underscores."
+                "Please use at least " + MIN_NAME_LENGTH +
+                " English letters, numbers or underscores."
             );
             return;
         }
@@ -555,7 +447,7 @@ document.getElementById("guestLoginButton")
         loginButton.disabled = true;
         guestButton.textContent = "Checking username...";
 
-        let reservedUsername = null;
+        let reserved = null;        // { username, name }
         let guestUid = null;
         let profileSaved = false;
 
@@ -569,36 +461,48 @@ document.getElementById("guestLoginButton")
 
             guestUid = user.uid;
 
-            // Reserve the name before writing the profile.
-            reservedUsername = await reserveUniqueUsername(
-                guestName,
-                guestUid
-            );
+            // If this guest already holds a name, remember it so it can be
+            // released after the new one is saved (one name per guest).
+            let previousUsername = null;
+            try {
+                const prev = await db.ref("users/" + guestUid + "/public/username")
+                    .once("value");
+                if (prev.exists() && typeof prev.val() === "string") {
+                    previousUsername = prev.val();
+                }
+            } catch (err) {
+                // No existing profile, or not readable: nothing to release.
+            }
 
+            // 1) Reserve the name first. The profile rule checks this claim.
+            reserved = await reserveUniqueUsername(guestName, guestUid);
+
+            // 2) Save the profile. username and name are plain strings.
             await db.ref("users/" + guestUid + "/public").update({
-                name: reservedUsername,
-                displayName: reservedUsername,
-                username: reservedUsername,
+                name: reserved.name,
+                displayName: reserved.name,
+                username: reserved.username,
                 isGuest: true,
                 lastLogin: Date.now()
             });
 
             profileSaved = true;
 
-            sessionStorage.setItem("current_user", guestUid);
-            sessionStorage.setItem("guest_name", reservedUsername);
+            if (previousUsername && previousUsername !== reserved.username) {
+                await releaseUsername(previousUsername, guestUid);
+            }
 
-            if (normalizeUsername(guestName) !== reservedUsername) {
+            sessionStorage.setItem("current_user", guestUid);
+            sessionStorage.setItem("guest_name", reserved.name);
+            sessionStorage.setItem("guest_username", reserved.username);
+
+            if (reserved.username !== normalizeUsername(guestName)) {
                 showMessage(
-                    "That username is taken. Your username is " +
-                    reservedUsername + ".",
+                    "That name is taken. Your name is " + reserved.name + ".",
                     "success"
                 );
             } else {
-                showMessage(
-                    "Welcome to BabuShona, " + reservedUsername + "!",
-                    "success"
-                );
+                showMessage("Welcome to BabuShona, " + reserved.name + "!", "success");
             }
 
             window.location.href = "friends.html";
@@ -606,21 +510,9 @@ document.getElementById("guestLoginButton")
         } catch (error) {
             console.error("Guest login error:", error);
 
-            // Release a newly reserved username if profile saving failed.
-            if (reservedUsername && guestUid && !profileSaved) {
-                try {
-                    await db.ref("usernames/" + reservedUsername)
-                        .transaction(function(current) {
-                            return current === guestUid
-                                ? null
-                                : undefined;
-                        });
-                } catch (cleanupError) {
-                    console.error(
-                        "Username cleanup error:",
-                        cleanupError
-                    );
-                }
+            // Give the reserved name back if the profile was not saved.
+            if (reserved && guestUid && !profileSaved) {
+                await releaseUsername(reserved.username, guestUid);
             }
 
             if (error.code === "auth/operation-not-allowed") {
@@ -628,18 +520,13 @@ document.getElementById("guestLoginButton")
                     "Guest login is not enabled. Enable Anonymous " +
                     "Authentication in Firebase Console."
                 );
-            } else if (
-                error.code === "PERMISSION_DENIED" ||
-                error.code === "database/permission-denied"
-            ) {
+            } else if (isPermissionError(error)) {
                 showMessage(
-                    "Firebase denied access. Please check your Realtime " +
-                    "Database rules, including the usernames rule."
+                    "Firebase denied access. Check your Realtime Database rules " +
+                    "and the console for the exact permission_denied path."
                 );
             } else {
-                showMessage(
-                    "Guest login failed: " + error.message
-                );
+                showMessage("Guest login failed: " + error.message);
             }
 
         } finally {
@@ -652,14 +539,12 @@ document.getElementById("guestLoginButton")
 /* --------------------------------------------------
    FORGOT PASSWORD
 -------------------------------------------------- */
-
 document.getElementById("resetPassword")
     .addEventListener("click", async function(e) {
         e.preventDefault();
         clearMessage();
 
-        const email = document.getElementById("email")
-            .value.trim();
+        const email = document.getElementById("email").value.trim();
 
         if (!email) {
             showMessage(
@@ -670,9 +555,18 @@ document.getElementById("resetPassword")
         }
 
         try {
-            await auth.sendPasswordResetEmail(email, {
-                url: "https://www.babushona.com/login.html"
-            });
+            try {
+                await auth.sendPasswordResetEmail(email, {
+                    url: "https://www.babushona.com/login.html"
+                });
+            } catch (err) {
+                // Domain not authorized yet: fall back to Firebase's default page.
+                if (err.code === "auth/unauthorized-continue-uri") {
+                    await auth.sendPasswordResetEmail(email);
+                } else {
+                    throw err;
+                }
+            }
 
             showMessage(
                 "If the account is eligible, a password reset email has been sent. Please check your inbox.",
@@ -681,10 +575,7 @@ document.getElementById("resetPassword")
 
         } catch (error) {
             console.error("Password reset error:", error);
-
-            showMessage(
-                "Unable to send the password reset email: " + error.message
-            );
+            showMessage("Unable to send the password reset email: " + error.message);
         }
     });
 </script>
