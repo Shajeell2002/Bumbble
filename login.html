@@ -354,11 +354,14 @@ function clearMessage() {
    USERNAME NORMALIZATION
 -------------------------------------------------- */
 
-function normalizeUsername(s) {
-  return s.trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 15);
+function normalizeUsername(name) {
+    return name
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, "")
+        .slice(0, 15);
 }
 
-    
 /* --------------------------------------------------
    ATOMIC USERNAME RESERVATION
 
@@ -367,32 +370,50 @@ function normalizeUsername(s) {
 -------------------------------------------------- */
 
 async function reserveUniqueUsername(requestedName, uid) {
-  const base = normalizeUsername(requestedName);
-  if (base.length < 3) {
-    throw new Error("Use at least 3 letters or numbers in your name.");
-  }
-  const shown = requestedName.trim().slice(0, 15);
+    const base = normalizeUsername(requestedName);
 
-  for (let attempt = 0; attempt < 100; attempt++) {
-    const suffix = attempt === 0 ? "" : String(Math.floor(1000 + Math.random() * 9000));
-    const candidate = attempt === 0 ? base : base.slice(0, 15) + suffix;
-
-    let result;
-    try {
-      result = await db.ref("usernames/" + candidate).transaction(current => {
-        if (current === null || current === uid) return uid;
-        return; // abort: owned by someone else
-      });
-    } catch (e) {
-      continue; // rejected by rules, try the next candidate
+    if (base.length < 2) {
+        throw new Error(
+            "Use at least 2 letters or numbers in your guest name."
+        );
     }
 
-    if (result.committed) {
-      return { username: candidate, name: shown + suffix };
+    for (let attempt = 0; attempt < 100; attempt++) {
+        let candidate;
+
+        if (attempt === 0) {
+            candidate = base;
+        } else {
+            const suffix = Math.floor(
+                1000 + Math.random() * 9000
+            );
+
+            // Keep the total username length within 19 characters.
+            candidate = base.slice(0, 15) + suffix;
+        }
+
+        const usernameRef = db.ref("usernames/" + candidate);
+
+        const result = await usernameRef.transaction(function(current) {
+            // Claim an unused username, or reuse this user's reservation.
+            if (current === null || current === uid) {
+                return uid;
+            }
+
+            // Abort if another account owns the username.
+            return;
+        });
+
+        if (result.committed) {
+            return candidate;
+        }
     }
-  }
-  throw new Error("Could not find an available username. Please try another name.");
+
+    throw new Error(
+        "Could not find an available username. Please try another name."
+    );
 }
+
 /* --------------------------------------------------
    AUTHENTICATION STATE AND NAVIGATION
 -------------------------------------------------- */
@@ -554,33 +575,34 @@ document.getElementById("guestLoginButton")
                 guestUid
             );
 
-         guestUid = user.uid;
+            await db.ref("users/" + guestUid + "/public").update({
+                name: reservedUsername,
+                displayName: reservedUsername,
+                username: reservedUsername,
+                isGuest: true,
+                lastLogin: Date.now()
+            });
 
-// returns { username, name }
-const reserved = await reserveUniqueUsername(guestName, guestUid);
-reservedUsername = reserved.username;      // keep this a string, used by the cleanup code
+            profileSaved = true;
 
-await db.ref("users/" + guestUid + "/public").update({
-    name: reserved.name,                   // e.g. "Ravi" or "Ravi4827"
-    displayName: reserved.name,
-    username: reserved.username,           // e.g. "ravi" or "ravi4827"
-    isGuest: true,
-    lastLogin: Date.now()
-});
+            sessionStorage.setItem("current_user", guestUid);
+            sessionStorage.setItem("guest_name", reservedUsername);
 
-profileSaved = true;
+            if (normalizeUsername(guestName) !== reservedUsername) {
+                showMessage(
+                    "That username is taken. Your username is " +
+                    reservedUsername + ".",
+                    "success"
+                );
+            } else {
+                showMessage(
+                    "Welcome to BabuShona, " + reservedUsername + "!",
+                    "success"
+                );
+            }
 
-sessionStorage.setItem("current_user", guestUid);
-sessionStorage.setItem("guest_name", reserved.name);
+            window.location.href = "friends.html";
 
-if (reserved.username !== normalizeUsername(guestName)) {
-    showMessage("That name is taken. Your name is " + reserved.name + ".", "success");
-} else {
-    showMessage("Welcome to BabuShona, " + reserved.name + "!", "success");
-}
-
-window.location.href = "friends.html";
-  
         } catch (error) {
             console.error("Guest login error:", error);
 
