@@ -375,36 +375,48 @@
 
     // ── Users List ─────────────────────────────────────────────────────────────
 function initUsersListener() {
-  // Only listen to public data of all users
-  db.ref("users").on("value", snap => {
+ const sources = { users: {}, registeredUsers: {}, guestUsers: {} };
+
+  function rebuild() {
     cachedUsers = {};
-    snap.forEach(child => {
-      const pub = child.child("public").val();
-      if (pub) {
-        cachedUsers[child.key] = { public: pub };
-      }
+    // later sources override earlier ones
+    ["users", "guestUsers", "registeredUsers"].forEach(src => {
+      Object.entries(sources[src]).forEach(([uid, pub]) => {
+        cachedUsers[uid] = { public: { ...(cachedUsers[uid]?.public || {}), ...pub } };
+      });
     });
     renderUserList(cachedUsers);
+  }
+
+  Object.keys(sources).forEach(src => {
+    db.ref(src).on("value", snap => {
+      sources[src] = {};
+      snap.forEach(child => {
+        const pub = child.child("public").val();
+        if (pub) sources[src][child.key] = pub;
+      });
+      rebuild();
+    });
   });
+    
+
+
+    
+function renderUserList(users) {
+  const friends = Object.keys(users)
+    .filter(uid => uid !== currentUserUid)
+    .map(uid => {
+      const u = users[uid].public || {};
+      return {
+        uid,
+        name:   u.name || u.displayName || u.username || "Unknown",
+        gender: u.gender || "N/A",
+        online: !!u.online,
+        time:   lastChatTimestamps[uid] || 0
+      };
+    });
+  // ...the rest of the function (sort, render rows) stays unchanged
 }
-
-    
-
-
-    
-    function renderUserList(users) {
-      const friends = Object.keys(users)
-        .filter(uid => uid !== currentUserUid)
-        .map(uid => {
-          const u = users[uid].public || {};
-          return {
-            uid,
-            name:   u.name   || "Unknown",
-            gender: u.gender || "N/A",
-            online: !!u.online,
-            time:   lastChatTimestamps[uid] || 0
-          };
-        });
 
       friends.sort((a, b) => {
         const unreadA = unreadCounters[a.uid] || 0;
