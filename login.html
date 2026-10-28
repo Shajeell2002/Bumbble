@@ -354,14 +354,11 @@ function clearMessage() {
    USERNAME NORMALIZATION
 -------------------------------------------------- */
 
-function normalizeUsername(name) {
-    return name
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9_]/g, "")
-        .slice(0, 15);
+function normalizeUsername(s) {
+  return s.trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 15);
 }
 
+    
 /* --------------------------------------------------
    ATOMIC USERNAME RESERVATION
 
@@ -370,50 +367,32 @@ function normalizeUsername(name) {
 -------------------------------------------------- */
 
 async function reserveUniqueUsername(requestedName, uid) {
-    const base = normalizeUsername(requestedName);
+  const base = normalizeUsername(requestedName);
+  if (base.length < 3) {
+    throw new Error("Use at least 3 letters or numbers in your name.");
+  }
+  const shown = requestedName.trim().slice(0, 15);
 
-    if (base.length < 2) {
-        throw new Error(
-            "Use at least 2 letters or numbers in your guest name."
-        );
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const suffix = attempt === 0 ? "" : String(Math.floor(1000 + Math.random() * 9000));
+    const candidate = attempt === 0 ? base : base.slice(0, 15) + suffix;
+
+    let result;
+    try {
+      result = await db.ref("usernames/" + candidate).transaction(current => {
+        if (current === null || current === uid) return uid;
+        return; // abort: owned by someone else
+      });
+    } catch (e) {
+      continue; // rejected by rules, try the next candidate
     }
 
-    for (let attempt = 0; attempt < 100; attempt++) {
-        let candidate;
-
-        if (attempt === 0) {
-            candidate = base;
-        } else {
-            const suffix = Math.floor(
-                1000 + Math.random() * 9000
-            );
-
-            // Keep the total username length within 19 characters.
-            candidate = base.slice(0, 15) + suffix;
-        }
-
-        const usernameRef = db.ref("usernames/" + candidate);
-
-        const result = await usernameRef.transaction(function(current) {
-            // Claim an unused username, or reuse this user's reservation.
-            if (current === null || current === uid) {
-                return uid;
-            }
-
-            // Abort if another account owns the username.
-            return;
-        });
-
-        if (result.committed) {
-            return candidate;
-        }
+    if (result.committed) {
+      return { username: candidate, name: shown + suffix };
     }
-
-    throw new Error(
-        "Could not find an available username. Please try another name."
-    );
+  }
+  throw new Error("Could not find an available username. Please try another name.");
 }
-
 /* --------------------------------------------------
    AUTHENTICATION STATE AND NAVIGATION
 -------------------------------------------------- */
