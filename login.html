@@ -554,34 +554,33 @@ document.getElementById("guestLoginButton")
                 guestUid
             );
 
-            await db.ref("users/" + guestUid + "/public").update({
-                name: reservedUsername,
-                displayName: reservedUsername,
-                username: reservedUsername,
-                isGuest: true,
-                lastLogin: Date.now()
-            });
+         guestUid = user.uid;
 
-            profileSaved = true;
+// returns { username, name }
+const reserved = await reserveUniqueUsername(guestName, guestUid);
+reservedUsername = reserved.username;      // keep this a string, used by the cleanup code
 
-            sessionStorage.setItem("current_user", guestUid);
-            sessionStorage.setItem("guest_name", reservedUsername);
+await db.ref("users/" + guestUid + "/public").update({
+    name: reserved.name,                   // e.g. "Ravi" or "Ravi4827"
+    displayName: reserved.name,
+    username: reserved.username,           // e.g. "ravi" or "ravi4827"
+    isGuest: true,
+    lastLogin: Date.now()
+});
 
-            if (normalizeUsername(guestName) !== reservedUsername) {
-                showMessage(
-                    "That username is taken. Your username is " +
-                    reservedUsername + ".",
-                    "success"
-                );
-            } else {
-                showMessage(
-                    "Welcome to BabuShona, " + reservedUsername + "!",
-                    "success"
-                );
-            }
+profileSaved = true;
 
-            window.location.href = "friends.html";
+sessionStorage.setItem("current_user", guestUid);
+sessionStorage.setItem("guest_name", reserved.name);
 
+if (reserved.username !== normalizeUsername(guestName)) {
+    showMessage("That name is taken. Your name is " + reserved.name + ".", "success");
+} else {
+    showMessage("Welcome to BabuShona, " + reserved.name + "!", "success");
+}
+
+window.location.href = "friends.html";
+  
         } catch (error) {
             console.error("Guest login error:", error);
 
