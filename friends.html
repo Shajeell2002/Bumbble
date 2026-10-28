@@ -325,9 +325,59 @@
 
     // ── Auth ───────────────────────────────────────────────────────────────────
    auth.onAuthStateChanged(user => {
-  if (user && (user.isAnonymous || user.emailVerified)) {
-    currentUserUid = user.uid;
-    listenCallEnd();
+     document.getElementById("logoutBtn").onclick = async event => {
+  event.preventDefault();
+
+  const user = auth.currentUser;
+  if (!user) {
+    window.location.replace("login.html");
+    return;
+  }
+
+  try {
+    const root = user.isAnonymous
+      ? "guestUsers"
+      : "registeredUsers";
+
+    await db.ref(`${root}/${user.uid}/public/online`).set(false);
+
+    localStorage.removeItem("lastChatFriendUid");
+    localStorage.removeItem("lastChatFriendName");
+
+    if (user.isAnonymous) {
+      const profileRef = db.ref(`guestUsers/${user.uid}/public`);
+      const snapshot = await profileRef.once("value");
+      const profile = snapshot.val() || {};
+      const username = profile.username;
+
+      // Release this guest's username reservation.
+      if (username) {
+        await db.ref(`usernames/${username}`).transaction(current => {
+          return current === user.uid ? null : current;
+        });
+      }
+
+      // Delete only this guest's database profile.
+      await db.ref(`guestUsers/${user.uid}`).remove();
+
+      sessionStorage.removeItem("current_user");
+      sessionStorage.removeItem("guest_name");
+
+      // Delete the anonymous Firebase Authentication account.
+      await user.delete();
+    } else {
+      sessionStorage.removeItem("current_user");
+      sessionStorage.removeItem("guest_name");
+      await auth.signOut();
+    }
+
+    window.location.replace("login.html");
+  } catch (error) {
+    console.error("Logout failed:", error);
+    showError("Logout failed. Check Firebase permissions and try again.");
+  }
+};
+
             nav.innerHTML = `
           <a href="index.html">Home</a>
           <a href="friends.html">Friends</a>
@@ -364,47 +414,112 @@
 
     // ── Online Status ──────────────────────────────────────────────────────────
     function setupOnlineStatus() {
-      const statusRef = db.ref(`users/${currentUserUid}/public/online`);
-      db.ref(".info/connected").on("value", snap => {
-        if (snap && snap.val()) {
-          statusRef.set(true);
-          statusRef.onDisconnect().set(false);
-        }
-      });
-    }
+  function getOwnProfileRoot() {
+  const user = auth.currentUser;
 
-    // ── Users List ─────────────────────────────────────────────────────────────
-function initUsersListener() {
-  // Only listen to public data of all users
-  db.ref("users").on("value", snap => {
-    cachedUsers = {};
-    snap.forEach(child => {
-      const pub = child.child("public").val();
-      if (pub) {
-        cachedUsers[child.key] = { public: pub };
-      }
-    });
-    renderUserList(cachedUsers);
-  });
+  if (!user) return null;
+
+  return user.isAnonymous ? "guestUsers" : "registeredUsers";
 }
 
-    
+function setupOnlineStatus() {
+  const root = getOwnProfileRoot();
+
+  if (!root) return;
+
+  const statusRef = db.ref(
+    `${root}/${currentUserUid}/public/online`
+  );
+
+  db.ref(".info/connected").on("value", snap => {
+    if (snap.val() === true) {
+      statusRef.set(true);
+      statusRef.onDisconnect().set(false);
+    }
+  });
+}
+    // ── Users List ─────────────────────────────────────────────────────────────
+function initUsersListener() {
+  const registeredRef = db.ref("registeredUsers");
+  const guestRef = db.ref("guestUsers");
+
+  let registeredProfiles = {};
+  let guestProfiles = {};
+
+  function refreshUsers() {
+    cachedUsers = {};
+
+    Object.entries(registeredProfiles).forEach(([uid, profile]) => {
+      if (profile && profile.public) {
+        cachedUsers[uid] = {
+          public: profile.public,
+          root: "registeredUsers"
+        };
+      }
+    });
+
+    Object.entries(guestProfiles).forEach(([uid, profile]) => {
+      if (profile && profile.public) {
+        cachedUsers[uid] = {
+          public: profile.public,
+          root: "guestUsers"
+        };
+      }
+    });
+
+    renderUserList(cachedUsers);
+
+    // Refresh the friends list when profiles load or change.
+    if (typeof listenFriendsListRefresh === "function") {
+      listenFriendsListRefresh();
+    }
+  }
+
+  registeredRef.on("value", snapshot => {
+    registeredProfiles = snapshot.val() || {};
+    refreshUsers();
+  }, error => {
+    console.error("Registered profiles could not be loaded:", error);
+    showError("Unable to load registered profiles. Check Firebase rules.");
+  });
+
+  guestRef.on("value", snapshot => {
+    guestProfiles = snapshot.val() || {};
+    refreshUsers();
+  }, error => {
+    console.error("Guest profiles could not be loaded:", error);
+    showError("Unable to load guest profiles. Check Firebase rules.");
+  });
+}    
 
 
     
-    function renderUserList(users) {
-      const friends = Object.keys(users)
-        .filter(uid => uid !== currentUserUid)
-        .map(uid => {
-          const u = users[uid].public || {};
-          return {
-            uid,
-            name:   u.name   || "Unknown",
-            gender: u.gender || "N/A",
-            online: !!u.online,
-            time:   lastChatTimestamps[uid] || 0
-          };
-        });
+   
+function renderUserList(users) {
+  const friends = Object.entries(users || {})
+    .filter(([uid, user]) => {
+      return uid !== currentUserUid &&
+             user &&
+             user.public;
+    })
+    .map(([uid, user]) => {
+      const u = user.public || {};
+      const isGuest = user.root === "guestUsers";
+
+      return {
+        uid: uid,
+        name: u.name || "Unknown",
+        gender: u.gender || "N/A",
+        online: u.online === true,
+        time: lastChatTimestamps[uid] || 0,
+        userType: isGuest ? "Guest" : "Registered"
+      };
+    });
+
+  // Continue with your existing sorting and HTML rendering below.
+  // Use friends as the prepared list of users.
+}
+
 
       friends.sort((a, b) => {
         const unreadA = unreadCounters[a.uid] || 0;
@@ -469,7 +584,13 @@ function initUsersListener() {
 
         uniqueFriends.forEach(friendUid => {
           // FIX: cachedUsers may not be populated yet; use optional chaining safely
-          const name = cachedUsers?.[friendUid]?.public?.name || "Unknown User";
+         const profile = cachedUsers[friendUid]?.public || {};
+
+const name =
+  profile.name ||
+  profile.displayName ||
+  profile.username ||
+  "Guest User";
 
           const li       = document.createElement("li");
           const nameSpan = document.createElement("span");
