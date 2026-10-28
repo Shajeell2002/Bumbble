@@ -445,15 +445,11 @@ auth.onAuthStateChanged(function(user) {
                 e.preventDefault();
 
                 try {
-if (auth.currentUser && auth.currentUser.isAnonymous) {
-    await deleteGuestAccount();
-} else {
-    sessionStorage.removeItem("current_user");
-    sessionStorage.removeItem("guest_name");
+                    sessionStorage.removeItem("current_user");
+                    sessionStorage.removeItem("guest_name");
 
-    await auth.signOut();
-    window.location.replace("login.html");
-}
+                    await auth.signOut();
+                    window.location.href = "login.html";
                 } catch (error) {
                     console.error("Logout error:", error);
                     showMessage("Unable to log out. Please try again.");
@@ -691,55 +687,6 @@ document.getElementById("resetPassword")
             );
         }
     });
-
-    async function deleteGuestAccount() {
-    const user = auth.currentUser;
-
-    if (!user || !user.isAnonymous) {
-        await auth.signOut();
-        return;
-    }
-
-    const uid = user.uid;
-
-    try {
-        // Read the guest's profile before deleting it.
-        const profileRef = db.ref("users/" + uid + "/public");
-        const snapshot = await profileRef.once("value");
-        const profile = snapshot.val();
-
-        // Remove the reserved username only if this guest owns it.
-        const username = profile && profile.username;
-
-        if (username) {
-            await db.ref("usernames/" + username).transaction(
-                function(current) {
-                    return current === uid ? null : current;
-                }
-            );
-        }
-
-        // Delete the temporary guest profile.
-        await db.ref("users/" + uid).remove();
-
-        // Clear this browser session.
-        sessionStorage.removeItem("current_user");
-        sessionStorage.removeItem("guest_name");
-
-        // Delete the Firebase anonymous account.
-        await user.delete();
-
-        // Return to the login page.
-        window.location.replace("login.html");
-
-    } catch (error) {
-        console.error("Guest cleanup failed:", error);
-
-        showMessage(
-            "Unable to completely remove the guest account. Please try again."
-        );
-    }
-}
 </script>
 
 </body>
