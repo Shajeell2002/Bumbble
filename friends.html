@@ -52,6 +52,7 @@
     .message.self { background: #9b59b6; color: white; align-self: flex-end; }
     .message.friend { background: #ece6f2; color: #111; align-self: flex-start; }
     .timestamp { font-size: 10px; color: #666; margin-top: 6px; text-align: right; display: block; }
+    .message.self .timestamp { color: #eee; }
     .uploading-badge { font-size: 11px; color: #444; margin-top: 6px; display: inline-block; background: #e6e0f0; padding: 3px 6px; border-radius: 6px; border: 1px solid #d0c4e0; }
     #chatInputContainer { display: flex; border-top: 1px solid #ccc; align-items: center; gap: 6px; padding: 8px; background: #e6e0f0; }
     #chatInput { flex: 1; padding: 8px; border: none; outline: none; border-radius: 8px; background: #f0e6fa; }
@@ -79,56 +80,28 @@
     #addFriendBtn:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,0.25); }
     #addFriendBtn:active { transform: scale(0.96); }
 
-.chat-actions {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
+    .chat-actions { display: flex; gap: 6px; align-items: center; }
 
-/* CALL BUTTON */
-.call-btn {
-  background: linear-gradient(135deg, #25D366, #1ebe5d);
-  border: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  color: white;
-  font-size: 14px;
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  transition: all 0.25s ease;
-}
+    /* CALL BUTTON */
+    .call-btn {
+      background: linear-gradient(135deg, #25D366, #1ebe5d);
+      border: none; width: 36px; height: 36px; border-radius: 50%;
+      color: white; font-size: 14px; cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: all 0.25s ease;
+    }
+    .call-btn:hover { transform: scale(1.1); box-shadow: 0 6px 14px rgba(0,0,0,0.3); }
 
-.call-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 14px rgba(0,0,0,0.3);
-}
+    /* END BUTTON */
+    .end-btn {
+      background: linear-gradient(135deg, #ff4d4d, #d93636);
+      border: none; width: 36px; height: 36px; border-radius: 50%;
+      color: white; font-size: 14px; cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: all 0.25s ease;
+    }
+    .end-btn:hover { transform: scale(1.1); box-shadow: 0 6px 14px rgba(0,0,0,0.3); }
 
-/* END BUTTON */
-.end-btn {
-  background: linear-gradient(135deg, #ff4d4d, #d93636);
-  border: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  color: white;
-  font-size: 14px;
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  transition: all 0.25s ease;
-}
+    .call-btn:active, .end-btn:active { transform: scale(0.9); }
 
-.end-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 14px rgba(0,0,0,0.3);
-}
-
-/* CLICK EFFECT */
-.call-btn:active,
-.end-btn:active {
-  transform: scale(0.9);
-}    
-    
     /* ── Friends List ── */
     #friendsList { list-style: none; padding-left: 0; margin: 0; }
     #friendsList li { display: flex; justify-content: flex-start; gap: 8px; align-items: center; padding: 6px 4px; margin-bottom: 6px; }
@@ -139,7 +112,7 @@
     /* ── Error Banner ── */
     .error-banner { background: #f2e6ff; color: #800; padding: 8px 12px; border: 1px solid #d8b3ff; margin: 10px; border-radius: 6px; }
 
-    /* ── WhatsApp Float ── FIX: 'Top' → 'top' */
+    /* ── WhatsApp Float ── */
     .whatsapp-float { position: fixed; top: 55px; right: 20px; background: #25D366; color: white; padding: 2px 5px; border-radius: 10px; font-weight: bold; text-decoration: none; box-shadow: 0 6px 18px rgba(0,0,0,0.25); z-index: 999; font-size: 12px; transition: transform 0.3s ease; }
     .whatsapp-float:hover { transform: scale(1.1); }
   </style>
@@ -152,8 +125,7 @@
     <nav id="navLinks"></nav>
   </header>
 
-  <!-- FIX: WhatsApp button moved from <head> to <body> -->
-  <!-- FIX: Replace 91XXXXXXXXXX with real number before going live -->
+  <!-- Replace 91XXXXXXXXXX with the real number before going live -->
   <a href="https://wa.me/91XXXXXXXXXX" class="whatsapp-float" target="_blank" rel="noopener noreferrer">
     💬 Chat on WhatsApp
   </a>
@@ -169,14 +141,12 @@
     <div id="chatModal">
       <div id="chatHeader">
         <span id="chatWith">Friend</span>
-        <!-- FIX: onclick uses window.sendFriendRequest to safely call the global function -->
         <button id="addFriendBtn" onclick="window.sendFriendRequest()">Add Friend</button>
-  <button class="call-btn" onclick="startCall()">📞</button>
-  <button class="end-btn" onclick="endCall()">❌</button>
-  <button onclick="closeChat()">✖</button>
-</div> 
-          
-      
+        <button class="call-btn" onclick="startCall()">📞</button>
+        <button class="end-btn" onclick="endCall()">❌</button>
+        <button onclick="closeChat()">✖</button>
+      </div>
+
       <div id="chatMessages"></div>
       <div id="typingIndicator"></div>
       <div id="chatInputContainer">
@@ -190,7 +160,6 @@
     <div id="errorArea"></div>
   </div>
 
-  <!-- FIX: All JS consolidated into one script block for clarity and correct execution order -->
   <script>
     // ── Firebase Init ──────────────────────────────────────────────────────────
     const firebaseConfig = {
@@ -208,32 +177,39 @@
     const db = firebase.database();
 
     // ── DOM References ─────────────────────────────────────────────────────────
-    const nav           = document.getElementById("navLinks");
-    const userList      = document.getElementById("userList");
-    const chatModal     = document.getElementById("chatModal");
-    const chatMessages  = document.getElementById("chatMessages");
-    const chatWith      = document.getElementById("chatWith");
-    const chatInput     = document.getElementById("chatInput");
-    const sendBtn       = document.getElementById("sendBtn");
-    const fileBtn       = document.getElementById("fileBtn");
-    const chatFileInput = document.getElementById("chatFileInput");
+    const nav             = document.getElementById("navLinks");
+    const userList        = document.getElementById("userList");
+    const chatModal       = document.getElementById("chatModal");
+    const chatMessages    = document.getElementById("chatMessages");
+    const chatWith        = document.getElementById("chatWith");
+    const chatInput       = document.getElementById("chatInput");
+    const sendBtn         = document.getElementById("sendBtn");
+    const fileBtn         = document.getElementById("fileBtn");
+    const chatFileInput   = document.getElementById("chatFileInput");
     const typingIndicator = document.getElementById("typingIndicator");
-    const errorArea     = document.getElementById("errorArea");
+    const errorArea       = document.getElementById("errorArea");
 
     // ── State ──────────────────────────────────────────────────────────────────
     let currentUserUid       = "";
     let currentChatFriendUid = "";
     let currentChatListener  = null;
+    let typingRef            = null;
     let unreadCounters       = {};
     let lastChatTimestamps   = {};
     let typingTimeout;
     let cachedUsers          = {};
+    let friendUids           = [];
+
+    // Online-status handles (kept so logout can cancel them cleanly)
+    let statusRef        = null;
+    let connectedRef     = null;
+    let connectedHandler = null;
 
     // ── Error Handling ─────────────────────────────────────────────────────────
     window.addEventListener("error", e => showError(e.message || e));
 
     function showError(msg) {
-      errorArea.innerHTML = `<div class="error-banner">${escapeHtml(msg)}</div>`;
+      errorArea.innerHTML = `<div class="error-banner">${escapeHtml(String(msg))}</div>`;
     }
 
     // ── Utility ────────────────────────────────────────────────────────────────
@@ -242,6 +218,12 @@
     function escapeHtml(str) {
       if (typeof str !== "string") return "";
       return str.replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+    }
+
+    // One place that decides which field is shown as the user's name.
+    function getDisplayName(pub) {
+      pub = pub || {};
+      return pub.name || pub.displayName || pub.username || "Unknown";
     }
 
     // ── NSFW Filter ────────────────────────────────────────────────────────────
@@ -294,20 +276,31 @@
     // ── File Upload with NSFW Check ────────────────────────────────────────────
     chatFileInput.addEventListener("change", async (e) => {
       const files = Array.from(e.target.files);
+      const friendUid = currentChatFriendUid;   // capture: it can change while we await
+
+      if (!friendUid) {
+        showError("Select a user before sending a file.");
+        e.target.value = "";
+        return;
+      }
+
       for (const f of files) {
         const isUnsafe = await isImageNSFW(f);
         if (isUnsafe) {
           showError("🚫 NSFW image detected. Upload blocked for safety.");
           continue;
         }
-        const chatId = getChatId(currentUserUid, currentChatFriendUid);
+        const chatId = getChatId(currentUserUid, friendUid);
+        const now = Date.now();
         const tempMsgRef = db.ref(`chats/${chatId}/messages`).push({
           sender: currentUserUid,
-          receiver: currentChatFriendUid,
+          receiver: friendUid,
           uploading: true,
           fileName: f.name,
-          timestamp: Date.now()
+          timestamp: now
         });
+        touchChat(friendUid, now);
+
         const reader = new FileReader();
         reader.onload = (ev) => {
           tempMsgRef.update({
@@ -315,20 +308,20 @@
             fileData: ev.target.result,
             fileType: f.type
           });
-          db.ref(`unread/${currentChatFriendUid}/${currentUserUid}/${tempMsgRef.key}`).set(true);
+          db.ref(`unread/${friendUid}/${currentUserUid}/${tempMsgRef.key}`).set(true);
         };
         reader.readAsDataURL(f);
       }
-      // Reset input so same file can be re-selected if needed
       e.target.value = "";
     });
 
     // ── Auth ───────────────────────────────────────────────────────────────────
-   auth.onAuthStateChanged(user => {
-  if (user && (user.isAnonymous || user.emailVerified)) {
-    currentUserUid = user.uid;
-    listenCallEnd();
-            nav.innerHTML = `
+    auth.onAuthStateChanged(user => {
+      if (user && (user.isAnonymous || user.emailVerified)) {
+        currentUserUid = user.uid;
+        listenCallEnd();
+
+        nav.innerHTML = `
           <a href="index.html">Home</a>
           <a href="friends.html">Friends</a>
           <a href="stories.html">Stories</a>
@@ -337,15 +330,13 @@
           <a href="notification.html">Notification <span id="notifBadge" class="badge" style="display:none;"></span></a>
           <a href="#" id="logoutBtn">Logout</a>`;
 
-        document.getElementById("logoutBtn").onclick = () => {
-          db.ref(`users/${currentUserUid}/public/online`).set(false);
-          localStorage.removeItem("lastChatFriendUid");
-          localStorage.removeItem("lastChatFriendName");
-          auth.signOut().then(() => window.location.href = "login.html");
+        document.getElementById("logoutBtn").onclick = (e) => {
+          e.preventDefault();
+          handleLogout(user);
         };
 
         setupOnlineStatus();
-        initUsersListener();         // fills cachedUsers first
+        initUsersListener();         // fills cachedUsers
         setupUnreadListener();
         listenLastMessagesForUserList();
         listenFriendsList();
@@ -362,61 +353,116 @@
       }
     });
 
-    // ── Online Status ──────────────────────────────────────────────────────────
-    function setupOnlineStatus() {
-      const statusRef = db.ref(`users/${currentUserUid}/public/online`);
-      db.ref(".info/connected").on("value", snap => {
-        if (snap && snap.val()) {
-          statusRef.set(true);
-          statusRef.onDisconnect().set(false);
+    // ── Logout ─────────────────────────────────────────────────────────────────
+    // Guests: remove profile + release the name together (no ghost profiles).
+    // Registered users: just mark offline.
+    async function removeGuestIdentity(user) {
+      try {
+        let username = sessionStorage.getItem("guest_username");
+        if (!username) {
+          const snap = await db.ref(`users/${user.uid}/public/username`).once("value");
+          if (typeof snap.val() === "string") username = snap.val();
         }
-      });
+
+        const updates = {};
+        updates[`users/${user.uid}/public`] = null;
+
+        if (username) {
+          const owner = await db.ref(`usernames/${username}`).once("value");
+          if (owner.val() === user.uid) updates[`usernames/${username}`] = null;
+        }
+        await db.ref().update(updates);
+      } catch (err) {
+        console.warn("Guest cleanup failed:", err);   // never block logout
+      }
+    }
+
+    async function stopOnlineStatus() {
+      try {
+        if (connectedRef && connectedHandler) connectedRef.off("value", connectedHandler);
+        if (statusRef) await statusRef.onDisconnect().cancel();   // otherwise it recreates a ghost node
+      } catch (err) {
+        console.warn("stopOnlineStatus:", err);
+      }
+    }
+
+    async function handleLogout(user) {
+      try {
+        await stopOnlineStatus();
+        if (user.isAnonymous) {
+          await removeGuestIdentity(user);
+        } else {
+          await db.ref(`users/${user.uid}/public/online`).set(false);
+        }
+      } catch (err) {
+        console.warn("Logout cleanup:", err);
+      }
+
+      localStorage.removeItem("lastChatFriendUid");
+      localStorage.removeItem("lastChatFriendName");
+      sessionStorage.removeItem("current_user");
+      sessionStorage.removeItem("guest_name");
+      sessionStorage.removeItem("guest_username");
+
+      await auth.signOut();
+      window.location.href = "login.html";
+    }
+
+    // ── Online Status ──────────────────────────────────────────────────────────
+    async function setupOnlineStatus() {
+      statusRef    = db.ref(`users/${currentUserUid}/public/online`);
+      connectedRef = db.ref(".info/connected");
+
+      // Only for real profiles, so we never create an empty "ghost" profile.
+      try {
+        const has = await db.ref(`users/${currentUserUid}/public/username`).once("value");
+        if (!has.exists()) { statusRef = null; return; }
+      } catch (err) {
+        statusRef = null;
+        return;
+      }
+
+      connectedHandler = snap => {
+        if (snap && snap.val()) {
+          statusRef.onDisconnect().set(false).then(() => statusRef.set(true));
+        }
+      };
+      connectedRef.on("value", connectedHandler);
     }
 
     // ── Users List ─────────────────────────────────────────────────────────────
-function initUsersListener() {
- const sources = { users: {}, registeredUsers: {}, guestUsers: {} };
-
-  function rebuild() {
-    cachedUsers = {};
-    // later sources override earlier ones
-    ["users", "guestUsers", "registeredUsers"].forEach(src => {
-      Object.entries(sources[src]).forEach(([uid, pub]) => {
-        cachedUsers[uid] = { public: { ...(cachedUsers[uid]?.public || {}), ...pub } };
+    function initUsersListener() {
+      db.ref("users").on("value", snap => {
+        const next = {};
+        snap.forEach(child => {
+          const pub = child.child("public").val();
+          // Skip empty/ghost profiles that have no name at all
+          if (pub && (pub.name || pub.displayName || pub.username)) {
+            next[child.key] = { public: pub };
+          }
+        });
+        cachedUsers = next;
+        renderUserList(cachedUsers);
+        renderFriendsList();            // names may have just arrived
+      }, err => {
+        console.error("users listener:", err);
+        showError("Could not load users: " + err.message);
       });
-    });
-    renderUserList(cachedUsers);
-  }
+    }
 
-  Object.keys(sources).forEach(src => {
-    db.ref(src).on("value", snap => {
-      sources[src] = {};
-      snap.forEach(child => {
-        const pub = child.child("public").val();
-        if (pub) sources[src][child.key] = pub;
-      });
-      rebuild();
-    });
-  });
-    
-
-
-    
-function renderUserList(users) {
-  const friends = Object.keys(users)
-    .filter(uid => uid !== currentUserUid)
-    .map(uid => {
-      const u = users[uid].public || {};
-      return {
-        uid,
-        name:   u.name || u.displayName || u.username || "Unknown",
-        gender: u.gender || "N/A",
-        online: !!u.online,
-        time:   lastChatTimestamps[uid] || 0
-      };
-    });
-  // ...the rest of the function (sort, render rows) stays unchanged
-}
+    function renderUserList(users) {
+      const friends = Object.keys(users)
+        .filter(uid => uid !== currentUserUid)
+        .map(uid => {
+          const u = users[uid].public || {};
+          return {
+            uid,
+            name:   getDisplayName(u),
+            gender: u.gender || "N/A",
+            online: !!u.online,
+            time:   lastChatTimestamps[uid] || 0
+          };
+        });
 
       friends.sort((a, b) => {
         const unreadA = unreadCounters[a.uid] || 0;
@@ -452,55 +498,59 @@ function renderUserList(users) {
       updateFriendListBadges();
     }
 
+    // ── Last-message index (needs the userChats rule) ──────────────────────────
+    function touchChat(otherUid, ts) {
+      if (!otherUid) return;
+      db.ref().update({
+        [`userChats/${currentUserUid}/${otherUid}`]: ts,
+        [`userChats/${otherUid}/${currentUserUid}`]: ts
+      }).catch(err => console.warn("userChats not updated:", err.message));
+    }
+
     function listenLastMessagesForUserList() {
-      db.ref("chats").on("child_added", chatSnap => {
-        const members = chatSnap.child("members").val() || {};
-        if (!members[currentUserUid]) return;
-        chatSnap.ref.child("messages").orderByChild("timestamp").limitToLast(1).on("value", snap => {
-          if (!snap.exists()) return;
-          const msg = Object.values(snap.val())[0];
-          const otherUid = msg.sender === currentUserUid ? msg.receiver : msg.sender;
-          lastChatTimestamps[otherUid] = msg.timestamp;
-          if (Object.keys(cachedUsers).length > 0) renderUserList(cachedUsers);
-        });
-      });
+      db.ref(`userChats/${currentUserUid}`).on("value", snap => {
+        lastChatTimestamps = snap.val() || {};
+        if (Object.keys(cachedUsers).length > 0) renderUserList(cachedUsers);
+      }, err => console.warn("userChats listener:", err.message));
     }
 
     // ── Friends List ───────────────────────────────────────────────────────────
     function listenFriendsList() {
       db.ref(`friends/${currentUserUid}`).on("value", snapshot => {
-        const list = document.getElementById("friendsList");
-        list.innerHTML = "";
+        friendUids = snapshot.exists() ? [...new Set(Object.keys(snapshot.val()))] : [];
+        renderFriendsList();
+      }, err => console.warn("friends listener:", err.message));
+    }
 
-        if (!snapshot.exists()) {
-          list.innerHTML = "<li>No friends yet</li>";
-          return;
-        }
+    function renderFriendsList() {
+      const list = document.getElementById("friendsList");
+      list.innerHTML = "";
 
-        const uniqueFriends = [...new Set(Object.keys(snapshot.val()))];
+      if (friendUids.length === 0) {
+        list.innerHTML = "<li>No friends yet</li>";
+        return;
+      }
 
-        uniqueFriends.forEach(friendUid => {
-          // FIX: cachedUsers may not be populated yet; use optional chaining safely
-          const name = cachedUsers?.[friendUid]?.public?.name || "Unknown User";
+      friendUids.forEach(friendUid => {
+        const name = getDisplayName(cachedUsers?.[friendUid]?.public);
 
-          const li       = document.createElement("li");
-          const nameSpan = document.createElement("span");
-          nameSpan.textContent = name;
-          nameSpan.style.cursor = "pointer";
-          nameSpan.onclick = () => openChat(friendUid, name);
+        const li       = document.createElement("li");
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = name;
+        nameSpan.style.cursor = "pointer";
+        nameSpan.onclick = () => openChat(friendUid, name);
 
-          const viewBtn       = document.createElement("button");
-          viewBtn.textContent = "View";
-          viewBtn.className   = "view";
-          viewBtn.onclick = (e) => {
-            e.stopPropagation();
-            window.location.href = `profile.html?uid=${friendUid}`;
-          };
+        const viewBtn       = document.createElement("button");
+        viewBtn.textContent = "View";
+        viewBtn.className   = "view";
+        viewBtn.onclick = (e) => {
+          e.stopPropagation();
+          window.location.href = `profile.html?uid=${encodeURIComponent(friendUid)}`;
+        };
 
-          li.appendChild(nameSpan);
-          li.appendChild(viewBtn);
-          list.appendChild(li);
-        });
+        li.appendChild(nameSpan);
+        li.appendChild(viewBtn);
+        list.appendChild(li);
       });
     }
 
@@ -535,7 +585,6 @@ function renderUserList(users) {
 
     // ── Open Chat ──────────────────────────────────────────────────────────────
     function openChat(uid, name) {
-      // FIX: Set currentChatFriendUid ONCE, at the top
       currentChatFriendUid = uid;
       checkFriendStatus(uid);
 
@@ -558,10 +607,9 @@ function renderUserList(users) {
 
       const chatId = getChatId(currentUserUid, uid);
 
-      // FIX: Remove ALL listeners cleanly before attaching new ones
-      if (currentChatListener) {
-        currentChatListener.off();
-      }
+      // Remove old listeners before attaching new ones
+      if (currentChatListener) currentChatListener.off();
+      if (typingRef) { typingRef.off(); typingRef = null; }
 
       db.ref(`chats/${chatId}/members`).update({ [currentUserUid]: true, [uid]: true });
 
@@ -580,7 +628,7 @@ function renderUserList(users) {
       // Realtime: new messages
       chatRef.on("child_added", snap => {
         const msg = { ...snap.val(), _key: snap.key };
-        if (document.getElementById(`msg-${snap.key}`)) return; // skip already-loaded
+        if (document.getElementById(`msg-${snap.key}`)) return;
 
         addOrUpdateMessageToChat(msg);
 
@@ -601,7 +649,7 @@ function renderUserList(users) {
         }
       });
 
-      // Realtime: updated messages (e.g. image finish uploading)
+      // Realtime: updated messages (e.g. image finished uploading)
       chatRef.on("child_changed", snap => {
         addOrUpdateMessageToChat({ ...snap.val(), _key: snap.key });
       });
@@ -609,7 +657,10 @@ function renderUserList(users) {
       listenTyping(uid);
     }
 
-    // ── Render Message ─────────────────────────────────────────────────────────
+    // ── Render Message (built with DOM nodes, so message data can never inject HTML) ──
+    const SAFE_IMAGE = /^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$/i;
+    const SAFE_FILE  = /^data:[a-z0-9.+-]+\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]+$/i;
+
     function addOrUpdateMessageToChat(msg) {
       if (!msg || !msg._key) return;
       const id     = `msg-${msg._key}`;
@@ -621,25 +672,39 @@ function renderUserList(users) {
         el.className = `message ${isSelf ? "self" : "friend"}`;
         chatMessages.appendChild(el);
       }
+      el.textContent = "";
 
-      const ts = `<span class="timestamp ${isSelf ? "" : "friend"}">${new Date(msg.timestamp).toLocaleString()}</span>`;
+      const fileName = typeof msg.fileName === "string" ? msg.fileName : "file";
 
-      if (msg.fileData) {
-        const isImage = msg.fileType?.startsWith("image/") || /\.(jpg|jpeg|png|gif)$/i.test(msg.fileName || "");
-        if (isImage) {
-          // FIX: fileData is a data URL — safe to use directly; fileName escaped for display only
-          el.innerHTML = `<img class="chat-image" src="${msg.fileData}" alt="${escapeHtml(msg.fileName || 'image')}">${ts}`;
-        } else {
-          // FIX: escapeHtml applied to fileName in download attribute
-          el.innerHTML = `<a href="${msg.fileData}" download="${escapeHtml(msg.fileName || "file")}">⬇️ ${escapeHtml(msg.fileName || "file")}</a>${ts}`;
-        }
+      if (typeof msg.fileData === "string" && SAFE_IMAGE.test(msg.fileData)) {
+        const img = document.createElement("img");
+        img.className = "chat-image";
+        img.src = msg.fileData;
+        img.alt = fileName;
+        el.appendChild(img);
+      } else if (typeof msg.fileData === "string" && SAFE_FILE.test(msg.fileData)) {
+        const a = document.createElement("a");
+        a.href = msg.fileData;
+        a.download = fileName;
+        a.textContent = "⬇️ " + fileName;
+        el.appendChild(a);
       } else if (msg.uploading) {
-        el.innerHTML = `<span class="uploading-badge">Sending ${escapeHtml(msg.fileName || "...")}</span>${ts}`;
-      } else if (msg.text) {
-        el.innerHTML = `${escapeHtml(msg.text)}<div class="timestamp ${isSelf ? "" : "friend"}">${new Date(msg.timestamp).toLocaleString()}</div>`;
+        const badge = document.createElement("span");
+        badge.className = "uploading-badge";
+        badge.textContent = "Sending " + fileName;
+        el.appendChild(badge);
+      } else if (typeof msg.text === "string" && msg.text) {
+        el.appendChild(document.createTextNode(msg.text));
       } else {
-        el.innerHTML = `<div class="small-muted">Unknown message</div>`;
+        const small = document.createElement("div");
+        small.textContent = "Unknown message";
+        el.appendChild(small);
       }
+
+      const ts = document.createElement("span");
+      ts.className = "timestamp";
+      ts.textContent = new Date(msg.timestamp).toLocaleString();
+      el.appendChild(ts);
 
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
@@ -647,13 +712,15 @@ function renderUserList(users) {
     // ── Typing ─────────────────────────────────────────────────────────────────
     chatInput.addEventListener("input", () => {
       if (!currentChatFriendUid) return;
-      db.ref(`typing/${currentChatFriendUid}/${currentUserUid}`).set(true);
+      const friendUid = currentChatFriendUid;
+      db.ref(`typing/${friendUid}/${currentUserUid}`).set(true);
       clearTimeout(typingTimeout);
-      typingTimeout = setTimeout(() => db.ref(`typing/${currentChatFriendUid}/${currentUserUid}`).remove(), 1000);
+      typingTimeout = setTimeout(() => db.ref(`typing/${friendUid}/${currentUserUid}`).remove(), 1000);
     });
 
     function listenTyping(uid) {
-      db.ref(`typing/${currentUserUid}/${uid}`).on("value", snap => {
+      typingRef = db.ref(`typing/${currentUserUid}/${uid}`);
+      typingRef.on("value", snap => {
         typingIndicator.textContent = snap.exists() ? `${chatWith.textContent} is typing...` : "";
       });
     }
@@ -662,11 +729,13 @@ function renderUserList(users) {
     function sendMessage() {
       const text = chatInput.value.trim();
       if (!text || !currentChatFriendUid) return;
-      const chatId = getChatId(currentUserUid, currentChatFriendUid);
-      const msg = { sender: currentUserUid, receiver: currentChatFriendUid, text, timestamp: Date.now() };
+      const friendUid = currentChatFriendUid;
+      const chatId = getChatId(currentUserUid, friendUid);
+      const msg = { sender: currentUserUid, receiver: friendUid, text: text.slice(0, 2000), timestamp: Date.now() };
       chatInput.value = "";
       const msgRef = db.ref(`chats/${chatId}/messages`).push(msg);
-      db.ref(`unread/${currentChatFriendUid}/${currentUserUid}/${msgRef.key}`).set(true);
+      db.ref(`unread/${friendUid}/${currentUserUid}/${msgRef.key}`).set(true);
+      touchChat(friendUid, msg.timestamp);
     }
 
     sendBtn.onclick = sendMessage;
@@ -677,10 +746,8 @@ function renderUserList(users) {
     function closeChat() {
       chatModal.style.display = "none";
       currentChatFriendUid = "";
-      if (currentChatListener) {
-        currentChatListener.off();
-        currentChatListener = null;
-      }
+      if (currentChatListener) { currentChatListener.off(); currentChatListener = null; }
+      if (typingRef) { typingRef.off(); typingRef = null; }
     }
 
     // ── Friend Status & Requests ───────────────────────────────────────────────
@@ -690,7 +757,6 @@ function renderUserList(users) {
       btn.style.display = snap.exists() ? "none" : "inline-block";
     }
 
-    // FIX: Exposed as window.sendFriendRequest so inline onclick can reach it
     window.sendFriendRequest = async function () {
       if (!currentChatFriendUid) { alert("No user selected"); return; }
       try {
@@ -722,7 +788,6 @@ function renderUserList(users) {
 
     // ── Notification Count ─────────────────────────────────────────────────────
     function listenNotificationCount() {
-      // FIX: notifBadge is injected by auth listener; this is called after nav is built — safe
       db.ref(`friendRequests/${currentUserUid}`).on("value", snap => {
         const badge = document.getElementById("notifBadge");
         if (!badge) return;
@@ -758,174 +823,154 @@ function renderUserList(users) {
     });
   </script>
 
+  <script src="https://unpkg.com/@zegocloud/zego-uikit-prebuilt/zego-uikit-prebuilt.js"></script>
 
+  <div id="callContainer" style="display:none; width:100%; height:100vh;"></div>
 
-  
- <script src="https://unpkg.com/@zegocloud/zego-uikit-prebuilt/zego-uikit-prebuilt.js"></script> 
+  <script>
+    // WARNING: a secret in browser code is public. Rotate this secret in the Zego
+    // console and generate tokens on a server (e.g. a Cloud Function) instead.
+    const appID = 1465354768;
+    const serverSecret = "5a379bb5617baa3d43734b4a818502d7";
 
-<div id="callContainer" style="display:none; width:100%; height:100vh;"></div>
-
-  <script>  
-    const appID = 1465354768; // number
-const serverSecret = "5a379bb5617baa3d43734b4a818502d7";
-
- 
-  function startCall() {
-  if (!currentChatFriendUid) {
-    alert("Select a user first");
-    return;
-  }
-
-  const callID = getChatId(currentUserUid, currentChatFriendUid) + "_" + Date.now();
-  // Notify receiver
-db.ref(`calls/${currentChatFriendUid}`).push({
-  from: currentUserUid,
-  callID: callID,
-  timestamp: Date.now()
-});
-    
-  // Start call for caller
-  joinCall(callID);
-}
-let incomingCallHandled = false;
-    function listenIncomingCalls() {
-  // Get current server timestamp first, then only listen for calls AFTER this point
-  const startTime = Date.now();
-
-  db.ref(`calls/${currentUserUid}`)
-    .orderByChild("timestamp")
-    .startAt(startTime)          // ← only NEW calls from now on
-    .on("child_added", snap => {
-      if (incomingCallHandled) return;
-      const callData = snap.val();
-      if (!callData) return;
-
-      // Extra safety: ignore anything older than 10 seconds
-      if (Date.now() - callData.timestamp > 10000) {
-        snap.ref.remove();
+    function startCall() {
+      if (!currentChatFriendUid) {
+        alert("Select a user first");
         return;
       }
 
-      incomingCallHandled = true;
+      const callID = getChatId(currentUserUid, currentChatFriendUid) + "_" + Date.now();
 
-      const accept = confirm("📞 Incoming call. Accept?");
-      if (accept) joinCall(callData.callID);
+      // Notify receiver
+      db.ref(`calls/${currentChatFriendUid}`).push({
+        from: currentUserUid,
+        callID: callID,
+        timestamp: Date.now()
+      });
 
-      snap.ref.remove();
-
-      setTimeout(() => { incomingCallHandled = false; }, 5000);
-    });
-}
-    
-    
-function joinCall(callID) {
-  document.getElementById("chatModal").style.display = "none";
-  document.getElementById("callContainer").style.display = "block";
-
-  const userID = currentUserUid;
-  const userName = "User_" + userID;
-
-  const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
-    appID,
-    serverSecret,
-    callID,
-    userID,
-    userName
-  );
-
-  const zp = ZegoUIKitPrebuilt.create(kitToken);
-
-  window.currentCallInstance = zp; // ✅ IMPORTANT (you missed this)
-
-  zp.joinRoom({
-    container: document.querySelector("#callContainer"),
-    scenario: {
-      mode: ZegoUIKitPrebuilt.OneONoneCall,
-    },
-    showPreJoinView: false,
-    showLeaveRoomConfirmDialog: false,    // ← disables Zego's confirm popup
-    turnOnCameraWhenJoining: false,
-    turnOnMicrophoneWhenJoining: false,
-    showMyCameraToggleButton: true,
-    showMyMicrophoneToggleButton: true,
-    onLeaveRoom: () => {
-      handleCallCleanup();
-    }
-  });
-}
-// ✅ NOW this is outside properly
-
-function listenCallEnd() {
-  db.ref(`callEnd/${currentUserUid}`).on("value", snap => {
-    if (!snap.exists()) return;             // ← ignore null triggers
-
-    if (window.currentCallInstance) {
-      try { window.currentCallInstance.destroy(); } catch (e) {}
-      window.currentCallInstance = null;
+      joinCall(callID);
     }
 
-    snap.ref.remove();
-    resetCallUI();
-  });
-}    
-function endCall() {
-  if (window.currentCallInstance) {
-    try {
-      window.currentCallInstance.destroy();   // ← destroy directly, no leaveRoom()
-    } catch (e) {}
-    window.currentCallInstance = null;
-  }
+    let incomingCallHandled = false;
 
-  // notify other user
-  const callID = getChatId(currentUserUid, currentChatFriendUid);
-  db.ref(`callEnd/${currentChatFriendUid}/${callID}`).set(true);
+    function listenIncomingCalls() {
+      const startTime = Date.now();   // only calls made after this point
 
-  // reset UI
-  const container = document.getElementById("callContainer");
-  container.innerHTML = "";
-  container.style.display = "none";
-  document.getElementById("chatModal").style.display = "flex";
-}
- 
+      db.ref(`calls/${currentUserUid}`)
+        .orderByChild("timestamp")
+        .startAt(startTime)
+        .on("child_added", snap => {
+          if (incomingCallHandled) return;
+          const callData = snap.val();
+          if (!callData) return;
 
-// ✅ Move this OUTSIDE
-function resetCallUI() {
-  const oldContainer = document.getElementById("callContainer");
+          if (Date.now() - callData.timestamp > 10000) {
+            snap.ref.remove();
+            return;
+          }
 
-  if (oldContainer) {
-    oldContainer.innerHTML = "";
-    oldContainer.style.display = "none";
+          incomingCallHandled = true;
 
-    const newContainer = document.createElement("div");
-    newContainer.id = "callContainer";
-    newContainer.style.width = "100%";
-    newContainer.style.height = "100vh";
-    newContainer.style.display = "none";
+          const accept = confirm("📞 Incoming call. Accept?");
+          if (accept) joinCall(callData.callID);
 
-    oldContainer.parentNode.replaceChild(newContainer, oldContainer);
-  }
+          snap.ref.remove();
 
-  document.getElementById("chatModal").style.display = "flex";
-}    
+          setTimeout(() => { incomingCallHandled = false; }, 5000);
+        }, err => console.warn("calls listener:", err.message));
+    }
 
-  function handleCallCleanup() {
-  if (window.currentCallInstance) {
-    try {
-      window.currentCallInstance.destroy();
-    } catch (e) {}
+    function joinCall(callID) {
+      document.getElementById("chatModal").style.display = "none";
+      document.getElementById("callContainer").style.display = "block";
 
-    window.currentCallInstance = null;
-  }
+      const userID = currentUserUid;
+      const userName = "User_" + userID;
 
-  const container = document.getElementById("callContainer");
-  container.innerHTML = "";
-  container.style.display = "none";
+      const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
+        appID, serverSecret, callID, userID, userName
+      );
 
-  document.getElementById("chatModal").style.display = "flex";
-}
-  
-  </script> 
-  
+      const zp = ZegoUIKitPrebuilt.create(kitToken);
+      window.currentCallInstance = zp;
+
+      zp.joinRoom({
+        container: document.querySelector("#callContainer"),
+        scenario: { mode: ZegoUIKitPrebuilt.OneONoneCall },
+        showPreJoinView: false,
+        showLeaveRoomConfirmDialog: false,
+        turnOnCameraWhenJoining: false,
+        turnOnMicrophoneWhenJoining: false,
+        showMyCameraToggleButton: true,
+        showMyMicrophoneToggleButton: true,
+        onLeaveRoom: () => { handleCallCleanup(); }
+      });
+    }
+
+    function listenCallEnd() {
+      db.ref(`callEnd/${currentUserUid}`).on("value", snap => {
+        if (!snap.exists()) return;
+
+        if (window.currentCallInstance) {
+          try { window.currentCallInstance.destroy(); } catch (e) {}
+          window.currentCallInstance = null;
+        }
+
+        snap.ref.remove();
+        resetCallUI();
+      }, err => console.warn("callEnd listener:", err.message));
+    }
+
+    function endCall() {
+      if (window.currentCallInstance) {
+        try { window.currentCallInstance.destroy(); } catch (e) {}
+        window.currentCallInstance = null;
+      }
+
+      if (currentChatFriendUid) {
+        const callID = getChatId(currentUserUid, currentChatFriendUid);
+        db.ref(`callEnd/${currentChatFriendUid}/${callID}`).set(true)
+          .catch(err => console.warn("callEnd not sent:", err.message));
+      }
+
+      const container = document.getElementById("callContainer");
+      container.innerHTML = "";
+      container.style.display = "none";
+      document.getElementById("chatModal").style.display = "flex";
+    }
+
+    function resetCallUI() {
+      const oldContainer = document.getElementById("callContainer");
+
+      if (oldContainer) {
+        oldContainer.innerHTML = "";
+        oldContainer.style.display = "none";
+
+        const newContainer = document.createElement("div");
+        newContainer.id = "callContainer";
+        newContainer.style.width = "100%";
+        newContainer.style.height = "100vh";
+        newContainer.style.display = "none";
+
+        oldContainer.parentNode.replaceChild(newContainer, oldContainer);
+      }
+
+      document.getElementById("chatModal").style.display = "flex";
+    }
+
+    function handleCallCleanup() {
+      if (window.currentCallInstance) {
+        try { window.currentCallInstance.destroy(); } catch (e) {}
+        window.currentCallInstance = null;
+      }
+
+      const container = document.getElementById("callContainer");
+      container.innerHTML = "";
+      container.style.display = "none";
+
+      document.getElementById("chatModal").style.display = "flex";
+    }
+  </script>
+
 </body>
 </html>
-
