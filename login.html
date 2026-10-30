@@ -205,7 +205,7 @@ const db = firebase.database();
 </main>
 
 <footer>
-    <p>&copy; 2026 BabuShona. All rights reserved.</p>
+    <p>&copy; 2026 BabuShona. All rights reserved. <small>v3-unique-names</small></p>
 </footer>
 
 <script>
@@ -257,6 +257,35 @@ async function releaseUsername(username, uid) {
         });
     } catch (err) {
         console.error("Username release error:", err);
+    }
+}
+
+/* Remove a guest's profile and name together, so no stale
+   "ghost" profile is left behind after logout. */
+async function removeGuestIdentity(user) {
+    try {
+        let username = sessionStorage.getItem("guest_username");
+
+        if (!username) {
+            const snap = await db.ref("users/" + user.uid + "/public/username")
+                .once("value");
+            if (typeof snap.val() === "string") username = snap.val();
+        }
+
+        const updates = {};
+        updates["users/" + user.uid + "/public"] = null;
+
+        if (username) {
+            const owner = await db.ref("usernames/" + username).once("value");
+            if (owner.val() === user.uid) {
+                updates["usernames/" + username] = null;
+            }
+        }
+
+        await db.ref().update(updates);
+    } catch (err) {
+        // Never block logout because cleanup failed.
+        console.warn("Guest cleanup failed:", err);
     }
 }
 
@@ -333,12 +362,9 @@ auth.onAuthStateChanged(function(user) {
                 e.preventDefault();
 
                 try {
-                    // Guests give their name back when they log out.
+                    // Guests give back their name and profile on logout.
                     if (user.isAnonymous) {
-                        await releaseUsername(
-                            sessionStorage.getItem("guest_username"),
-                            user.uid
-                        );
+                        await removeGuestIdentity(user);
                     }
 
                     sessionStorage.removeItem("current_user");
@@ -382,11 +408,16 @@ document.getElementById("loginForm")
                 return;
             }
 
-            // Write to a child path so the profile's username rule is not
-            // re-checked, and never let this block a successful login.
+            // Only touch lastLogin if a profile already exists, so login never
+            // creates a half-empty profile. Never let this block the login.
             try {
-                await db.ref("users/" + user.uid + "/public/lastLogin")
-                    .set(Date.now());
+                const hasProfile = await db
+                    .ref("users/" + user.uid + "/public/username")
+                    .once("value");
+                if (hasProfile.exists()) {
+                    await db.ref("users/" + user.uid + "/public/lastLogin")
+                        .set(Date.now());
+                }
             } catch (err) {
                 console.warn("lastLogin not saved:", err);
             }
@@ -435,7 +466,9 @@ document.getElementById("guestLoginButton")
             return;
         }
 
-        if (normalizeUsername(guestName).length < MIN_NAME_LENGTH) {
+        const base = normalizeUsername(guestName);
+
+        if (base.length < MIN_NAME_LENGTH) {
             showMessage(
                 "Please use at least " + MIN_NAME_LENGTH +
                 " English letters, numbers or underscores."
@@ -450,6 +483,7 @@ document.getElementById("guestLoginButton")
         let reserved = null;        // { username, name }
         let guestUid = null;
         let profileSaved = false;
+        let newlyReserved = false;
 
         try {
             let user = auth.currentUser;
@@ -461,8 +495,7 @@ document.getElementById("guestLoginButton")
 
             guestUid = user.uid;
 
-            // If this guest already holds a name, remember it so it can be
-            // released after the new one is saved (one name per guest).
+            // Does this guest already hold a name from an earlier visit?
             let previousUsername = null;
             try {
                 const prev = await db.ref("users/" + guestUid + "/public/username")
@@ -471,13 +504,32 @@ document.getElementById("guestLoginButton")
                     previousUsername = prev.val();
                 }
             } catch (err) {
-                // No existing profile, or not readable: nothing to release.
+                // No existing profile or not readable: nothing to reuse.
             }
 
-            // 1) Reserve the name first. The profile rule checks this claim.
-            reserved = await reserveUniqueUsername(guestName, guestUid);
+            // Reuse the existing name if the guest typed the same base name
+            // (so "Sameer" stays "Sameer3205" instead of changing every login).
+            if (previousUsername &&
+                new RegExp("^" + base + "(\\d{4})?$").test(previousUsername)) {
+                const owner = await db.ref("usernames/" + previousUsername)
+                    .once("value");
+                if (owner.val() === guestUid) {
+                    reserved = {
+                        username: previousUsername,
+                        name: guestName.slice(0, 15) +
+                              previousUsername.slice(base.length)
+                    };
+                }
+            }
 
-            // 2) Save the profile. username and name are plain strings.
+            // 1) Reserve a new name first. The profile rule checks this claim.
+            if (!reserved) {
+                reserved = await reserveUniqueUsername(guestName, guestUid);
+                newlyReserved = true;
+            }
+
+            // 2) Save the profile. name and displayName are identical,
+            //    username is the claimed key. All plain strings.
             await db.ref("users/" + guestUid + "/public").update({
                 name: reserved.name,
                 displayName: reserved.name,
@@ -488,7 +540,9 @@ document.getElementById("guestLoginButton")
 
             profileSaved = true;
 
-            if (previousUsername && previousUsername !== reserved.username) {
+            // Give back the old name only after the new profile is saved.
+            if (newlyReserved && previousUsername &&
+                previousUsername !== reserved.username) {
                 await releaseUsername(previousUsername, guestUid);
             }
 
@@ -496,7 +550,7 @@ document.getElementById("guestLoginButton")
             sessionStorage.setItem("guest_name", reserved.name);
             sessionStorage.setItem("guest_username", reserved.username);
 
-            if (reserved.username !== normalizeUsername(guestName)) {
+            if (reserved.username !== base) {
                 showMessage(
                     "That name is taken. Your name is " + reserved.name + ".",
                     "success"
@@ -510,8 +564,8 @@ document.getElementById("guestLoginButton")
         } catch (error) {
             console.error("Guest login error:", error);
 
-            // Give the reserved name back if the profile was not saved.
-            if (reserved && guestUid && !profileSaved) {
+            // Give back a newly reserved name if the profile was not saved.
+            if (reserved && newlyReserved && guestUid && !profileSaved) {
                 await releaseUsername(reserved.username, guestUid);
             }
 
