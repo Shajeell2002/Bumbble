@@ -89,9 +89,7 @@ nav a:hover { text-decoration: underline; }
     border-radius: 6px;
 }
 
-.edit-section textarea {
-    resize: none;
-}
+.edit-section textarea { resize: none; }
 
 .save-btn {
     width: 100%;
@@ -105,17 +103,13 @@ nav a:hover { text-decoration: underline; }
     color: white;
 }
 
-.save-btn:hover {
-    background: #3b2370;
-}
+.save-btn:hover { background: #3b2370; }
+.save-btn:disabled { opacity: 0.65; cursor: not-allowed; }
 
-.error-msg {
-    color: red;
-    font-size: 14px;
-    margin-top: 5px;
-}
+.error-msg { color: red; font-size: 14px; margin-top: 5px; }
+.info-msg  { color: #1b5e20; font-size: 14px; margin-top: 5px; }
+</style>
 
-</Style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -133,7 +127,7 @@ nav a:hover { text-decoration: underline; }
 
   <div class="profile-card">
 
-    <img id="profilePreview" class="profile-pic" src="images/profile1.png">
+    <img id="profilePreview" class="profile-pic" alt="Profile picture">
 
     <h2 id="displayName">Your Name</h2>
 
@@ -141,7 +135,7 @@ nav a:hover { text-decoration: underline; }
 
       <input type="file" id="profilePic" accept="image/*">
 
-      <input type="text" id="name" placeholder="Full Name">
+      <input type="text" id="name" placeholder="Full Name" maxlength="30">
       <input type="number" id="age" placeholder="Age">
       <input type="text" id="location" placeholder="Location">
 
@@ -158,9 +152,10 @@ nav a:hover { text-decoration: underline; }
 
       <input type="text" id="interests" placeholder="Interests (music, travel, sports)">
 
-      <button class="save-btn" onclick="updateProfile()">Save Changes</button>
+      <button class="save-btn" id="saveBtn" onclick="updateProfile()">Save Changes</button>
 
       <p class="error-msg" id="errorMsg"></p>
+      <p class="info-msg" id="infoMsg"></p>
 
     </div>
 
@@ -184,12 +179,90 @@ const db = firebase.database();
 
 const nav = document.getElementById("navLinks");
 const errorMsg = document.getElementById("errorMsg");
+const infoMsg = document.getElementById("infoMsg");
 const profilePreview = document.getElementById("profilePreview");
-let profileBase64 = "";
 
-// Navigation & auth
+// Built-in default picture (no image file needed, so no 404)
+const DEFAULT_PIC = "data:image/svg+xml;utf8," + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 140">' +
+  '<rect width="140" height="140" fill="#d8cce5"/>' +
+  '<circle cx="70" cy="55" r="26" fill="#9b59b6"/>' +
+  '<path d="M20 140c0-30 22-48 50-48s50 18 50 48z" fill="#9b59b6"/></svg>'
+);
+
+// Only real image data URLs are shown; anything else falls back to the default
+function safePic(p) {
+  return (typeof p === "string" && /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(p)) ? p : DEFAULT_PIC;
+}
+
+profilePreview.src = DEFAULT_PIC;
+
+let profileBase64 = "";
+let currentProfile = {};   // what is stored right now (name, username, displayName ...)
+
+/* --------------------------------------------------
+   USERNAME HELPERS  (same logic as login.html)
+   Rules: lowercase a-z, 0-9, underscore, 3-20 chars.
+-------------------------------------------------- */
+const MIN_NAME_LENGTH = 3;
+
+function normalizeUsername(name) {
+  return String(name).trim().toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 15);
+}
+
+function isPermissionError(error) {
+  return !!error && (
+    error.code === "PERMISSION_DENIED" ||
+    error.code === "database/permission-denied" ||
+    /permission_denied/i.test(error.message || "")
+  );
+}
+
+async function releaseUsername(username, uid) {
+  if (!username || !uid) return;
+  try {
+    await db.ref("usernames/" + username).transaction(function(current) {
+      return current === uid ? null : undefined;
+    });
+  } catch (err) {
+    console.error("Username release error:", err);
+  }
+}
+
+// Returns { username, name }, adding 4 random digits if the name is taken
+async function reserveUniqueUsername(requestedName, uid) {
+  const base = normalizeUsername(requestedName);
+  if (base.length < MIN_NAME_LENGTH) {
+    throw new Error("Use at least " + MIN_NAME_LENGTH + " letters or numbers in your name.");
+  }
+  const shown = requestedName.trim().slice(0, 15);
+  let ruleErrors = 0;
+
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const suffix = attempt === 0 ? "" : String(Math.floor(1000 + Math.random() * 9000));
+    const candidate = base + suffix;
+
+    let result;
+    try {
+      result = await db.ref("usernames/" + candidate).transaction(function(current) {
+        if (current === null || current === uid) return uid;
+        return; // owned by someone else
+      });
+    } catch (err) {
+      if (isPermissionError(err) && ++ruleErrors >= 3) throw err;
+      continue;
+    }
+
+    if (result.committed) return { username: candidate, name: shown + suffix };
+  }
+  throw new Error("Could not find an available name. Please try another.");
+}
+
+/* --------------------------------------------------
+   NAVIGATION & AUTH
+-------------------------------------------------- */
 auth.onAuthStateChanged(user => {
-  if(user && user.emailVerified){
+  if (user && user.emailVerified) {
     nav.innerHTML = `
       <a href="index.html">Home</a>
       <a href="friends.html">Friends</a>
@@ -198,20 +271,23 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
-    document.getElementById("logoutBtn").addEventListener("click", ()=>{
-      auth.signOut().then(()=>{
-        sessionStorage.removeItem("current_user"); // auto logout on close
-        window.location.href="login.html";
+    document.getElementById("logoutBtn").addEventListener("click", e => {
+      e.preventDefault();
+      auth.signOut().then(() => {
+        sessionStorage.removeItem("current_user");
+        window.location.href = "login.html";
       });
     });
-    setupRealtimeProfile(user.uid);
+    loadProfile(user.uid);
   } else {
     nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
     document.querySelector(".profile-wrapper").innerHTML = "<p>Please login to view your profile.</p>";
   }
 });
 
-// Image compression & upload
+/* --------------------------------------------------
+   IMAGE COMPRESSION
+-------------------------------------------------- */
 function compressImage(file, maxDim=150, maxSizeKB=64, callback){
   const reader = new FileReader();
   reader.onload = function(evt){
@@ -223,8 +299,7 @@ function compressImage(file, maxDim=150, maxSizeKB=64, callback){
       else if(width>maxDim){ width=height=maxDim; }
       const canvas=document.createElement('canvas');
       canvas.width=width; canvas.height=height;
-      const ctx=canvas.getContext('2d');
-      ctx.drawImage(img,0,0,width,height);
+      canvas.getContext('2d').drawImage(img,0,0,width,height);
       let quality=0.9;
       let dataUrl=canvas.toDataURL('image/jpeg', quality);
       while((dataUrl.length/1024)>maxSizeKB && quality>0.05){
@@ -233,9 +308,9 @@ function compressImage(file, maxDim=150, maxSizeKB=64, callback){
       }
       if((dataUrl.length/1024)>maxSizeKB){ alert("Image too large after compression"); callback(""); }
       else callback(dataUrl);
-    }
+    };
     img.src=evt.target.result;
-  }
+  };
   reader.readAsDataURL(file);
 }
 
@@ -245,58 +320,50 @@ document.getElementById("profilePic").addEventListener("change", e=>{
   if(file.size>2*1024*1024){ errorMsg.textContent="Max file size 2MB"; return; }
   compressImage(file,150,64,(dataUrl)=>{
     profileBase64=dataUrl;
-    profilePreview.src=dataUrl || "images/profile1.png";
+    profilePreview.src=safePic(dataUrl);
     errorMsg.textContent="";
   });
 });
 
-// Realtime profile listener
-function setupRealtimeProfile(uid){
-  const publicRef = db.ref(`users/${uid}/public`);
-  const privateRef = db.ref(`users/${uid}/private`);
-  
- 
-publicRef.on('value', snap=>{
-  const data = snap.val() || {};
-
-  document.getElementById("name").value = data.name || "";
-  document.getElementById("age").value = data.age || "";
-  document.getElementById("location").value = data.location || "";
-  document.getElementById("gender").value = data.gender || "";
-  document.getElementById("bio").value = data.bio || "";
+/* --------------------------------------------------
+   LOAD PROFILE (once, so typing is never overwritten)
+-------------------------------------------------- */
+function fillForm(data) {
+  document.getElementById("name").value      = data.name || "";
+  document.getElementById("age").value       = data.age && data.age !== "N/A" ? data.age : "";
+  document.getElementById("location").value  = data.location || "";
+  document.getElementById("gender").value    = data.gender || "";
+  document.getElementById("bio").value       = data.bio || "";
   document.getElementById("interests").value = data.interests || "";
-
   document.getElementById("displayName").textContent = data.name || "Your Name";
-
-  profilePreview.src = data.pic || "images/profile1.png";
-  profileBase64 = data.pic || "";
-});
-
-
-    
-  privateRef.on('value', snap=>{
-    const data = snap.val() || {};
-    document.getElementById("email").value = data.email || "";
-  });
+  profileBase64 = safePic(data.pic) === DEFAULT_PIC ? "" : data.pic;
+  profilePreview.src = safePic(data.pic);
 }
-// Check if name is unique (except current user)
-async function isNameUnique(name, currentUid) {
-  const snapshot = await db.ref("users").once("value");
-  const users = snapshot.val() || {};
 
-  for (const uid in users) {
-    if (uid !== currentUid) {
-      const userPublic = users[uid]?.public;
-      if (userPublic && userPublic.name && userPublic.name.toLowerCase() === name.toLowerCase()) {
-        return false; // name already taken
-      }
-    }
+async function loadProfile(uid) {
+  try {
+    const pubSnap = await db.ref(`users/${uid}/public`).once("value");
+    currentProfile = pubSnap.val() || {};
+    fillForm(currentProfile);
+  } catch (err) {
+    console.error(err);
+    errorMsg.textContent = "Could not load your profile.";
   }
-  return true; // name is available
+
+  try {
+    const privSnap = await db.ref(`users/${uid}/private`).once("value");
+    document.getElementById("email").value = (privSnap.val() || {}).email || auth.currentUser.email || "";
+  } catch (err) {
+    document.getElementById("email").value = auth.currentUser ? (auth.currentUser.email || "") : "";
+  }
 }
 
-
-// Update profile with unique name restriction
+/* --------------------------------------------------
+   SAVE PROFILE
+   - Other fields are saved on their own.
+   - name / displayName / username are only written together,
+     and only after the name has been claimed in /usernames.
+-------------------------------------------------- */
 async function updateProfile() {
   const user = auth.currentUser;
   if (!user) return;
@@ -308,42 +375,80 @@ async function updateProfile() {
   const gender = document.getElementById("gender").value;
   const bio = document.getElementById("bio").value.trim();
   const interests = document.getElementById("interests").value.trim();
+  const saveBtn = document.getElementById("saveBtn");
 
   errorMsg.textContent = "";
+  infoMsg.textContent = "";
 
   if (!name) {
     errorMsg.textContent = "Full Name cannot be empty!";
     return;
   }
+  if (normalizeUsername(name).length < MIN_NAME_LENGTH) {
+    errorMsg.textContent = "Please use at least " + MIN_NAME_LENGTH + " English letters, numbers or underscores in your name.";
+    return;
+  }
+
+  saveBtn.disabled = true;
+  let newlyReserved = null;
+  let saved = false;
 
   try {
-    const isUnique = await isNameUnique(name, uid);
-    if (!isUnique) {
-      errorMsg.textContent = "This name is already taken. Please choose another.";
-      return;
+    const updates = {
+      age: age || "N/A",
+      location: location,
+      gender: gender || "",
+      bio: bio,
+      interests: interests,
+      pic: profileBase64 || ""
+    };
+
+    const nameChanged = name !== (currentProfile.name || "");
+    const needsClaim = !currentProfile.username || nameChanged;
+
+    if (needsClaim) {
+      newlyReserved = await reserveUniqueUsername(name, uid);
+      updates.name = newlyReserved.name;
+      updates.displayName = newlyReserved.name;
+      updates.username = newlyReserved.username;
+    } else if (currentProfile.displayName !== currentProfile.name) {
+      updates.displayName = currentProfile.name;   // repair an out-of-date displayName
     }
 
-    await db.ref(`users/${uid}/public`).update({
-      name,
-      age: age || "N/A",
-      location: location || "",
-      gender: gender || "",
-      bio: bio || "",
-      interests: interests || "",
-      pic: profileBase64 || "images/profile1.png"
-    });
+    await db.ref(`users/${uid}/public`).update(updates);
+    saved = true;
+
+    // Give back the old name only after the new profile is saved
+    if (newlyReserved && currentProfile.username && currentProfile.username !== newlyReserved.username) {
+      await releaseUsername(currentProfile.username, uid);
+    }
+
+    currentProfile = { ...currentProfile, ...updates };
+    document.getElementById("displayName").textContent = currentProfile.name || "Your Name";
+
+    if (newlyReserved) {
+      document.getElementById("name").value = newlyReserved.name;
+      if (normalizeUsername(name) !== newlyReserved.username) {
+        infoMsg.textContent = "That name was taken, so your name is " + newlyReserved.name + ".";
+      }
+    }
 
     alert("Profile updated successfully!");
+
   } catch (err) {
-    console.error(err);
-    errorMsg.textContent = "Failed to save profile.";
+    console.error("Profile save error:", err);
+
+    if (newlyReserved && !saved) {
+      await releaseUsername(newlyReserved.username, uid);
+    }
+
+    errorMsg.textContent = isPermissionError(err)
+      ? "Failed to save profile: permission denied. Check the database rules."
+      : (err.message || "Failed to save profile.");
+  } finally {
+    saveBtn.disabled = false;
   }
 }
-
-    
 </script>
 </body>
 </html>
-
-
-
