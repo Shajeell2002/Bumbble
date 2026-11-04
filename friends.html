@@ -487,20 +487,22 @@
       });
 
       userList.innerHTML = "";
-      friends.forEach(f => {
-        const row = document.createElement("div");
-        row.className = "user-row" + (f.uid === currentChatFriendUid ? " active" : "");
-        row.id = `userrow-${f.uid}`;
-        row.dataset.uid  = f.uid;
-        row.dataset.name = f.name;
-        row.innerHTML = `
-          <div>
-            <span class="status-dot ${f.online ? "online" : "offline"}"></span>
-            ${escapeHtml(f.name)} (${escapeHtml(f.gender)})
-          </div>`;
-        row.onclick = () => openChat(f.uid, f.name);
-        userList.appendChild(row);
-      });
+     friends.forEach(f => {
+  const row = document.createElement("div");
+  row.className = "user-row" + (f.uid === currentChatFriendUid ? " active" : "");
+  row.id = `userrow-${f.uid}`;
+  row.dataset.uid  = f.uid;
+  row.dataset.name = f.name;
+  row.innerHTML = `
+    <div>
+      <span class="status-dot ${f.isSelf || f.online ? "online" : "offline"}"></span>
+      ${escapeHtml(f.name)}${f.isSelf ? " (You)" : ` (${escapeHtml(f.gender)})`}
+    </div>`;
+  row.onclick = () => f.isSelf
+    ? (window.location.href = "profile.html")
+    : openChat(f.uid, f.name);
+  userList.appendChild(row);
+});
 
       updateFriendListBadges();
     }
