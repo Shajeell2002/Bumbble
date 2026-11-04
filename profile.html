@@ -8,7 +8,7 @@
 <style>
 body {
     font-family: Arial, sans-serif;
-    background: #b39ddb; /* Lavender background */
+    background: #b39ddb;
     color: #333;
     margin: 0;
     display: flex;
@@ -16,13 +16,12 @@ body {
     min-height: 100vh;
 }
 
-/* Header */
 header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 20px;
-    background: #b39ddb; /* Lavender header */
+    background: #b39ddb;
     color: white;
     box-shadow:0 3px 6px rgba(0,0,0,0.1);
 }
@@ -30,12 +29,7 @@ header h1 { font-size: 24px; color:white; }
 nav a { margin: 0 10px; text-decoration: none; color: white; font-weight: bold; }
 nav a:hover { text-decoration: underline; }
 
-/* Profile Layout */
-.profile-wrapper {
-    flex: 1;
-    max-width: 800px;
-    margin: 30px auto;
-}
+.profile-wrapper { flex: 1; max-width: 800px; width: 100%; margin: 30px auto; }
 
 .cover-photo {
     height: 220px;
@@ -53,25 +47,19 @@ nav a:hover { text-decoration: underline; }
 }
 
 .profile-pic {
-    width: 140px;
-    height: 140px;
+    width: 140px; height: 140px;
     border-radius: 50%;
     border: 5px solid white;
     object-fit: cover;
     position: absolute;
-    top: -70px;
-    left: 50%;
+    top: -70px; left: 50%;
     transform: translateX(-50%);
     background: white;
 }
 
-.profile-card h2 {
-    margin-top: 80px;
-    font-size: 24px;
-    color: #333;
-}
+.profile-card h2 { margin-top: 80px; font-size: 24px; color: #333; }
 
-.edit-section {
+.edit-section, .view-section {
     margin-top: 20px;
     text-align: left;
     max-width: 500px;
@@ -88,8 +76,9 @@ nav a:hover { text-decoration: underline; }
     border: 1px solid #ccc;
     border-radius: 6px;
 }
-
 .edit-section textarea { resize: none; }
+
+.private-note { font-size: 12px; color: #666; margin: 2px 0 8px; }
 
 .save-btn {
     width: 100%;
@@ -102,12 +91,69 @@ nav a:hover { text-decoration: underline; }
     cursor: pointer;
     color: white;
 }
-
 .save-btn:hover { background: #3b2370; }
 .save-btn:disabled { opacity: 0.65; cursor: not-allowed; }
 
 .error-msg { color: red; font-size: 14px; margin-top: 5px; }
 .info-msg  { color: #1b5e20; font-size: 14px; margin-top: 5px; }
+
+.view-section p { margin: 8px 0; line-height: 1.5; overflow-wrap: anywhere; }
+.view-section b { color: #4a2e8e; }
+
+/* Photo gallery */
+.gallery-section {
+    margin-top: 28px;
+    text-align: left;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+    border-top: 1px solid #eee;
+    padding-top: 18px;
+}
+.gallery-section h3 { color: #4a2e8e; margin-bottom: 6px; }
+.gallery-note { font-size: 13px; color: #666; margin-bottom: 10px; }
+.gallery {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+.photo {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #eee;
+}
+.photo img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in; }
+.photo .del {
+    position: absolute; top: 4px; right: 4px;
+    width: 26px; height: 26px;
+    border: none; border-radius: 50%;
+    background: rgba(0,0,0,0.6); color: white;
+    cursor: pointer; font-size: 14px;
+}
+.add-photo {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 9px 14px;
+    background: #b39ddb;
+    color: white;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.add-photo:hover { background: #9775c2; }
+.add-photo input { display: none; }
+
+/* Photo viewer */
+#lightbox {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    align-items: center; justify-content: center;
+    z-index: 2000; cursor: zoom-out;
+}
+#lightbox img { max-width: 92vw; max-height: 92vh; border-radius: 8px; }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -121,7 +167,7 @@ nav a:hover { text-decoration: underline; }
   <nav id="navLinks"></nav>
 </header>
 
-<div class="profile-wrapper">
+<div class="profile-wrapper" id="profileWrapper">
 
   <div class="cover-photo"></div>
 
@@ -131,7 +177,11 @@ nav a:hover { text-decoration: underline; }
 
     <h2 id="displayName">Your Name</h2>
 
-    <div class="edit-section">
+    <!-- Read-only view (when looking at someone else's profile) -->
+    <div class="view-section" id="viewSection" style="display:none;"></div>
+
+    <!-- Edit form (your own profile) -->
+    <div class="edit-section" id="editSection">
 
       <input type="file" id="profilePic" accept="image/*">
 
@@ -147,6 +197,8 @@ nav a:hover { text-decoration: underline; }
       </select>
 
       <input type="email" id="email" placeholder="Email" disabled>
+      <input type="tel" id="mobile" placeholder="Mobile number (optional)" maxlength="20">
+      <p class="private-note">🔒 Your email and mobile number are private. Only you can see them.</p>
 
       <textarea id="bio" placeholder="Write something about yourself..." rows="3"></textarea>
 
@@ -159,9 +211,22 @@ nav a:hover { text-decoration: underline; }
 
     </div>
 
+    <!-- Photos -->
+    <div class="gallery-section" id="gallerySection">
+      <h3>Photos</h3>
+      <p class="gallery-note" id="galleryNote"></p>
+      <div class="gallery" id="gallery"></div>
+      <label class="add-photo" id="addPhotoLabel" style="display:none;">
+        ＋ Add photos
+        <input type="file" id="galleryInput" accept="image/*" multiple>
+      </label>
+    </div>
+
   </div>
 
 </div>
+
+<div id="lightbox"><img id="lightboxImg" alt="Photo"></div>
 
 <script>
 const firebaseConfig = {
@@ -181,8 +246,8 @@ const nav = document.getElementById("navLinks");
 const errorMsg = document.getElementById("errorMsg");
 const infoMsg = document.getElementById("infoMsg");
 const profilePreview = document.getElementById("profilePreview");
+const galleryNote = document.getElementById("galleryNote");
 
-// Built-in default picture (no image file needed, so no 404)
 const DEFAULT_PIC = "data:image/svg+xml;utf8," + encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 140">' +
   '<rect width="140" height="140" fill="#d8cce5"/>' +
@@ -190,19 +255,21 @@ const DEFAULT_PIC = "data:image/svg+xml;utf8," + encodeURIComponent(
   '<path d="M20 140c0-30 22-48 50-48s50 18 50 48z" fill="#9b59b6"/></svg>'
 );
 
-// Only real image data URLs are shown; anything else falls back to the default
 function safePic(p) {
   return (typeof p === "string" && /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(p)) ? p : DEFAULT_PIC;
 }
+function isRealPic(p) { return safePic(p) !== DEFAULT_PIC; }
 
 profilePreview.src = DEFAULT_PIC;
 
 let profileBase64 = "";
-let currentProfile = {};   // what is stored right now (name, username, displayName ...)
+let currentProfile = {};
+let myUid = "";
+let photos = {};                    // { p0: {data, createdAt}, ... }
+const PHOTO_SLOTS = ["p0", "p1", "p2", "p3", "p4", "p5"];   // max 6 photos (enforced by the rules too)
 
 /* --------------------------------------------------
-   USERNAME HELPERS  (same logic as login.html)
-   Rules: lowercase a-z, 0-9, underscore, 3-20 chars.
+   USERNAME HELPERS (same logic as login.html / signup.html)
 -------------------------------------------------- */
 const MIN_NAME_LENGTH = 3;
 
@@ -229,7 +296,6 @@ async function releaseUsername(username, uid) {
   }
 }
 
-// Returns { username, name }, adding 4 random digits if the name is taken
 async function reserveUniqueUsername(requestedName, uid) {
   const base = normalizeUsername(requestedName);
   if (base.length < MIN_NAME_LENGTH) {
@@ -246,7 +312,7 @@ async function reserveUniqueUsername(requestedName, uid) {
     try {
       result = await db.ref("usernames/" + candidate).transaction(function(current) {
         if (current === null || current === uid) return uid;
-        return; // owned by someone else
+        return;
       });
     } catch (err) {
       if (isPermissionError(err) && ++ruleErrors >= 3) throw err;
@@ -259,18 +325,36 @@ async function reserveUniqueUsername(requestedName, uid) {
 }
 
 /* --------------------------------------------------
-   NAVIGATION & AUTH
+   AUTH + MODE (own profile or someone else's)
+   profile.html            -> your own profile (edit)
+   profile.html?uid=<uid>  -> another user's profile (read only)
 -------------------------------------------------- */
+const requestedUid = new URLSearchParams(window.location.search).get("uid");
+
 auth.onAuthStateChanged(user => {
-  if (user && user.emailVerified) {
+  if (!user || !(user.isAnonymous || user.emailVerified)) {
+    nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
+    document.getElementById("profileWrapper").innerHTML = "<p>Please login to view this profile.</p>";
+    return;
+  }
+
+  myUid = user.uid;
+  const targetUid = requestedUid || user.uid;
+  const isOwner = targetUid === user.uid;
+
+  if (user.isAnonymous) {
+    nav.innerHTML = `
+      <a href="index.html">Home</a>
+      <a href="friends.html">Friends</a>
+      <a href="safety.html">Safety</a>`;
+  } else {
     nav.innerHTML = `
       <a href="index.html">Home</a>
       <a href="friends.html">Friends</a>
       <a href="stories.html">Stories</a>
       <a href="safety.html">Safety</a>
       <a href="profile.html">Profile</a>
-      <a href="#" id="logoutBtn">Logout</a>
-    `;
+      <a href="#" id="logoutBtn">Logout</a>`;
     document.getElementById("logoutBtn").addEventListener("click", e => {
       e.preventDefault();
       auth.signOut().then(() => {
@@ -278,17 +362,31 @@ auth.onAuthStateChanged(user => {
         window.location.href = "login.html";
       });
     });
-    loadProfile(user.uid);
-  } else {
-    nav.innerHTML = `<a href="index.html">Home</a><a href="login.html">Login</a><a href="signup.html">Sign Up</a>`;
-    document.querySelector(".profile-wrapper").innerHTML = "<p>Please login to view your profile.</p>";
   }
+
+  if (isOwner && user.isAnonymous) {
+    document.getElementById("profileWrapper").innerHTML =
+      "<p style='background:white;padding:20px;border-radius:12px'>Guests don't have a profile page. Create an account to get one.</p>";
+    return;
+  }
+
+  if (isOwner) {
+    document.getElementById("viewSection").style.display = "none";
+    document.getElementById("editSection").style.display = "";
+    document.getElementById("addPhotoLabel").style.display = "";
+    loadOwnProfile(user);
+  } else {
+    document.getElementById("editSection").style.display = "none";
+    document.getElementById("viewSection").style.display = "";
+    loadOtherProfile(targetUid);
+  }
+  loadGallery(targetUid, isOwner);
 });
 
 /* --------------------------------------------------
    IMAGE COMPRESSION
 -------------------------------------------------- */
-function compressImage(file, maxDim=150, maxSizeKB=64, callback){
+function compressImage(file, maxDim, maxSizeKB, callback){
   const reader = new FileReader();
   reader.onload = function(evt){
     const img = new Image();
@@ -306,11 +404,13 @@ function compressImage(file, maxDim=150, maxSizeKB=64, callback){
         quality-=0.05;
         dataUrl=canvas.toDataURL('image/jpeg', quality);
       }
-      if((dataUrl.length/1024)>maxSizeKB){ alert("Image too large after compression"); callback(""); }
+      if((dataUrl.length/1024)>maxSizeKB){ callback(""); }
       else callback(dataUrl);
     };
+    img.onerror = function(){ callback(""); };
     img.src=evt.target.result;
   };
+  reader.onerror = function(){ callback(""); };
   reader.readAsDataURL(file);
 }
 
@@ -319,6 +419,7 @@ document.getElementById("profilePic").addEventListener("change", e=>{
   if(!file) return;
   if(file.size>2*1024*1024){ errorMsg.textContent="Max file size 2MB"; return; }
   compressImage(file,150,64,(dataUrl)=>{
+    if (!dataUrl) { errorMsg.textContent = "Image too large after compression."; return; }
     profileBase64=dataUrl;
     profilePreview.src=safePic(dataUrl);
     errorMsg.textContent="";
@@ -326,7 +427,7 @@ document.getElementById("profilePic").addEventListener("change", e=>{
 });
 
 /* --------------------------------------------------
-   LOAD PROFILE (once, so typing is never overwritten)
+   OWN PROFILE
 -------------------------------------------------- */
 function fillForm(data) {
   document.getElementById("name").value      = data.name || "";
@@ -336,11 +437,13 @@ function fillForm(data) {
   document.getElementById("bio").value       = data.bio || "";
   document.getElementById("interests").value = data.interests || "";
   document.getElementById("displayName").textContent = data.name || "Your Name";
-  profileBase64 = safePic(data.pic) === DEFAULT_PIC ? "" : data.pic;
+  profileBase64 = isRealPic(data.pic) ? data.pic : "";
   profilePreview.src = safePic(data.pic);
 }
 
-async function loadProfile(uid) {
+async function loadOwnProfile(user) {
+  const uid = user.uid;
+
   try {
     const pubSnap = await db.ref(`users/${uid}/public`).once("value");
     currentProfile = pubSnap.val() || {};
@@ -350,19 +453,182 @@ async function loadProfile(uid) {
     errorMsg.textContent = "Could not load your profile.";
   }
 
+  // Private details live in /userPrivate/<uid> (readable only by you)
+  document.getElementById("email").value = user.email || "";
   try {
-    const privSnap = await db.ref(`users/${uid}/private`).once("value");
-    document.getElementById("email").value = (privSnap.val() || {}).email || auth.currentUser.email || "";
+    const privSnap = await db.ref(`userPrivate/${uid}`).once("value");
+    document.getElementById("mobile").value = (privSnap.val() || {}).mobile || "";
   } catch (err) {
-    document.getElementById("email").value = auth.currentUser ? (auth.currentUser.email || "") : "";
+    console.warn("Private details not loaded:", err.message);
+  }
+
+  // One-time move of old private data (stored where others could read it)
+  try {
+    const old = await db.ref(`users/${uid}/private`).once("value");
+    if (old.exists()) {
+      const o = old.val() || {};
+      const moved = {};
+      if (typeof o.email === "string") moved.email = o.email;
+      if (typeof o.mobile === "string") moved.mobile = o.mobile;
+      if (typeof o.createdAt === "number") moved.createdAt = o.createdAt;
+      if (Object.keys(moved).length) await db.ref(`userPrivate/${uid}`).update(moved);
+      await db.ref(`users/${uid}/private`).remove();
+      if (moved.mobile) document.getElementById("mobile").value = moved.mobile;
+    }
+  } catch (err) {
+    console.warn("Private data move skipped:", err.message);
   }
 }
 
 /* --------------------------------------------------
+   SOMEONE ELSE'S PROFILE (read only, public fields only)
+-------------------------------------------------- */
+function addLine(parent, label, value) {
+  if (!value || value === "N/A") return;
+  const p = document.createElement("p");
+  const b = document.createElement("b");
+  b.textContent = label + ": ";
+  p.appendChild(b);
+  p.appendChild(document.createTextNode(String(value)));
+  parent.appendChild(p);
+}
+
+async function loadOtherProfile(uid) {
+  const box = document.getElementById("viewSection");
+  try {
+    const snap = await db.ref(`users/${uid}/public`).once("value");
+    const d = snap.val();
+    if (!d) { box.textContent = "This profile was not found."; return; }
+
+    document.getElementById("displayName").textContent = d.name || d.displayName || d.username || "User";
+    profilePreview.src = safePic(d.pic);
+
+    box.textContent = "";
+    addLine(box, "Age", d.age);
+    addLine(box, "Gender", d.gender);
+    addLine(box, "Location", d.location);
+    addLine(box, "About", d.bio);
+    addLine(box, "Interests", d.interests);
+    if (!box.children.length) box.textContent = "This user hasn't added any details yet.";
+  } catch (err) {
+    console.error(err);
+    box.textContent = "Could not load this profile.";
+  }
+}
+
+/* --------------------------------------------------
+   PHOTO GALLERY  (/userPhotos/<uid>/p0..p5)
+   Visible to you and your friends only. Max 6 photos.
+-------------------------------------------------- */
+function renderGallery(canEdit) {
+  const grid = document.getElementById("gallery");
+  grid.textContent = "";
+
+  const keys = PHOTO_SLOTS.filter(k => photos[k] && isRealPic(photos[k].data));
+
+  keys.forEach(k => {
+    const wrap = document.createElement("div");
+    wrap.className = "photo";
+
+    const img = document.createElement("img");
+    img.src = photos[k].data;
+    img.alt = "Photo";
+    img.onclick = () => openLightbox(photos[k].data);
+    wrap.appendChild(img);
+
+    if (canEdit) {
+      const del = document.createElement("button");
+      del.className = "del";
+      del.type = "button";
+      del.title = "Delete photo";
+      del.textContent = "✕";
+      del.onclick = () => deletePhoto(k);
+      wrap.appendChild(del);
+    }
+    grid.appendChild(wrap);
+  });
+
+  if (canEdit) {
+    galleryNote.textContent = keys.length
+      ? `${keys.length} of ${PHOTO_SLOTS.length} photos. Only you and your friends can see them.`
+      : "No photos yet. Only you and your friends can see photos you add.";
+    document.getElementById("addPhotoLabel").style.display = keys.length >= PHOTO_SLOTS.length ? "none" : "";
+  }
+}
+
+async function loadGallery(uid, isOwner) {
+  try {
+    const snap = await db.ref(`userPhotos/${uid}`).once("value");
+    photos = snap.val() || {};
+    renderGallery(isOwner);
+    if (!isOwner && !Object.keys(photos).length) {
+      galleryNote.textContent = "No photos to show.";
+    }
+  } catch (err) {
+    if (isPermissionError(err)) {
+      galleryNote.textContent = isOwner
+        ? "Photos could not be loaded."
+        : "Photos are only visible to friends.";
+    } else {
+      console.error(err);
+      galleryNote.textContent = "Photos could not be loaded.";
+    }
+  }
+}
+
+async function deletePhoto(slot) {
+  if (!confirm("Delete this photo?")) return;
+  try {
+    await db.ref(`userPhotos/${myUid}/${slot}`).remove();
+    delete photos[slot];
+    renderGallery(true);
+  } catch (err) {
+    console.error(err);
+    galleryNote.textContent = "Could not delete the photo.";
+  }
+}
+
+document.getElementById("galleryInput").addEventListener("change", async e => {
+  const files = Array.from(e.target.files);
+  e.target.value = "";
+  galleryNote.textContent = "";
+
+  for (const file of files) {
+    if (!file.type.startsWith("image/")) continue;
+    if (file.size > 8 * 1024 * 1024) { galleryNote.textContent = "Each photo must be under 8MB."; continue; }
+
+    const slot = PHOTO_SLOTS.find(k => !(photos[k] && photos[k].data));
+    if (!slot) { galleryNote.textContent = "You can add up to " + PHOTO_SLOTS.length + " photos."; break; }
+
+    galleryNote.textContent = "Uploading…";
+    const dataUrl = await new Promise(res => compressImage(file, 700, 150, res));
+    if (!dataUrl) { galleryNote.textContent = "That photo could not be processed."; continue; }
+
+    try {
+      const item = { data: dataUrl, createdAt: Date.now() };
+      await db.ref(`userPhotos/${myUid}/${slot}`).set(item);
+      photos[slot] = item;
+      renderGallery(true);
+    } catch (err) {
+      console.error(err);
+      galleryNote.textContent = "Could not save the photo.";
+    }
+  }
+});
+
+/* Photo viewer */
+function openLightbox(src) {
+  document.getElementById("lightboxImg").src = src;
+  document.getElementById("lightbox").style.display = "flex";
+}
+document.getElementById("lightbox").addEventListener("click", () => {
+  document.getElementById("lightbox").style.display = "none";
+});
+
+/* --------------------------------------------------
    SAVE PROFILE
-   - Other fields are saved on their own.
-   - name / displayName / username are only written together,
-     and only after the name has been claimed in /usernames.
+   name / displayName / username are only written together,
+   after the name has been claimed in /usernames.
 -------------------------------------------------- */
 async function updateProfile() {
   const user = auth.currentUser;
@@ -375,17 +641,19 @@ async function updateProfile() {
   const gender = document.getElementById("gender").value;
   const bio = document.getElementById("bio").value.trim();
   const interests = document.getElementById("interests").value.trim();
+  const mobile = document.getElementById("mobile").value.trim();
   const saveBtn = document.getElementById("saveBtn");
 
   errorMsg.textContent = "";
   infoMsg.textContent = "";
 
-  if (!name) {
-    errorMsg.textContent = "Full Name cannot be empty!";
-    return;
-  }
+  if (!name) { errorMsg.textContent = "Full Name cannot be empty!"; return; }
   if (normalizeUsername(name).length < MIN_NAME_LENGTH) {
     errorMsg.textContent = "Please use at least " + MIN_NAME_LENGTH + " English letters, numbers or underscores in your name.";
+    return;
+  }
+  if (!/^[0-9+ ()-]{0,20}$/.test(mobile)) {
+    errorMsg.textContent = "Mobile number can only contain digits, spaces, + ( ) and -.";
     return;
   }
 
@@ -412,13 +680,18 @@ async function updateProfile() {
       updates.displayName = newlyReserved.name;
       updates.username = newlyReserved.username;
     } else if (currentProfile.displayName !== currentProfile.name) {
-      updates.displayName = currentProfile.name;   // repair an out-of-date displayName
+      updates.displayName = currentProfile.name;
     }
 
     await db.ref(`users/${uid}/public`).update(updates);
     saved = true;
 
-    // Give back the old name only after the new profile is saved
+    // Private details go to their own node, never into the public profile
+    await db.ref(`userPrivate/${uid}`).update({
+      email: user.email || "",
+      mobile: mobile
+    });
+
     if (newlyReserved && currentProfile.username && currentProfile.username !== newlyReserved.username) {
       await releaseUsername(currentProfile.username, uid);
     }
@@ -438,9 +711,7 @@ async function updateProfile() {
   } catch (err) {
     console.error("Profile save error:", err);
 
-    if (newlyReserved && !saved) {
-      await releaseUsername(newlyReserved.username, uid);
-    }
+    if (newlyReserved && !saved) await releaseUsername(newlyReserved.username, uid);
 
     errorMsg.textContent = isPermissionError(err)
       ? "Failed to save profile: permission denied. Check the database rules."
