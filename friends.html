@@ -451,19 +451,26 @@
     }
 
     function renderUserList(users) {
-      const friends = Object.keys(users)
-        .filter(uid => uid !== currentUserUid)
-        .map(uid => {
-          const u = users[uid].public || {};
-          return {
-            uid,
-            name:   getDisplayName(u),
-            gender: u.gender || "N/A",
-            online: !!u.online,
-            time:   lastChatTimestamps[uid] || 0
-          };
-        });
+  const friends = Object.keys(users)
+    .map(uid => {
+      const u = users[uid].public || {};
+      return {
+        uid,
+        isSelf: uid === currentUserUid,
+        name:   getDisplayName(u),
+        gender: u.gender || "N/A",
+        online: !!u.online,
+        time:   lastChatTimestamps[uid] || 0
+      };
+    });
 
+  friends.sort((a, b) => {
+    // 0. Yourself always on top
+    if (a.isSelf !== b.isSelf) return a.isSelf ? -1 : 1;
+    const unreadA = unreadCounters[a.uid] || 0;
+    const unreadB = unreadCounters[b.uid] || 0;
+    // ...the rest of the comparator stays exactly as it is
+  });
       friends.sort((a, b) => {
         const unreadA = unreadCounters[a.uid] || 0;
         const unreadB = unreadCounters[b.uid] || 0;
