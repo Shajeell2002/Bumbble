@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
@@ -126,7 +126,7 @@ footer {
   <div class="signup-box" role="region" aria-label="Signup form">
     <h2>Create Your Account</h2>
 
-    <div class="form-row"><input id="name" type="text" placeholder="Full name" /></div>
+    <div class="form-row"><input id="name" type="text" placeholder="Full name" maxlength="30" autocomplete="nickname" /></div>
     <div class="form-row"><input id="age" type="number" min="13" placeholder="Age" /></div>
 
     <div class="form-row">
@@ -139,8 +139,8 @@ footer {
     </div>
 
     <div class="form-row"><input id="location" type="text" placeholder="City" /></div>
-    <div class="form-row"><input id="email" type="email" placeholder="Email address" /></div>
-    <div class="form-row"><input id="password" type="password" placeholder="Password (min 6 chars)" /></div>
+    <div class="form-row"><input id="email" type="email" placeholder="Email address" autocomplete="email" /></div>
+    <div class="form-row"><input id="password" type="password" placeholder="Password (min 6 chars)" autocomplete="new-password" /></div>
 
     <button id="signupBtn" class="btn">Sign Up</button>
 
@@ -151,15 +151,15 @@ footer {
   </div>
 </main>
 
-<footer>&copy; 2025 BabuShona. All rights reserved.</footer>
+<footer>&copy; 2026 BabuShona. All rights reserved.</footer>
 
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyDEoy2Z6kfDMoIOtzeTJdA0FphkoiXJo4g",
   authDomain: "bumbble-c061f.firebaseapp.com",
-      databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
-      projectId: "bumbble-c061f",
-      storageBucket: "bumbble-c061f.appspot.com",
+  databaseURL: "https://bumbble-c061f-default-rtdb.firebaseio.com",
+  projectId: "bumbble-c061f",
+  storageBucket: "bumbble-c061f.appspot.com",
   messagingSenderId: "213165886981",
   appId: "1:213165886981:web:c18652003444869b1bd66c"
 };
@@ -167,7 +167,9 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-/* Nav Update (same logic as your working code) */
+/* --------------------------------------------------
+   NAVIGATION
+-------------------------------------------------- */
 const nav = document.getElementById('navLinks');
 auth.onAuthStateChanged(user => {
   if (user && user.emailVerified) {
@@ -180,10 +182,12 @@ auth.onAuthStateChanged(user => {
       <a href="profile.html">Profile</a>
       <a href="#" id="logoutBtn">Logout</a>
     `;
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-      auth.signOut();
-      localStorage.removeItem('current_user');
-      window.location.href = 'login.html';
+    document.getElementById('logoutBtn').addEventListener('click', e => {
+      e.preventDefault();
+      auth.signOut().then(() => {
+        sessionStorage.removeItem('current_user');
+        window.location.href = 'login.html';
+      });
     });
   } else {
     nav.innerHTML = `
@@ -198,7 +202,105 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-/* Signup handler (restored working logic) */
+/* --------------------------------------------------
+   USERNAME HELPERS  (same logic as login.html / profile.html)
+   Rules: lowercase a-z, 0-9, underscore, 3-20 chars.
+-------------------------------------------------- */
+const MIN_NAME_LENGTH = 3;
+
+function normalizeUsername(name) {
+  return String(name).trim().toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 15);
+}
+
+function isPermissionError(error) {
+  return !!error && (
+    error.code === 'PERMISSION_DENIED' ||
+    error.code === 'database/permission-denied' ||
+    /permission_denied/i.test(error.message || '')
+  );
+}
+
+async function releaseUsername(username, uid) {
+  if (!username || !uid) return;
+  try {
+    await db.ref('usernames/' + username).transaction(function (current) {
+      return current === uid ? null : undefined;
+    });
+  } catch (err) {
+    console.error('Username release error:', err);
+  }
+}
+
+// Returns { username, name }; adds 4 random digits if the name is taken
+// by a guest or by another registered user.
+async function reserveUniqueUsername(requestedName, uid) {
+  const base = normalizeUsername(requestedName);
+  if (base.length < MIN_NAME_LENGTH) {
+    throw new Error('Use at least ' + MIN_NAME_LENGTH + ' letters or numbers in your name.');
+  }
+  const shown = requestedName.trim().slice(0, 15);
+  let ruleErrors = 0;
+
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const suffix = attempt === 0 ? '' : String(Math.floor(1000 + Math.random() * 9000));
+    const candidate = base + suffix;
+
+    let result;
+    try {
+      result = await db.ref('usernames/' + candidate).transaction(function (current) {
+        if (current === null || current === uid) return uid;
+        return; // owned by someone else
+      });
+    } catch (err) {
+      if (isPermissionError(err) && ++ruleErrors >= 3) throw err;
+      continue;
+    }
+
+    if (result.committed) return { username: candidate, name: shown + suffix };
+  }
+  throw new Error('Could not find an available name. Please try another.');
+}
+
+/* Verification email. If the custom redirect domain is not authorised,
+   fall back to Firebase's default page instead of failing. */
+async function sendVerification(user) {
+  try {
+    await user.sendEmailVerification({ url: 'https://www.babushona.com/login.html' });
+  } catch (err) {
+    if (err.code === 'auth/unauthorized-continue-uri') {
+      await user.sendEmailVerification();
+    } else {
+      throw err;
+    }
+  }
+}
+
+function friendlyError(err) {
+  switch (err && err.code) {
+    case 'auth/email-already-in-use':
+      return 'This email is already registered. Please log in instead.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/weak-password':
+      return 'Password must be at least 6 characters.';
+    case 'auth/network-request-failed':
+      return 'Network problem. Please check your connection and try again.';
+    case 'auth/too-many-requests':
+      return 'Too many attempts. Please wait a few minutes and try again.';
+  }
+  if (isPermissionError(err)) {
+    return 'Could not save your profile. Please try again in a moment.';
+  }
+  return (err && err.message) || 'Signup failed.';
+}
+
+/* --------------------------------------------------
+   SIGNUP
+   Order: create account -> claim unique name -> save profile
+          -> send verification email.
+   If any step fails, everything created so far is rolled back,
+   so no half-finished accounts or stuck names are left behind.
+-------------------------------------------------- */
 document.getElementById('signupBtn').addEventListener('click', async function () {
   const name = document.getElementById('name').value.trim();
   const age = document.getElementById('age').value.trim();
@@ -214,100 +316,96 @@ document.getElementById('signupBtn').addEventListener('click', async function ()
   errorMsg.textContent = '';
   successMsg.textContent = '';
 
-  // Basic validation (same as your working code)
+  // Validate everything BEFORE creating the account
   if (!name || !email || !password) {
     errorMsg.textContent = 'Please fill in name, email and password.';
+    return;
+  }
+  if (normalizeUsername(name).length < MIN_NAME_LENGTH) {
+    errorMsg.textContent = 'Please use at least ' + MIN_NAME_LENGTH + ' English letters, numbers or underscores in your name.';
     return;
   }
   if (password.length < 6) {
     errorMsg.textContent = 'Password must be at least 6 characters.';
     return;
   }
+  if (age && (Number(age) < 13 || Number(age) > 120)) {
+    errorMsg.textContent = 'Please enter a valid age (13 or older).';
+    return;
+  }
 
   btn.disabled = true;
   btn.textContent = 'Creating account...';
 
+  let user = null;
+  let reserved = null;
+
   try {
-    // create account
+    // 1) create the account
     const cred = await auth.createUserWithEmailAndPassword(email, password);
-    const user = cred.user;
+    user = cred.user;
     const uid = user.uid;
 
-    // send verification email (redirects to login on click)
-    await user.sendEmailVerification({ url: 'https://BabuShona.com/login.html' });
+    // 2) claim a unique name (digits are added if it is taken)
+    reserved = await reserveUniqueUsername(name, uid);
 
-    // save public profile
+    // 3) save the profile: name, displayName and username together
     await db.ref(`users/${uid}/public`).set({
-      name: name,
+      name: reserved.name,
+      displayName: reserved.name,
+      username: reserved.username,
       age: age || 'N/A',
       gender: gender || '',
       location: location || '',
-      pic: 'images/profile1.png',
+      pic: '',
       online: false,
+      isGuest: false,
       testAccount: false
     });
 
-    // save private profile
     await db.ref(`users/${uid}/private`).set({
       email: email,
       createdAt: Date.now()
     });
 
-    successMsg.textContent = 'Account created — verification email sent, Check your Inbox & Spam folder . Please verify before login.';
+    // 4) verification email last, so a failure above never leaves a mail behind
+    await sendVerification(user);
+
+    // 5) finished: sign out until the email is verified
+    await auth.signOut();
+    sessionStorage.removeItem('current_user');
+
+    let message = 'Account created — verification email sent. Check your Inbox & Spam folder, and verify before login.';
+    if (normalizeUsername(name) !== reserved.username) {
+      message += ' That name was taken, so your name is ' + reserved.name + '.';
+    }
+    successMsg.textContent = message;
     btn.textContent = 'Done';
-    // optional: redirect after short delay
-    setTimeout(() => { window.location.href = 'login.html'; }, 3500);
+    setTimeout(() => { window.location.href = 'login.html'; }, 5000);
 
   } catch (err) {
     console.error('Signup error:', err);
-    errorMsg.textContent = err.message || 'Signup failed.';
+
+    // Roll back whatever was created, so the user can simply try again
+    if (user) {
+      try {
+        await db.ref().update({
+          [`users/${user.uid}/public`]: null,
+          [`users/${user.uid}/private`]: null
+        });
+      } catch (e) { console.warn('Profile rollback:', e.message); }
+
+      if (reserved) await releaseUsername(reserved.username, user.uid);
+
+      try { await user.delete(); }
+      catch (e) { await auth.signOut().catch(() => {}); }
+    }
+
+    errorMsg.textContent = friendlyError(err);
     btn.disabled = false;
     btn.textContent = 'Sign Up';
   }
 });
-
-  
-async function createUniqueUsername(inputName, uid) {
-  const base = inputName
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_]/g, "")
-    .slice(0, 15);
-
-  if (!base) {
-    throw new Error("Please enter a valid username.");
-  }
-
-  const db = firebase.database();
-
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const candidate = attempt === 0
-      ? base
-      : base + Math.floor(1000 + Math.random() * 9000);
-
-    const ref = db.ref("usernames/" + candidate);
-
-    const result = await ref.transaction(currentValue => {
-      // Claim only if unused or already owned by this account.
-      if (currentValue === null || currentValue === uid) {
-        return uid;
-      }
-
-      // Abort if another account owns this username.
-      return;
-    });
-
-    if (result.committed) {
-      return candidate;
-    }
-  }
-
-  throw new Error(
-    "Could not generate an available username. Please try again."
-  );
-}
-
 </script>
 </body>
 </html>
-
