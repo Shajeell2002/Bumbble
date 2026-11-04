@@ -363,7 +363,7 @@ document.getElementById('signupBtn').addEventListener('click', async function ()
       testAccount: false
     });
 
-    await db.ref(`users/${uid}/private`).set({
+    await db.ref(`userPrivate/${uid}`).set({
       email: email,
       createdAt: Date.now()
     });
@@ -391,7 +391,7 @@ document.getElementById('signupBtn').addEventListener('click', async function ()
       try {
         await db.ref().update({
           [`users/${user.uid}/public`]: null,
-          [`users/${user.uid}/private`]: null
+          [`userPrivate/${user.uid}`]: null
         });
       } catch (e) { console.warn('Profile rollback:', e.message); }
 
