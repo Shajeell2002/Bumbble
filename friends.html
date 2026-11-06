@@ -465,13 +465,21 @@
     });
 
 friends.sort((a, b) => {
-  // 0. You first (only if you added the "show myself" change)
+  // 0. You first (delete this line if you didn't add the "show myself" change)
   if (a.isSelf !== b.isSelf) return a.isSelf ? -1 : 1;
 
-  // 1. Online users above offline users
+  // 1. Users with new (unread) messages on top
+  const unreadA = unreadCounters[a.uid] || 0;
+  const unreadB = unreadCounters[b.uid] || 0;
+  if ((unreadA > 0) !== (unreadB > 0)) return unreadA > 0 ? -1 : 1;
+
+  // 1b. Among users with new messages, the most recent message first
+  if (unreadA > 0 && unreadB > 0 && a.time !== b.time) return b.time - a.time;
+
+  // 2. Then online users above offline users
   if (a.online !== b.online) return a.online ? -1 : 1;
 
-  // 2. Alphabetical inside each group (A–Z, ignores capitals, "Ravi2" before "Ravi10")
+  // 3. Alphabetical inside each group
   return a.name.localeCompare(b.name, undefined, { sensitivity: "base", numeric: true });
 });
       friends.sort((a, b) => {
