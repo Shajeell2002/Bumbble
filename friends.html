@@ -450,74 +450,54 @@
       });
     }
 
-    function renderUserList(users) {
-  const friends = Object.keys(users)
-    .map(uid => {
-      const u = users[uid].public || {};
-      return {
-        uid,
-        isSelf: uid === currentUserUid,
-        name:   getDisplayName(u),
-        gender: u.gender || "N/A",
-        online: !!u.online,
-        time:   lastChatTimestamps[uid] || 0
-      };
-    });
+function renderUserList(users) {
+  const list = Object.keys(users).map(uid => {
+    const u = users[uid].public || {};
+    return {
+      uid,
+      isSelf: uid === currentUserUid,
+      name:   getDisplayName(u),
+      gender: u.gender || "N/A",
+      online: !!u.online,
+      time:   lastChatTimestamps[uid] || 0
+    };
+  });
 
-friends.sort((a, b) => {
-  // 0. You first (delete this line if you didn't add the "show myself" change)
-  if (a.isSelf !== b.isSelf) return a.isSelf ? -1 : 1;
+  list.sort((a, b) => {
+    // 0. You first
+    if (a.isSelf !== b.isSelf) return a.isSelf ? -1 : 1;
 
-  // 1. Users with new (unread) messages on top
-  const unreadA = unreadCounters[a.uid] || 0;
-  const unreadB = unreadCounters[b.uid] || 0;
-  if ((unreadA > 0) !== (unreadB > 0)) return unreadA > 0 ? -1 : 1;
+    // 1. New (unread) messages on top, most recent message first
+    const unreadA = unreadCounters[a.uid] || 0;
+    const unreadB = unreadCounters[b.uid] || 0;
+    if ((unreadA > 0) !== (unreadB > 0)) return unreadA > 0 ? -1 : 1;
+    if (unreadA > 0 && unreadB > 0 && a.time !== b.time) return b.time - a.time;
 
-  // 1b. Among users with new messages, the most recent message first
-  if (unreadA > 0 && unreadB > 0 && a.time !== b.time) return b.time - a.time;
+    // 2. Then online users above offline users
+    if (a.online !== b.online) return a.online ? -1 : 1;
 
-  // 2. Then online users above offline users
-  if (a.online !== b.online) return a.online ? -1 : 1;
+    // 3. Alphabetical inside each group
+    return a.name.localeCompare(b.name, undefined, { sensitivity: "base", numeric: true });
+  });
 
-  // 3. Alphabetical inside each group
-  return a.name.localeCompare(b.name, undefined, { sensitivity: "base", numeric: true });
-});
-      friends.sort((a, b) => {
-        const unreadA = unreadCounters[a.uid] || 0;
-        const unreadB = unreadCounters[b.uid] || 0;
-        // 1. Unread chats on top
-        if ((unreadB > 0) !== (unreadA > 0)) return unreadB > 0 ? 1 : -1;
-        // 2. Users with messages above those without
-        if ((b.time > 0) !== (a.time > 0)) return b.time > 0 ? 1 : -1;
-        // 3. Newest message first
-        if (b.time !== a.time) return b.time - a.time;
-        // 4. Online above offline
-        if (b.online !== a.online) return b.online - a.online;
-        // 5. Alphabetical
-        return a.name.localeCompare(b.name);
-      });
+  userList.innerHTML = "";
+  list.forEach(f => {
+    const row = document.createElement("div");
+    row.className = "user-row" + (f.uid === currentChatFriendUid ? " active" : "");
+    row.id = `userrow-${f.uid}`;
+    row.dataset.uid  = f.uid;
+    row.dataset.name = f.name;
+    row.innerHTML = `
+      <div>
+        <span class="status-dot ${f.isSelf || f.online ? "online" : "offline"}"></span>
+        ${escapeHtml(f.name)}${f.isSelf ? " (You)" : ` (${escapeHtml(f.gender)})`}
+      </div>`;
+    row.onclick = () => { if (!f.isSelf) openChat(f.uid, f.name); };
+    userList.appendChild(row);
+  });
 
-      userList.innerHTML = "";
-     friends.forEach(f => {
-  const row = document.createElement("div");
-  row.className = "user-row" + (f.uid === currentChatFriendUid ? " active" : "");
-  row.id = `userrow-${f.uid}`;
-  row.dataset.uid  = f.uid;
-  row.dataset.name = f.name;
-  row.innerHTML = `
-    <div>
-      <span class="status-dot ${f.isSelf || f.online ? "online" : "offline"}"></span>
-      ${escapeHtml(f.name)}${f.isSelf ? " (You)" : ` (${escapeHtml(f.gender)})`}
-    </div>`;
-  row.onclick = () => f.isSelf
-    ? (window.location.href = "profile.html")
-    : openChat(f.uid, f.name);
-  userList.appendChild(row);
-});
-
-      updateFriendListBadges();
-    }
-
+  updateFriendListBadges();
+}
     // ── Last-message index (needs the userChats rule) ──────────────────────────
     function touchChat(otherUid, ts) {
       if (!otherUid) return;
