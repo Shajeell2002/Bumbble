@@ -464,13 +464,16 @@
       };
     });
 
-  friends.sort((a, b) => {
-    // 0. Yourself always on top
-    if (a.isSelf !== b.isSelf) return a.isSelf ? -1 : 1;
-    const unreadA = unreadCounters[a.uid] || 0;
-    const unreadB = unreadCounters[b.uid] || 0;
-    // ...the rest of the comparator stays exactly as it is
-  });
+friends.sort((a, b) => {
+  // 0. You first (only if you added the "show myself" change)
+  if (a.isSelf !== b.isSelf) return a.isSelf ? -1 : 1;
+
+  // 1. Online users above offline users
+  if (a.online !== b.online) return a.online ? -1 : 1;
+
+  // 2. Alphabetical inside each group (A–Z, ignores capitals, "Ravi2" before "Ravi10")
+  return a.name.localeCompare(b.name, undefined, { sensitivity: "base", numeric: true });
+});
       friends.sort((a, b) => {
         const unreadA = unreadCounters[a.uid] || 0;
         const unreadB = unreadCounters[b.uid] || 0;
